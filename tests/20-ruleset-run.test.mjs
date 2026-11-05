@@ -491,3 +491,68 @@ test("the type index reflects a retract", () => {
     session.retract({ type: "task", v: 1 });
     assert.deepEqual(session.run().emitted, []);
 });
+
+test("the prefix operator matches a string that starts with the prefix", () => {
+    const ruleset = {
+        facts: [
+            { type: "operation", path: "logs/session.log" },
+            { type: "operation", path: "sources/krank.mjs" },
+        ],
+        rules: [
+            {
+                id: "protected",
+                when: [{ fact: { type: "operation", path: { prefix: "logs/" } } }],
+                then: [{ emit: "protected" }],
+            },
+        ],
+    };
+    const result = ruleset_run(ruleset);
+    assert.deepEqual(result.emitted, ["protected"]);
+    assert.equal(result.firings, 1);
+});
+
+test("a count condition is non-vacuous: no checklist means no match", () => {
+    const rule = {
+        id: "complete",
+        when: [
+            { fact: { type: "task", id: "$t" } },
+            { count: { fact: { type: "checklist", task: "$t" }, at_least: 1 } },
+            { fact: { type: "checklist", task: "$t", status: "open" }, not: true },
+        ],
+        then: [{ emit: { complete: "$t" } }],
+    };
+    const facts = [{ type: "task", id: "t1" }];
+    assert.deepEqual(ruleset_run({ facts, rules: [rule] }).emitted, []);
+    facts.push({ type: "checklist", task: "t1", status: "done" });
+    assert.deepEqual(ruleset_run({ facts, rules: [rule] }).emitted, [{ complete: "t1" }]);
+});
+
+test("a count condition enforces at_most", () => {
+    const rule = {
+        id: "single",
+        when: [{ count: { fact: { type: "output", kind: "verification" }, at_most: 1 } }],
+        then: [{ emit: "single" }],
+    };
+    const one = [{ type: "output", kind: "verification", n: 1 }];
+    assert.deepEqual(ruleset_run({ facts: one, rules: [rule] }).emitted, ["single"]);
+    const two = [...one, { type: "output", kind: "verification", n: 2 }];
+    assert.deepEqual(ruleset_run({ facts: two, rules: [rule] }).emitted, []);
+});
+
+test("a count condition may not bind a new variable", () => {
+    const rule = {
+        id: "bad",
+        when: [{ count: { fact: { type: "checklist", task: "$t" }, at_least: 1 } }],
+        then: [{ emit: "x" }],
+    };
+    assert.throws(() => ruleset_run({ facts: [], rules: [rule] }), /may not bind a new variable/);
+});
+
+test("a count condition needs a bound", () => {
+    const rule = {
+        id: "bad",
+        when: [{ count: { fact: { type: "checklist" } } }],
+        then: [{ emit: "x" }],
+    };
+    assert.throws(() => ruleset_run({ facts: [], rules: [rule] }), /at_least or at_most/);
+});

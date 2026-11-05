@@ -57,14 +57,14 @@ requires $v" is grammatical but stilted.
 **Rendered**
 
 > Rule "refuse-protected-path": when there is an operation with path $p and there
-> is a guard with kind "protected" and path $p, then emit
-> {"refused":{"path":"$p","reason":"protected path"}}.
+> is a guard with kind "protected" and path $g and there is an operation with path
+> starting with $g, then emit {"refused":{"path":"$p","reason":"protected path"}}.
 
-**Verdict: faithful for exact paths, lossy on the rest.** The protected path
-matching is exact; the original is a prefix (anything under `logs/`). The
-`guard` fact supplies the judgement "this path is protected", so the rule is only
-as good as that input. "The task authorizes" is dropped: the operation fact is not
-tied to a task.
+**Verdict: faithful for prefixes; still lossy on the task link.** The guard names
+the protected prefix (`logs/`), and the operation path is tested with the `prefix`
+operator, so anything under it is refused. The `guard` fact supplies the judgement
+"this path is protected", so the rule is only as good as that input. "The task
+authorizes" is dropped: the operation fact is not tied to a task.
 
 ### Rule 3 — `prompts/common/01-universal-rules.md`, Clarification Rules
 
@@ -110,31 +110,30 @@ about the facts it is given.
 
 **Rendered**
 
-> Rule "mark-complete": when there is a task with id $t and there is no checklist
-> with task $t and status "open", then emit {"complete":"$t"}.
+> Rule "mark-complete": when there is a task with id $t and at least 1 checklist
+> with task $t and there is no checklist with task $t and status "open", then emit
+> {"complete":"$t"}.
 
-**Verdict: the interesting failure.** A negated existential is the natural
-encoding of "every item is satisfied", and it reads well. But it is **vacuously
+**Verdict: the failure, fixed.** A negated existential alone is **vacuously
 true**: a task with no checklist facts at all is emitted as complete, because
-there is nothing open. The notation has no cardinality ("at least one item") and
-no link to the referenced document. The fixture demonstrates both sides: `t9` has
-an open item and is not completed; `t10` has a done item and is.
+there is nothing open. The count condition supplies the missing cardinality: at
+least one checklist must exist, and the negation then requires none of them open.
+The fixture demonstrates all three cases: `t9` has an open item and is not
+completed; `t10` has a done item and is; `t11` has no checklist and is not. The
+link to the referenced document is still absent.
 
 ## What the round trip preserved
 
-- Discrete, fact-shaped conditions: equality and membership.
+- Discrete, fact-shaped conditions: equality, membership, and prefix.
 - Cross-fact correlation through a shared `$variable` ("the same task").
 - Negation as failure ("not stated", "nothing open").
+- Cardinality through a count condition ("at least one checklist").
 - The action: an emitted refusal, question, permission, or completion.
 
 ## What it lost or could not express
 
-- **Prefix and content matching.** "Log filenames must begin with
-  `YYYY-MM-DD-HH-MM-SS-`" (contract section 7) needs a `startsWith` or regex
-  operator; there is none. "Keep secrets ... out of output" (section 8) is the
-  same gap.
-- **Cardinality.** "A single `VERIFICATION:` line", "every applicable item", and
-  the vacuity of Rule 5 above all need a count.
+- **Content matching.** "Keep secrets ... out of output" (section 8) needs a
+  substring or regex operator; `prefix` covers paths, not content.
 - **Temporal order.** "A DELTA applies to the immediately preceding assistant
   output" (section 6) needs a sequence; facts are an unordered set.
 - **Procedural control.** "Produce the requested payload and stop" (section 5)
@@ -147,18 +146,15 @@ an open item and is not completed; `t10` has a done item and is.
 
 ## Verdict
 
-The round trip is useful where a rule is discrete and fact-shaped: four of the
-five rules kept their logical core, and the rendered prose is close enough to the
-original to compare by reading. It degrades where the rule turns on content,
-order, cardinality, modality, or a referenced document — which is most of the
-contract's hard rules.
+The round trip is useful where a rule is discrete and fact-shaped: all five rules
+kept their logical core, and the rendered prose is close enough to the original to
+compare by reading. Two gaps the first pass found are closed: a `prefix` operator
+for paths, and a count condition for cardinality, which removes the vacuous
+completion. It still degrades where the rule turns on content, order, modality, or
+a referenced document.
 
-The exercise also names two specific gaps worth deciding on, rather than leaving
-them implicit:
-
-1. a **prefix or content operator**, because path and secret rules are common;
-2. a **rule strength** field (`MUST`/`SHOULD`), because the contract already
-   distinguishes them and the formal form cannot.
+The remaining explicit gap is a **rule strength** field (`MUST`/`SHOULD`), because
+the contract already distinguishes them and the formal form cannot.
 
 ## Reproduction
 

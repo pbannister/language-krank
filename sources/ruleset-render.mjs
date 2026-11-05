@@ -14,6 +14,7 @@ const OPERATOR_WORDS = {
     gt: "greater than",
     gte: "at least",
     in: "in",
+    prefix: "starting with",
 };
 
 function operand_render(operand) {
@@ -80,6 +81,17 @@ export function fact_render(fact) {
 }
 
 export function condition_render(condition) {
+    if (condition.count) {
+        const { fact, at_least, at_most } = condition.count;
+        const bounds = [];
+        if (at_least !== undefined) {
+            bounds.push(`at least ${at_least}`);
+        }
+        if (at_most !== undefined) {
+            bounds.push(`at most ${at_most}`);
+        }
+        return `${bounds.join(" and ")} ${fact_phrase(fact)}`;
+    }
     if (condition.not) {
         return `there is no ${fact_phrase(condition.fact)}`;
     }

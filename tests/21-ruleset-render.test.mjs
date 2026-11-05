@@ -110,3 +110,27 @@ test("rule_render shows a rule priority", () => {
     const rule = { id: "x", priority: 7, when: [{ fact: { type: "task" } }], then: [{ emit: "y" }] };
     assert.ok(rule_render(rule).startsWith('Rule "x" (priority 7):'));
 });
+
+test("rule_render renders a count condition", () => {
+    const rule = {
+        id: "complete",
+        when: [
+            { fact: { type: "task", id: "$t" } },
+            { count: { fact: { type: "checklist", task: "$t" }, at_least: 1 } },
+            { fact: { type: "checklist", task: "$t", status: "open" }, not: true },
+        ],
+        then: [{ emit: { complete: "$t" } }],
+    };
+    const text = rule_render(rule);
+    assert.ok(text.includes("at least 1 checklist with task $t"));
+    assert.ok(text.includes('there is no checklist with task $t and status "open"'));
+});
+
+test("rule_render renders the prefix operator", () => {
+    const rule = {
+        id: "protected",
+        when: [{ fact: { type: "operation", path: { prefix: "logs/" } } }],
+        then: [{ emit: "protected" }],
+    };
+    assert.ok(rule_render(rule).includes('path starting with "logs/"'));
+});

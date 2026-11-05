@@ -70,6 +70,19 @@ fact. `"not": true` inverts the condition: it holds when no fact matches the
 pattern. A negated condition may reference variables already bound by earlier
 conditions, but it may not bind a new one.
 
+A **count condition** is `{"count": {"fact": PATTERN, "at_least": N}}` or
+`{"count": {"fact": PATTERN, "at_most": N}}`, or both bounds together. It holds
+when the number of facts matching the pattern is within the bounds. The pattern may
+reference variables already bound by earlier conditions, but it may not bind a new
+one. A count condition makes a "for all" non-vacuous: pair `at_least: 1` with a
+negated condition to mean "at least one, and none of them forbidden".
+
+```json
+{"count": {"fact": {"type": "checklist", "task": "$t"}, "at_least": 1}}
+```
+
+This holds when at least one checklist fact belongs to the task bound to `$t`.
+
 Disjunction is expressed by writing two rules with the same `then`, not by an
 `any` operator. The notation has no `any`.
 
@@ -120,9 +133,11 @@ range.
 | `lt`, `lte` | the value is less than, or at most, the operand |
 | `gt`, `gte` | the value is greater than, or at least, the operand |
 | `in` | the value is one of the operand array |
+| `prefix` | the value is a string that starts with the operand |
 
 An operand is a scalar, an already-bound `$variable`, or (for `in` only) an array
-of scalars. A comparison holds only when both sides are numbers; a non-numeric
+of scalars. `prefix` compares strings; a non-string value is a no-match, not an
+error. A numeric comparison holds only when both sides are numbers; a non-numeric
 comparison is a no-match, not an error.
 
 ```json

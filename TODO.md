@@ -19,3 +19,5 @@
 - [x] make the demo compile and check: select a compiled prompt (rules, rendered prose, comparison, reduced prompt), then select a project file or directory and run the rules against build-time facts (2026-11-05).
 - [x] list every prompt file in the demo and show the line-by-line difference between the original and the reduced prompt (2026-11-05).
 - [x] add `krank check <ruleset> [facts] [--fail-on-emit]`, the conformance entry point a model or test calls instead of reading the rules (2026-11-05).
+- [x] add the `prefix` operator, so a protected path can name a prefix rather than an exact path (2026-11-05).
+- [x] add a `count` condition (`at_least`/`at_most`), so a "for all" is non-vacuous; the round-trip's `mark-complete` now requires at least one checklist (2026-11-05).

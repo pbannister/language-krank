@@ -7,7 +7,7 @@
 // then document order — a rule binding fires at most once, and assert/retract
 // change the fact set for later scans.
 
-const OPERATORS = new Set(["eq", "ne", "lt", "lte", "gt", "gte", "in"]);
+const OPERATORS = new Set(["eq", "ne", "lt", "lte", "gt", "gte", "in", "prefix"]);
 const VARIABLE_PATTERN = /^\$[A-Za-z_][A-Za-z0-9_]*$/;
 const NO_TYPE = Symbol("no literal type");
 
@@ -90,6 +90,10 @@ function test_operator(operator, operand, actual, bindings) {
             throw new Error('the "in" operand must be an array or a $variable bound to one');
         }
         return list.some((item) => Object.is(item, actual));
+    }
+    if (operator === "prefix") {
+        const expected = resolve_operand(operand, bindings);
+        return typeof actual === "string" && typeof expected === "string" && actual.startsWith(expected);
     }
     const expected = resolve_operand(operand, bindings);
     switch (operator) {
@@ -191,6 +195,21 @@ function* extend_conditions(conditions, index, context, state) {
         return;
     }
     const condition = conditions[index];
+    if (condition.count) {
+        const pattern = condition.count.fact;
+        let count = 0;
+        for (const fact of candidates(pattern, context)) {
+            if (unify(pattern, fact, state.vars, false) !== null) {
+                count += 1;
+            }
+        }
+        const above = condition.count.at_least === undefined || count >= condition.count.at_least;
+        const below = condition.count.at_most === undefined || count <= condition.count.at_most;
+        if (above && below) {
+            yield* extend_conditions(conditions, index + 1, context, state);
+        }
+        return;
+    }
     if (condition.not) {
         for (const fact of candidates(condition.fact, context)) {
             if (unify(condition.fact, fact, state.vars, false) !== null) {
@@ -212,15 +231,15 @@ function* extend_conditions(conditions, index, context, state) {
 }
 
 // scan_pattern checks a pattern and records the variables it binds.
-function scan_pattern(rule_id, pattern, is_negated, bound) {
+function scan_pattern(rule_id, pattern, allow_new, bound, label) {
     for (const spec of Object.values(pattern)) {
         if (is_variable(spec)) {
             const name = variable_name(spec);
             if (bound.has(name)) {
                 continue;
             }
-            if (is_negated) {
-                throw new Error(`rule "${rule_id}": a negated condition may not bind a new variable ${spec}`);
+            if (!allow_new) {
+                throw new Error(`rule "${rule_id}": ${label} may not bind a new variable ${spec}`);
             }
             bound.add(name);
             continue;
@@ -330,17 +349,45 @@ function rule_validate(rule) {
     }
     const bound = new Set();
     for (const condition of rule.when) {
-        if (
-            condition === null ||
-            typeof condition !== "object" ||
-            Array.isArray(condition) ||
-            condition.fact === null ||
-            typeof condition.fact !== "object" ||
-            Array.isArray(condition.fact)
-        ) {
+        if (condition === null || typeof condition !== "object" || Array.isArray(condition)) {
+            throw new Error(`rule "${rule.id}": every condition needs a "fact" object pattern or a "count"`);
+        }
+        if ("count" in condition) {
+            const count = condition.count;
+            if (
+                count === null ||
+                typeof count !== "object" ||
+                Array.isArray(count) ||
+                count.fact === null ||
+                typeof count.fact !== "object" ||
+                Array.isArray(count.fact)
+            ) {
+                throw new Error(`rule "${rule.id}": a count condition needs a "count.fact" object pattern`);
+            }
+            for (const key of ["at_least", "at_most"]) {
+                if (key in count && (!Number.isInteger(count[key]) || count[key] < 0)) {
+                    throw new Error(`rule "${rule.id}": "count.${key}" must be a non-negative integer`);
+                }
+            }
+            if (!("at_least" in count) && !("at_most" in count)) {
+                throw new Error(`rule "${rule.id}": a count condition needs at_least or at_most`);
+            }
+            if ("at_least" in count && "at_most" in count && count.at_least > count.at_most) {
+                throw new Error(`rule "${rule.id}": count.at_least must not exceed count.at_most`);
+            }
+            scan_pattern(rule.id, count.fact, false, bound, "a count condition");
+            continue;
+        }
+        if (condition.fact === null || typeof condition.fact !== "object" || Array.isArray(condition.fact)) {
             throw new Error(`rule "${rule.id}": every condition needs a "fact" object pattern`);
         }
-        scan_pattern(rule.id, condition.fact, condition.not === true, bound);
+        scan_pattern(
+            rule.id,
+            condition.fact,
+            condition.not !== true,
+            bound,
+            condition.not === true ? "a negated condition" : "a condition",
+        );
     }
     for (const action of rule.then) {
         scan_action(rule.id, action, bound);

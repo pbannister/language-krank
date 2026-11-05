@@ -31,12 +31,19 @@ test("the round-trip fixture renders the recorded phrases", () => {
     assert.ok(prose.includes("there is no workflow with requires $v"));
     assert.ok(prose.includes('changes in ["output", "scope", "safety"]'));
     assert.ok(prose.includes('there is no checklist with task $t and status "open"'));
+    assert.ok(prose.includes("path starting with $g"));
+    assert.ok(prose.includes("at least 1 checklist with task $t"));
 });
 
-test("the vacuous completion is real: a task with no checklist is complete", () => {
+test("a task with no checklist is not complete", () => {
     const bare = {
         facts: [{ type: "task", id: "t1" }],
         rules: [ruleset.rules.find((rule) => rule.id === "mark-complete")],
     };
-    assert.deepEqual(ruleset_run(bare).emitted, [{ complete: "t1" }]);
+    assert.deepEqual(ruleset_run(bare).emitted, []);
+});
+
+test("the fixture's bare task t11 is not complete", () => {
+    const result = ruleset_run(ruleset);
+    assert.ok(!result.emitted.some((item) => item.complete === "t11"));
 });

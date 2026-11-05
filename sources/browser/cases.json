@@ -11,8 +11,8 @@
             "rule": "refuse-protected-path",
             "source": "prompts/01-contract.md",
             "original": "A task may not authorize an operation on a protected path; the prompt validator refuses it.",
-            "verdict": "faithful for exact paths",
-            "note": "Protected-path matching is exact, while the original is a prefix. The task link is dropped: the operation fact is not tied to a task."
+            "verdict": "faithful for prefixes",
+            "note": "The guard names the protected prefix, and the operation path is tested with the prefix operator. The task link is still dropped: the operation fact is not tied to a task."
         },
         {
             "rule": "ask-on-material-ambiguity",
@@ -32,8 +32,8 @@
             "rule": "mark-complete",
             "source": "prompts/01-contract.md",
             "original": "A task is complete only when the Definition of Done in `prompts/02-workflow.md` is satisfied.",
-            "verdict": "vacuous",
-            "note": "A negated existential is the natural encoding of every item is satisfied, but it is vacuously true: a task with no checklist facts is reported complete."
+            "verdict": "non-vacuous",
+            "note": "A count guard requires at least one checklist, so a task with no checklist is not complete; the negation then requires none open. The direction of the original is preserved and the vacuity is removed."
         }
     ]
 }
