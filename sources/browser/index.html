@@ -3,34 +3,52 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>krank — browser demo</title>
+    <title>krank — the round trip</title>
     <style>
         :root { color-scheme: light dark; }
-        body { margin: 0 auto; max-width: 60rem; padding: 2rem 1rem; font-family: system-ui, sans-serif; line-height: 1.4; }
+        body { margin: 0 auto; max-width: 64rem; padding: 2rem 1rem; font-family: system-ui, sans-serif; line-height: 1.45; }
         h1 { margin: 0 0 0.25rem; }
+        h2 { margin: 2rem 0 0.5rem; font-size: 1.1rem; }
         p { margin: 0 0 1rem; }
-        label { display: block; margin-bottom: 0.25rem; font-weight: 600; }
-        textarea, pre { width: 100%; box-sizing: border-box; font-family: ui-monospace, monospace; font-size: 0.875rem; }
-        textarea { height: 20rem; }
-        pre { min-height: 6rem; padding: 1rem; border-radius: 0.25rem; overflow: auto; background: color-mix(in srgb, Canvas 92%, CanvasText 8%); }
-        .row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.75rem 0; }
-        button { font: inherit; padding: 0.4rem 1rem; }
+        .lead { max-width: 48rem; }
+        pre { padding: 1rem; border-radius: 0.25rem; overflow: auto; background: color-mix(in srgb, Canvas 92%, CanvasText 8%); font-family: ui-monospace, monospace; font-size: 0.8125rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+        th, td { border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); padding: 0.5rem; text-align: left; vertical-align: top; }
+        th { background: color-mix(in srgb, Canvas 92%, CanvasText 8%); }
+        ol { padding-left: 1.25rem; }
+        ol li { margin-bottom: 0.5rem; }
+        code { background: color-mix(in srgb, Canvas 92%, CanvasText 8%); padding: 0.1em 0.3em; }
+        .verdict { font-weight: 600; white-space: nowrap; }
         .note { opacity: 0.75; font-size: 0.875rem; }
     </style>
 </head>
 <body>
     <!-- HOMELAB-NAV -->
-    <h1>krank</h1>
-    <p>A minimal production-rules engine. This page loads <code>sources/krank.mjs</code> directly as a native ES module, with no build step, so it runs the same engine the package exports.</p>
-    <label for="input">Rule set (JSON)</label>
-    <textarea id="input" spellcheck="false"></textarea>
-    <div class="row">
-        <button id="run" type="button">Run</button>
-        <button id="render" type="button">Render to prose</button>
-        <button id="reset" type="button">Reset sample</button>
-    </div>
-    <pre id="output" aria-live="polite"></pre>
-    <p class="note">Serve this directory over HTTP (for example <code>make demo</code>); ES modules do not load from <code>file://</code>.</p>
-    <script type="module" src="./demo.mjs"></script>
+    <h1>krank — the round trip</h1>
+    <p class="lead">A human writes rules in prose. A model compiles them into the formal rule set below. The engine renders the rules back into prose, and a reader compares that prose with the original. The comparison is the check that the compilation kept the meaning; it is a recorded judgement, not a mechanical proof.</p>
+    <p class="lead">The aim is to shrink what the model must hold: in a later iteration it receives the compiled rules and calls the engine to prove conformance, instead of re-reading the full prose. <a href="playground.html">The playground</a> lets you edit a rule set and run it.</p>
+
+    <h2>1. Original prose (the loading prompt)</h2>
+    <ol id="original"></ol>
+
+    <h2>2. The compiled rule set</h2>
+    <pre id="rules"></pre>
+
+    <h2>3. The rules rendered back to prose</h2>
+    <pre id="rendered"></pre>
+
+    <h2>4. The comparison</h2>
+    <table>
+        <thead>
+            <tr><th>Original</th><th>Rendered</th><th>Verdict</th><th>What was kept and lost</th></tr>
+        </thead>
+        <tbody id="comparison"></tbody>
+    </table>
+
+    <h2>5. The rules running</h2>
+    <p>The same rule set, evaluated against a small fact set:</p>
+    <pre id="result"></pre>
+
+    <script type="module" src="./round-trip.mjs"></script>
 </body>
 </html>
