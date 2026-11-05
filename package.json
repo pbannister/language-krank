@@ -11,7 +11,7 @@
     "./package.json": "./package.json"
   },
   "bin": {
-    "krank": "./sources/ruleset-command.mjs"
+    "krank": "sources/ruleset-command.mjs"
   },
   "files": [
     "sources/",
