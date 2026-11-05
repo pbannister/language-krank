@@ -3,7 +3,13 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ruleset_run, is_match, fact_key } from "../sources/ruleset-run.mjs";
+import {
+  ruleset_run,
+  is_match,
+  fact_key,
+  is_variable,
+  is_operator,
+} from "../sources/ruleset-run.mjs";
 
 test("a matching fact fires a rule and emits", () => {
   const ruleset = {
@@ -171,4 +177,191 @@ test("a rule with only negative conditions fires once when they hold", () => {
   const result = ruleset_run(ruleset);
   assert.equal(result.firings, 1);
   assert.deepEqual(result.emitted, ["empty"]);
+});
+
+test("is_variable and is_operator recognise their forms", () => {
+  assert.equal(is_variable("$p"), true);
+  assert.equal(is_variable("p"), false);
+  assert.equal(is_variable("$p q"), false);
+  assert.equal(is_operator({ gt: 5 }), true);
+  assert.equal(is_operator({ gt: 5, lt: 10 }), true);
+  assert.equal(is_operator({ gt: 5, name: "x" }), false);
+  assert.equal(is_operator({}), false);
+});
+
+test("a $variable binds a fact value and is substituted in an action", () => {
+  const ruleset = {
+    facts: [{ type: "task", priority: "high" }],
+    rules: [
+      {
+        id: "echo",
+        when: [{ fact: { type: "task", priority: "$p" } }],
+        then: [{ assert: { type: "alert", priority: "$p" } }],
+      },
+    ],
+  };
+  const result = ruleset_run(ruleset);
+  assert.deepEqual(result.facts[1], { type: "alert", priority: "high" });
+});
+
+test("two conditions binding the same variable must agree", () => {
+  const rule = {
+    id: "same",
+    when: [
+      { fact: { type: "task", priority: "$p" } },
+      { fact: { type: "cap", priority: "$p" } },
+    ],
+    then: [{ emit: "$p" }],
+  };
+  const agree = {
+    facts: [{ type: "task", priority: "high" }, { type: "cap", priority: "high" }],
+    rules: [rule],
+  };
+  assert.deepEqual(ruleset_run(agree).emitted, ["high"]);
+
+  const disagree = {
+    facts: [{ type: "task", priority: "high" }, { type: "cap", priority: "low" }],
+    rules: [rule],
+  };
+  assert.deepEqual(ruleset_run(disagree).emitted, []);
+});
+
+test("comparison and membership operators filter facts", () => {
+  const ruleset = {
+    facts: [
+      { type: "task", priority: "high", score: 9 },
+      { type: "task", priority: "low", score: 2 },
+    ],
+    rules: [
+      { id: "high-score", when: [{ fact: { type: "task", score: { gt: 5 } } }], then: [{ emit: "high" }] },
+      { id: "low-score", when: [{ fact: { type: "task", score: { lte: 5 } } }], then: [{ emit: "low" }] },
+      {
+        id: "member",
+        when: [{ fact: { type: "task", priority: { in: ["high", "critical"] } } }],
+        then: [{ emit: "urgent" }],
+      },
+    ],
+  };
+  const result = ruleset_run(ruleset);
+  assert.deepEqual(result.emitted, ["high", "low", "urgent"]);
+});
+
+test("an operator object may carry a range", () => {
+  const ruleset = {
+    facts: [{ type: "n", v: 5 }, { type: "n", v: 15 }],
+    rules: [
+      { id: "mid", when: [{ fact: { type: "n", v: { gt: 4, lt: 10 } } }], then: [{ emit: "mid" }] },
+    ],
+  };
+  const result = ruleset_run(ruleset);
+  assert.deepEqual(result.emitted, ["mid"]);
+  assert.equal(result.firings, 1);
+});
+
+test("an unbound variable in an action is refused", () => {
+  const ruleset = {
+    facts: [{ type: "task" }],
+    rules: [{ id: "bad", when: [{ fact: { type: "task" } }], then: [{ emit: "$missing" }] }],
+  };
+  assert.throws(() => ruleset_run(ruleset), /unbound variable/);
+});
+
+test("an unbound variable in an operator operand is refused", () => {
+  const ruleset = {
+    facts: [{ type: "task", score: 5 }],
+    rules: [
+      { id: "bad", when: [{ fact: { type: "task", score: { gt: "$missing" } } }], then: [{ emit: "x" }] },
+    ],
+  };
+  assert.throws(() => ruleset_run(ruleset), /unbound variable/);
+});
+
+test("a negated condition may not bind a new variable", () => {
+  const ruleset = {
+    facts: [],
+    rules: [
+      { id: "bad", when: [{ fact: { type: "alert", level: "$l" }, not: true }], then: [{ emit: "x" }] },
+    ],
+  };
+  assert.throws(() => ruleset_run(ruleset), /may not bind/);
+});
+
+test("a negated condition may reference an already-bound variable", () => {
+  const ruleset = {
+    facts: [{ type: "task", priority: "high" }],
+    rules: [
+      {
+        id: "uncovered",
+        when: [
+          { fact: { type: "task", priority: "$p" } },
+          { fact: { type: "cover", priority: "$p" }, not: true },
+        ],
+        then: [{ emit: "$p" }],
+      },
+    ],
+  };
+  const result = ruleset_run(ruleset);
+  assert.deepEqual(result.emitted, ["high"]);
+});
+
+test("a retract action substitutes the bound variable", () => {
+  const ruleset = {
+    facts: [
+      { type: "task", id: "a" },
+      { type: "task", id: "b" },
+      { type: "done", id: "a" },
+    ],
+    rules: [
+      {
+        id: "drop-done",
+        when: [
+          { fact: { type: "task", id: "$i" } },
+          { fact: { type: "done", id: "$i" } },
+        ],
+        then: [{ retract: { type: "task", id: "$i" } }],
+      },
+    ],
+  };
+  const result = ruleset_run(ruleset);
+  assert.deepEqual(result.facts, [
+    { type: "task", id: "b" },
+    { type: "done", id: "a" },
+  ]);
+});
+
+test("a variable is substituted recursively in an emitted value", () => {
+  const ruleset = {
+    facts: [{ type: "task", priority: "high" }],
+    rules: [
+      {
+        id: "report",
+        when: [{ fact: { type: "task", priority: "$p" } }],
+        then: [{ emit: { message: "$p" } }],
+      },
+    ],
+  };
+  const result = ruleset_run(ruleset);
+  assert.deepEqual(result.emitted, [{ message: "high" }]);
+});
+
+test("a binding with the same facts and variables fires once", () => {
+  const ruleset = {
+    facts: [{ type: "task", priority: "high" }],
+    rules: [
+      { id: "once", when: [{ fact: { type: "task", priority: "$p" } }], then: [{ emit: "$p" }] },
+    ],
+  };
+  const result = ruleset_run(ruleset);
+  assert.equal(result.firings, 1);
+  assert.deepEqual(result.emitted, ["high"]);
+});
+
+test("an action must have exactly one of assert, retract, emit", () => {
+  const ruleset = {
+    facts: [{ type: "task" }],
+    rules: [
+      { id: "bad", when: [{ fact: { type: "task" } }], then: [{ assert: { type: "x" }, emit: "y" }] },
+    ],
+  };
+  assert.throws(() => ruleset_run(ruleset), /exactly one/);
 });

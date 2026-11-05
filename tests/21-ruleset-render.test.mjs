@@ -62,3 +62,46 @@ test("ruleset_render includes facts and rules and is deterministic", () => {
   assert.ok(first.includes('a task with status "open"'));
   assert.ok(first.includes('Rule "r1"'));
 });
+
+test("fact_render keeps a $variable visible", () => {
+  assert.equal(fact_render({ type: "task", priority: "$p" }), "a task with priority $p");
+});
+
+test("rule_render renders a comparison operator as prose", () => {
+  const rule = {
+    id: "big",
+    when: [{ fact: { type: "task", score: { gt: 5 } } }],
+    then: [{ emit: "big" }],
+  };
+  assert.equal(
+    rule_render(rule),
+    'Rule "big": when there is a task with score greater than 5, then emit "big".',
+  );
+});
+
+test("rule_render renders an operator range as prose", () => {
+  const rule = {
+    id: "mid",
+    when: [{ fact: { type: "n", v: { gt: 4, lt: 10 } } }],
+    then: [{ emit: "mid" }],
+  };
+  assert.equal(
+    rule_render(rule),
+    'Rule "mid": when there is a n with v greater than 4 and less than 10, then emit "mid".',
+  );
+});
+
+test("rule_render renders membership and a negated condition", () => {
+  const rule = {
+    id: "urgent",
+    when: [
+      { fact: { type: "task", priority: { in: ["high", "critical"] } } },
+      { fact: { type: "task", priority: "$p" } },
+      { fact: { type: "cover", priority: "$p" }, not: true },
+    ],
+    then: [{ emit: "urgent" }],
+  };
+  const text = rule_render(rule);
+  assert.ok(text.includes('priority in ["high", "critical"]'));
+  assert.ok(text.includes("there is no cover with priority $p"));
+});

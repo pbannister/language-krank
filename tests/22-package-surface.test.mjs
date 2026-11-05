@@ -71,6 +71,7 @@ test("the barrel re-exports the public functions", async () => {
   const barrel = await import("../sources/krank.mjs");
   const exported = [
     "ruleset_run", "is_match", "fact_key", "keys_sort",
+    "is_variable", "variable_name", "is_operator",
     "ruleset_render", "rule_render", "fact_render", "fact_phrase",
     "condition_render", "action_render",
   ];

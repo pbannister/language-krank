@@ -1,6 +1,6 @@
 {
   "name": "@bannister.us/krank",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A minimal production-rules engine with an LLM-emittable notation and a prose round-trip renderer.",
   "license": "MIT",
   "repository": {

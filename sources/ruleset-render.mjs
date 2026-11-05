@@ -4,8 +4,42 @@
 // is deterministic, so the same rule set always renders to the same prose and a
 // reviewer can compare it to the original intent.
 
-// value_render renders a scalar value for prose.
+import { is_operator, is_variable } from "./ruleset-run.mjs";
+
+const OPERATOR_WORDS = {
+  eq: "equal to",
+  ne: "not equal to",
+  lt: "less than",
+  lte: "at most",
+  gt: "greater than",
+  gte: "at least",
+  in: "in",
+};
+
+function operand_render(operand) {
+  if (is_variable(operand)) {
+    return operand;
+  }
+  if (Array.isArray(operand)) {
+    const items = operand.map((item) => (typeof item === "string" ? `"${item}"` : JSON.stringify(item)));
+    return `[${items.join(", ")}]`;
+  }
+  if (typeof operand === "string") {
+    return `"${operand}"`;
+  }
+  return JSON.stringify(operand);
+}
+
+// value_render renders a scalar, a $variable, or an operator phrase.
 function value_render(value) {
+  if (is_variable(value)) {
+    return value;
+  }
+  if (is_operator(value)) {
+    return Object.entries(value)
+      .map(([operator, operand]) => `${OPERATOR_WORDS[operator]} ${operand_render(operand)}`)
+      .join(" and ");
+  }
   if (typeof value === "string") {
     return `"${value}"`;
   }

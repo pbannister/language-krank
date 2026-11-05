@@ -56,10 +56,17 @@ A **rule** is an object with exactly three keys:
 
 A **condition** is `{"fact": PATTERN}` or `{"fact": PATTERN, "not": true}`.
 
-A pattern is matched by subset equality: a fact matches a pattern when, for every
-key in the pattern, the fact has an equal value under that key. A pattern with no
-keys matches every fact. `"not": true` inverts the condition: it holds when no
-fact matches the pattern.
+A pattern is an object keyed by fact key. Each value is a **matcher**:
+
+- a scalar (string, number, boolean, or null) — the fact's value must equal it;
+- a `$variable` such as `"$priority"` — the fact's value is bound to the variable;
+- an **operator object** such as `{"gt": 5}` — the fact's value must satisfy it.
+
+A fact matches a pattern when it has every key in the pattern and every matcher
+holds. Extra keys on the fact are ignored, so a pattern with no keys matches every
+fact. `"not": true` inverts the condition: it holds when no fact matches the
+pattern. A negated condition may reference variables already bound by earlier
+conditions, but it may not bind a new one.
 
 Disjunction is expressed by writing two rules with the same `then`, not by an
 `any` operator. The notation has no `any`.
@@ -74,6 +81,54 @@ An **action** is one of:
 
 `emit` is the observable result; `assert` and `retract` change state.
 
+### Variable
+
+A **variable** is a string of the form `"$name"`, where `name` starts with a letter
+or underscore and continues with letters, digits, or underscores.
+
+- In a pattern value, a variable **binds** the matched fact's value. When the
+  variable is already bound (by an earlier condition), the fact's value must equal
+  it, so two conditions that name the same variable must agree.
+- In an action template, a variable is **replaced** by its bound value: in an
+  `assert` or `retract` fact, and in any leaf of an `emit` value.
+- A variable that no condition binds is an error. A rule that uses one is refused
+  before matching, with a message naming the rule and the variable.
+
+Variables bind left to right: a condition may use a variable an earlier condition
+bound, never one a later condition binds.
+
+```json
+{
+  "id": "echo-priority",
+  "when": [ {"fact": {"type": "task", "priority": "$p"}} ],
+  "then": [ {"assert": {"type": "alert", "priority": "$p"}} ]
+}
+```
+
+### Operator
+
+An **operator object** is a non-empty object whose keys are all operators. The
+fact's value must satisfy every operator in the object, so one object can carry a
+range.
+
+| Operator | Holds when |
+|---|---|
+| `eq` | the value equals the operand |
+| `ne` | the value does not equal the operand |
+| `lt`, `lte` | the value is less than, or at most, the operand |
+| `gt`, `gte` | the value is greater than, or at least, the operand |
+| `in` | the value is one of the operand array |
+
+An operand is a scalar, an already-bound `$variable`, or (for `in` only) an array
+of scalars. A comparison holds only when both sides are numbers; a non-numeric
+comparison is a no-match, not an error.
+
+```json
+{"fact": {"type": "task", "score": {"gt": 4, "lt": 10}}}
+```
+
+This matches a task whose score is greater than 4 and less than 10.
+
 ## Semantics
 
 The interpreter is deterministic and forward-chaining.
@@ -84,11 +139,16 @@ The interpreter is deterministic and forward-chaining.
    every way to satisfy its conditions — in canonical order.
 3. Fire the first rule with a binding that has not fired before: apply its `then`
    in order, and record the firing.
-4. Refraction: a rule binding fires at most once. A binding is the rule id plus
-   the multiset of matched facts.
+4. Refraction: a rule binding fires at most once. A binding is the rule id, the
+   multiset of matched facts, and the variable assignment.
 5. Repeat from step 2 until no rule has an unfired binding (a fixpoint).
 6. If the number of firings reaches a cap (10 000 by default), stop with an error:
    the set did not reach a fixpoint.
+
+Before any matching, the engine validates every rule: a string `id`, `when` and
+`then` arrays, exactly one key per action, and every variable bound before it is
+used. A malformed rule is refused with a message naming the rule and the problem,
+rather than silently matching nothing.
 
 Two facts are the same fact when their keys and values are equal, so an `assert`
 of an equal fact is a no-op and a `retract` removes every equal fact.
@@ -106,10 +166,11 @@ step 3 is between two pieces of prose, not between prose and a data structure.
 
 ## Minimality
 
-The notation has three kinds of condition (positive, negated) and three actions
+The notation has two kinds of condition (positive, negated), three actions
 (assert, retract, emit), one control structure (conjunction, with disjunction by
-multiple rules), and one matching rule (subset equality). Anything more is added
-only when a real rule set cannot be expressed without it.
+multiple rules), and three matchers (scalar equality, variable binding, operator
+object). Anything more is added only when a real rule set cannot be expressed
+without it.
 
-The engine has no certainty factors, no salience, and no complex conflict
-resolution. Firing order is document order; a rule binding fires once.
+The engine has no certainty factors, no salience, no conflict resolution, and no
+Rete network. Firing order is document order; a rule binding fires once.

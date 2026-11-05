@@ -4,7 +4,15 @@
 // (ruleset-command.mjs) is deliberately absent, because it imports node:fs and
 // would break a browser import of this package.
 
-export { keys_sort, fact_key, is_match, ruleset_run } from "./ruleset-run.mjs";
+export {
+  keys_sort,
+  fact_key,
+  is_match,
+  is_variable,
+  variable_name,
+  is_operator,
+  ruleset_run,
+} from "./ruleset-run.mjs";
 export {
   fact_phrase,
   fact_render,
