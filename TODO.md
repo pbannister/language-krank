@@ -2,9 +2,6 @@
 
 ## Open Questions
 
-- [ ] decide whether to add a string-matching operator (`matches` with a regex, or `contains`), which is deliberately absent from the operator set.
-- [ ] decide whether an `any` (disjunction) operator is worth adding, given that disjunction is expressible as multiple rules with the same `then`.
-- [ ] try the round trip on real prose: translate a few rules of `prompts/01-contract.md` into a rule set, render them back, and compare.
 - [ ] decide whether `sources/` should grow a browser demo (the engine is already browser-safe; only the CLI reads files).
 - [ ] trim the inherited site-build and project-pages features, scripts, and tests once the rules engine no longer needs a complete-project fixture.
 
@@ -18,3 +15,4 @@
 - [x] add variable binding and a small operator set (`eq`, `ne`, `lt`, `lte`, `gt`, `gte`, `in`) to the engine, renderer, and notation (2026-11-04).
 - [x] add a priority agenda, a `ruleset_session` working-memory object, and a per-`type` fact index (2026-11-04).
 - [x] add `make publish` (`scripts/release-publish.sh`) to tag, push, and publish to npm (2026-11-04).
+- [x] run the round trip on real prose from `prompts/01-contract.md`, recorded in `documents/11-round-trip.md` with fixture `dataflow.in/round-trip.json` (2026-11-04).

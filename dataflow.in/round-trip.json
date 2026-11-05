@@ -1,0 +1,67 @@
+{
+    "facts": [
+        {"type": "change", "task": "t1", "verb": "modify"},
+        {"type": "change", "task": "t2", "verb": "test"},
+        {"type": "statement", "task": "t2", "verb": "test"},
+        {"type": "operation", "path": "logs/session.log"},
+        {"type": "guard", "kind": "protected", "path": "logs/session.log"},
+        {"type": "ambiguity", "changes": "scope"},
+        {"type": "ambiguity", "changes": "style"},
+        {"type": "output", "kind": "verification"},
+        {"type": "task", "id": "t9"},
+        {"type": "checklist", "task": "t9", "status": "open"},
+        {"type": "task", "id": "t10"},
+        {"type": "checklist", "task": "t10", "status": "done"}
+    ],
+    "rules": [
+        {
+            "id": "refuse-unstated-change",
+            "when": [
+                {"fact": {"type": "change", "task": "$t", "verb": "$v"}},
+                {"fact": {"type": "statement", "task": "$t", "verb": "$v"}, "not": true},
+                {"fact": {"type": "workflow", "requires": "$v"}, "not": true}
+            ],
+            "then": [
+                {"emit": {"refused": {"verb": "$v", "reason": "not stated by the task and not required by the workflow"}}}
+            ]
+        },
+        {
+            "id": "refuse-protected-path",
+            "when": [
+                {"fact": {"type": "operation", "path": "$p"}},
+                {"fact": {"type": "guard", "kind": "protected", "path": "$p"}}
+            ],
+            "then": [
+                {"emit": {"refused": {"path": "$p", "reason": "protected path"}}}
+            ]
+        },
+        {
+            "id": "ask-on-material-ambiguity",
+            "when": [
+                {"fact": {"type": "ambiguity", "changes": {"in": ["output", "scope", "safety"]}}}
+            ],
+            "then": [
+                {"emit": {"ask": {"because": "the ambiguity can change output, scope, or safety"}}}
+            ]
+        },
+        {
+            "id": "permit-verification-line",
+            "when": [
+                {"fact": {"type": "output", "kind": "verification"}}
+            ],
+            "then": [
+                {"emit": {"permitted": "one verification line"}}
+            ]
+        },
+        {
+            "id": "mark-complete",
+            "when": [
+                {"fact": {"type": "task", "id": "$t"}},
+                {"fact": {"type": "checklist", "task": "$t", "status": "open"}, "not": true}
+            ],
+            "then": [
+                {"emit": {"complete": "$t"}}
+            ]
+        }
+    ]
+}
