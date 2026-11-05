@@ -30,10 +30,10 @@ During development, a sibling project can depend on this checkout by path (`"@ba
 
 `sources/browser/` holds two zero-build pages that load `sources/krank.mjs` as a native ES module; the engine and renderer carry no `node:` import, so the same code runs in the browser.
 
-- `index.html` is the round trip: the original prose, the compiled rule set, the rules rendered back to prose, the comparison with a verdict, and the engine's result on a sample fact set.
+- `index.html` compiles and checks: select a prompt file to see its compiled rule set, the rules rendered back to prose, the comparison, and the reduced prompt that removes the covered lines; then select a project file or directory to run the selected rules against facts extracted at build time.
 - `playground.html` edits a rule set and runs it.
 
-`make demo` serves them locally at `http://127.0.0.1:8080/browser/`, exposing only `sources/`. `make site` publishes both with the project pages via `scripts/site-demo.sh` (library modules at the project root), and `site.in/pages.nav` lists them in the nav. The npm package does not include the demo; `package.json`'s `files` lists the library modules only.
+The compile is recorded: `scripts/site-catalog.mjs` assembles the compiled rule sets and the prompt text, and `scripts/site-facts.mjs` extracts the file facts, both at build time; the page neither calls a model nor reads the repository. `make demo` serves the pages locally at `http://127.0.0.1:8080/browser/`, exposing only `sources/`. `make site` publishes them with the project pages via `scripts/site-demo.sh` (library modules at the project root), and `site.in/pages.nav` lists them in the nav. The npm package does not include the demo; `package.json`'s `files` lists the library modules only.
 
 ## Publishing
 

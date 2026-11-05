@@ -7,6 +7,10 @@
 # same relative import resolves. The demo page is listed in site.in/pages.nav, so
 # the homelab adds it to the one navigation bar at the right depth.
 #
+# The compile catalog (scripts/site-catalog.mjs) and the file facts
+# (scripts/site-facts.mjs) are generated from the repository at build time, so the
+# published page never reads the repository itself.
+#
 # The demo ships with the project pages and not in the npm package: package.json's
 # "files" lists the library only.
 #
@@ -19,14 +23,13 @@ REPOSITORY_ROOT=$(CDPATH= cd -- "$DIRECTORY_SCRIPT/.." && pwd)
 DIRECTORY_OUTPUT=${1:-"$REPOSITORY_ROOT/site.out"}
 DIRECTORY_DEMO="$REPOSITORY_ROOT/sources/browser"
 
-if [ ! -d "$DIRECTORY_DEMO" ]; then
-    echo "site-demo: demo directory not found: $DIRECTORY_DEMO" >&2
+fail() {
+    echo "site-demo: $1" >&2
     exit 1
-fi
-if [ ! -d "$DIRECTORY_OUTPUT" ]; then
-    echo "site-demo: output directory not found: $DIRECTORY_OUTPUT (run the site build first)" >&2
-    exit 1
-fi
+}
+
+[ -d "$DIRECTORY_DEMO" ] || fail "demo directory not found: $DIRECTORY_DEMO"
+[ -d "$DIRECTORY_OUTPUT" ] || fail "output directory not found: $DIRECTORY_OUTPUT (run the site build first)"
 
 mkdir -p "$DIRECTORY_OUTPUT/browser"
 
@@ -39,13 +42,17 @@ for file_page in index.html playground.html; do
     } > "$DIRECTORY_OUTPUT/browser/$file_page"
 done
 
-for file_asset in demo.mjs round-trip.mjs sample.json cases.json; do
+for file_asset in demo.mjs catalog.mjs sample.json; do
     cp "$DIRECTORY_DEMO/$file_asset" "$DIRECTORY_OUTPUT/browser/"
 done
 
-# The round-trip page renders the test fixture itself, so there is one copy of
-# the rules rather than a demo copy that can drift.
-cp "$REPOSITORY_ROOT/dataflow.in/round-trip.json" "$DIRECTORY_OUTPUT/browser/round-trip.json"
+# The catalog (compiled rules, cases, prompt markdown) and the file facts are
+# generated from the repository at build time, so the published page never reads
+# the repository itself.
+node "$REPOSITORY_ROOT/scripts/site-catalog.mjs" > "$DIRECTORY_OUTPUT/browser/catalog.json" \
+    || fail 'the catalog builder failed'
+node "$REPOSITORY_ROOT/scripts/site-facts.mjs" > "$DIRECTORY_OUTPUT/browser/files.json" \
+    || fail 'the facts builder failed'
 
 for file_library in krank.mjs ruleset-run.mjs ruleset-render.mjs; do
     cp "$REPOSITORY_ROOT/sources/$file_library" "$DIRECTORY_OUTPUT/"

@@ -3,39 +3,42 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>krank — the round trip</title>
+    <title>krank — compile and check</title>
     <style>
         :root { color-scheme: light dark; }
         body { margin: 0 auto; max-width: 64rem; padding: 2rem 1rem; font-family: system-ui, sans-serif; line-height: 1.45; }
         h1 { margin: 0 0 0.25rem; }
-        h2 { margin: 2rem 0 0.5rem; font-size: 1.1rem; }
+        h2 { margin: 2rem 0 0.5rem; font-size: 1.15rem; border-bottom: 1px solid color-mix(in srgb, Canvas 80%, CanvasText 20%); padding-bottom: 0.25rem; }
         p { margin: 0 0 1rem; }
-        .lead { max-width: 48rem; }
+        .lead { max-width: 50rem; }
         pre { padding: 1rem; border-radius: 0.25rem; overflow: auto; background: color-mix(in srgb, Canvas 92%, CanvasText 8%); font-family: ui-monospace, monospace; font-size: 0.8125rem; }
+        pre.tall { max-height: 24rem; }
         table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
         th, td { border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); padding: 0.5rem; text-align: left; vertical-align: top; }
         th { background: color-mix(in srgb, Canvas 92%, CanvasText 8%); }
-        ol { padding-left: 1.25rem; }
-        ol li { margin-bottom: 0.5rem; }
-        code { background: color-mix(in srgb, Canvas 92%, CanvasText 8%); padding: 0.1em 0.3em; }
+        label { display: block; margin: 0.5rem 0 0.25rem; font-weight: 600; }
+        select, button { font: inherit; padding: 0.35rem 0.6rem; max-width: 100%; }
+        .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.75rem 0; }
+        .note { opacity: 0.75; font-size: 0.875rem; max-width: 50rem; }
         .verdict { font-weight: 600; white-space: nowrap; }
-        .note { opacity: 0.75; font-size: 0.875rem; }
+        code { background: color-mix(in srgb, Canvas 92%, CanvasText 8%); padding: 0.1em 0.3em; }
     </style>
 </head>
 <body>
     <!-- HOMELAB-NAV -->
-    <h1>krank — the round trip</h1>
-    <p class="lead">A human writes rules in prose. A model compiles them into the formal rule set below. The engine renders the rules back into prose, and a reader compares that prose with the original. The comparison is the check that the compilation kept the meaning; it is a recorded judgement, not a mechanical proof.</p>
-    <p class="lead">The aim is to shrink what the model must hold: in a later iteration it receives the compiled rules and calls the engine to prove conformance, instead of re-reading the full prose. <a href="playground.html">The playground</a> lets you edit a rule set and run it.</p>
+    <h1>krank — compile and check</h1>
+    <p class="lead">A human writes rules in prose. A model compiles them into a formal rule set; the engine renders the rules back into prose so a reader can compare, and runs them against the project's files. The compile is recorded: this page loads the compiled rule sets, it does not call a model.</p>
+    <p class="lead">The aim is to shrink what the model must hold: in a later iteration it receives the compiled rules and calls the engine to prove conformance, instead of re-reading the full prose. <a href="playground.html">The playground</a> edits a rule set and runs it.</p>
 
-    <h2>1. Original prose (the loading prompt)</h2>
-    <ol id="original"></ol>
+    <h2>1. Select a prompt file</h2>
+    <label for="prompt">Prompt file</label>
+    <select id="prompt"></select>
 
     <h2>2. The compiled rule set</h2>
-    <pre id="rules"></pre>
+    <pre id="rules" class="tall"></pre>
 
     <h2>3. The rules rendered back to prose</h2>
-    <pre id="rendered"></pre>
+    <pre id="rendered" class="tall"></pre>
 
     <h2>4. The comparison</h2>
     <table>
@@ -45,10 +48,20 @@
         <tbody id="comparison"></tbody>
     </table>
 
-    <h2>5. The rules running</h2>
-    <p>The same rule set, evaluated against a small fact set:</p>
-    <pre id="result"></pre>
+    <h2>5. The reduced prompt</h2>
+    <p class="note">Lines covered by a rule and present in the selected file are removed, and a pointer replaces them. A case drawn from another file is left alone: it is not part of this prompt.</p>
+    <p><a id="download" download="reduced-prompt.md">Download the reduced prompt</a></p>
+    <pre id="reduced" class="tall"></pre>
 
-    <script type="module" src="./round-trip.mjs"></script>
+    <h2>6. Check a file or directory</h2>
+    <p class="note">The selected rule set runs against facts extracted from the project's files at build time. A clean file produces no finding; the template currently has a 2-space indent, so the Conventions rules report it.</p>
+    <label for="scope">Scope</label>
+    <select id="scope"></select>
+    <div class="row">
+        <button id="run" type="button">Run the rules</button>
+    </div>
+    <pre id="output" aria-live="polite"></pre>
+
+    <script type="module" src="./catalog.mjs"></script>
 </body>
 </html>

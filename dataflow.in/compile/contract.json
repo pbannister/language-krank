@@ -1,0 +1,7 @@
+{
+    "id": "contract",
+    "title": "Interaction contract — selected rules",
+    "source": "prompts/01-contract.md",
+    "rules_file": "dataflow.in/round-trip.json",
+    "cases_file": "sources/browser/cases.json"
+}

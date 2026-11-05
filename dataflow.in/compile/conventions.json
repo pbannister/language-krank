@@ -1,0 +1,72 @@
+{
+    "id": "conventions",
+    "title": "Conventions — formatting and filenames",
+    "source": "prompts/03-conventions.md",
+    "rules": {
+        "facts": [],
+        "rules": [
+            {
+                "id": "no-tabs",
+                "when": [
+                    {"fact": {"type": "file", "has_tab": true, "path": "$p"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "tab", "path": "$p"}}
+                ]
+            },
+            {
+                "id": "indent-four",
+                "when": [
+                    {"fact": {"type": "file", "extension": {"in": [".mjs", ".html", ".sh"]}, "indent_unit": 2, "path": "$p"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "indent", "expected": 4, "path": "$p"}}
+                ]
+            },
+            {
+                "id": "no-space-in-name",
+                "when": [
+                    {"fact": {"type": "file", "has_space": true, "path": "$p"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "space-in-name", "path": "$p"}}
+                ]
+            },
+            {
+                "id": "no-non-ascii-in-name",
+                "when": [
+                    {"fact": {"type": "file", "has_non_ascii": true, "path": "$p"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "non-ascii-in-name", "path": "$p"}}
+                ]
+            }
+        ]
+    },
+    "cases": [
+        {
+            "rule": "indent-four",
+            "original": "Use 4-space indents in code and Markdown when the format supports configurable indentation.",
+            "verdict": "faithful for code",
+            "note": "The rule reads the leading-space unit of a file. Markdown is excluded because its indentation is structural."
+        },
+        {
+            "rule": "no-tabs",
+            "original": "Use spaces where the format allows a choice.",
+            "verdict": "core preserved",
+            "note": "A tab anywhere in the file is the violation. The rule does not distinguish a tab in a literal from one in indentation."
+        },
+        {
+            "rule": "no-space-in-name",
+            "original": "free of spaces and non-ASCII characters.",
+            "verdict": "faithful",
+            "note": "Checked against the file name only."
+        },
+        {
+            "rule": "no-non-ascii-in-name",
+            "original": "free of spaces and non-ASCII characters.",
+            "verdict": "faithful",
+            "note": "Checked against the file name only."
+        }
+    ]
+}

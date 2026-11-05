@@ -1,0 +1,42 @@
+{
+    "id": "naming",
+    "title": "Semantic-sort naming",
+    "source": "prompts/flavors/01-semantic-sort-naming.md",
+    "rules": {
+        "facts": [],
+        "rules": [
+            {
+                "id": "no-camel-case",
+                "when": [
+                    {"fact": {"type": "file", "camel_case": true, "path": "$p"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "camel-case", "path": "$p"}}
+                ]
+            },
+            {
+                "id": "scripts-have-dash",
+                "when": [
+                    {"fact": {"type": "file", "directory": "scripts", "has_dash": false, "path": "$p"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "script-no-dash", "path": "$p"}}
+                ]
+            }
+        ]
+    },
+    "cases": [
+        {
+            "rule": "no-camel-case",
+            "original": "Avoid CamelCase in filenames unless required by an external convention.",
+            "verdict": "faithful",
+            "note": "A name with a lowercase-to-uppercase transition is flagged; the external-convention exception is not modelled."
+        },
+        {
+            "rule": "scripts-have-dash",
+            "original": "Use hyphens or underscores for readability.",
+            "verdict": "partial",
+            "note": "The rule requires a hyphen in a script name. The underscore alternative is not accepted, because the project's scripts use hyphens."
+        }
+    ]
+}

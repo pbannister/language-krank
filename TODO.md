@@ -2,8 +2,6 @@
 
 ## Open Questions
 
-- [ ] trim the inherited site-build and project-pages features, scripts, and tests once the rules engine no longer needs a complete-project fixture.
-
 ## Recently Completed
 
 - [x] create the project from `00-project-skeleton` and vendor the shared rules (2026-11-04).
@@ -18,3 +16,4 @@
 - [x] add a zero-build browser demo in `sources/browser/`, served by `make demo` (2026-11-05).
 - [x] publish the demo with the project pages (`scripts/site-demo.sh`, `site.in/pages.nav`) and exclude it from the npm package (`files`) (2026-11-05).
 - [x] make the published demo a round-trip page: original prose, compiled rules, rendered prose, the comparison, and the run result; plus a playground page (2026-11-05).
+- [x] make the demo compile and check: select a compiled prompt (rules, rendered prose, comparison, reduced prompt), then select a project file or directory and run the rules against build-time facts (2026-11-05).

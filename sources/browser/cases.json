@@ -2,31 +2,36 @@
     "cases": [
         {
             "rule": "refuse-unstated-change",
+            "source": "prompts/01-contract.md",
             "original": "A file may be modified only when the task states the operation, or when the workflow requires it as a consequence of executing the task.",
             "verdict": "core preserved",
             "note": "Only when A or B becomes refuse when not A and not B, which is the same predicate. Lost: the file path, the workflow's reason, and the modality, since the rule emits a refusal rather than granting a permission."
         },
         {
             "rule": "refuse-protected-path",
+            "source": "prompts/01-contract.md",
             "original": "A task may not authorize an operation on a protected path; the prompt validator refuses it.",
             "verdict": "faithful for exact paths",
             "note": "Protected-path matching is exact, while the original is a prefix. The task link is dropped: the operation fact is not tied to a task."
         },
         {
             "rule": "ask-on-material-ambiguity",
+            "source": "prompts/common/01-universal-rules.md",
             "original": "Ask only when the ambiguity can change the requested output, the authorized scope, or safety.",
             "verdict": "close",
             "note": "The three-way or becomes an in list, which fits. Only loses its exclusivity, and can change is carried by the fact rather than computed."
         },
         {
             "rule": "permit-verification-line",
-            "original": "A single VERIFICATION: line is always permitted output, regardless of the requested format.",
+            "source": "prompts/01-contract.md",
+            "original": "A single `VERIFICATION:` line is always permitted output, regardless of the requested format",
             "verdict": "faithful for one line",
             "note": "Single is not enforced (no cardinality), regardless of the requested format is dropped (no format fact), and always is a claim about every run."
         },
         {
             "rule": "mark-complete",
-            "original": "A task is complete only when the Definition of Done in prompts/02-workflow.md is satisfied.",
+            "source": "prompts/01-contract.md",
+            "original": "A task is complete only when the Definition of Done in `prompts/02-workflow.md` is satisfied.",
             "verdict": "vacuous",
             "note": "A negated existential is the natural encoding of every item is satisfied, but it is vacuously true: a task with no checklist facts is reported complete."
         }

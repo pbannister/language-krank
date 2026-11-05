@@ -1,8 +1,8 @@
 #!/bin/sh
 #
-# 27-site-demo.sh — assert scripts/site-demo.sh publishes the demo pages and the
-# library they import, that each page keeps the homelab nav marker, and that the
-# page set declares both pages.
+# 27-site-demo.sh — assert scripts/site-demo.sh publishes the demo pages, the
+# build-time data, and the library they import; that each page keeps the homelab
+# nav marker; and that the page set declares both pages.
 # Tier: portable.
 set -eu
 
@@ -25,10 +25,10 @@ for file_expected in \
     "$DIRECTORY_TEST/site.out/browser/index.html" \
     "$DIRECTORY_TEST/site.out/browser/playground.html" \
     "$DIRECTORY_TEST/site.out/browser/demo.mjs" \
-    "$DIRECTORY_TEST/site.out/browser/round-trip.mjs" \
+    "$DIRECTORY_TEST/site.out/browser/catalog.mjs" \
+    "$DIRECTORY_TEST/site.out/browser/catalog.json" \
+    "$DIRECTORY_TEST/site.out/browser/files.json" \
     "$DIRECTORY_TEST/site.out/browser/sample.json" \
-    "$DIRECTORY_TEST/site.out/browser/cases.json" \
-    "$DIRECTORY_TEST/site.out/browser/round-trip.json" \
     "$DIRECTORY_TEST/site.out/krank.mjs" \
     "$DIRECTORY_TEST/site.out/ruleset-run.mjs" \
     "$DIRECTORY_TEST/site.out/ruleset-render.mjs"; do
@@ -41,6 +41,11 @@ for file_page in index.html playground.html; do
     grep -q 'HOMELAB-NAV' "$DIRECTORY_TEST/site.out/browser/$file_page" \
         || fail "$file_page has no HOMELAB-NAV marker"
 done
+
+node -e 'const data = require(process.argv[1]); if (!Array.isArray(data.entries) || data.entries.length < 2) process.exit(1);' \
+    "$DIRECTORY_TEST/site.out/browser/catalog.json" || fail 'catalog.json has no entries'
+node -e 'const data = require(process.argv[1]); if (!Array.isArray(data.files) || data.files.length === 0) process.exit(1);' \
+    "$DIRECTORY_TEST/site.out/browser/files.json" || fail 'files.json has no files'
 
 grep -q '^browser/index.html|Demo$' "$REPOSITORY_ROOT/site.in/pages.nav" \
     || fail 'site.in/pages.nav does not declare the demo page'
