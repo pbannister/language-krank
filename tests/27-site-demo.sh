@@ -26,6 +26,7 @@ for file_expected in \
     "$DIRECTORY_TEST/site.out/browser/playground.html" \
     "$DIRECTORY_TEST/site.out/browser/demo.mjs" \
     "$DIRECTORY_TEST/site.out/browser/catalog.mjs" \
+    "$DIRECTORY_TEST/site.out/browser/prompt-diff.mjs" \
     "$DIRECTORY_TEST/site.out/browser/catalog.json" \
     "$DIRECTORY_TEST/site.out/browser/files.json" \
     "$DIRECTORY_TEST/site.out/browser/sample.json" \

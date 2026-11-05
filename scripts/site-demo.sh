@@ -42,7 +42,7 @@ for file_page in index.html playground.html; do
     } > "$DIRECTORY_OUTPUT/browser/$file_page"
 done
 
-for file_asset in demo.mjs catalog.mjs sample.json; do
+for file_asset in demo.mjs catalog.mjs prompt-diff.mjs sample.json; do
     cp "$DIRECTORY_DEMO/$file_asset" "$DIRECTORY_OUTPUT/browser/"
 done
 

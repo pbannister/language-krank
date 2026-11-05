@@ -22,6 +22,11 @@
         .note { opacity: 0.75; font-size: 0.875rem; max-width: 50rem; }
         .verdict { font-weight: 600; white-space: nowrap; }
         code { background: color-mix(in srgb, Canvas 92%, CanvasText 8%); padding: 0.1em 0.3em; }
+        .diff { font-family: ui-monospace, monospace; font-size: 0.8125rem; border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); border-radius: 0.25rem; max-height: 24rem; overflow: auto; }
+        .diff-line { white-space: pre-wrap; padding: 0 0.75rem; }
+        .diff-add { background: color-mix(in srgb, Canvas 78%, #2e7d32 22%); }
+        .diff-remove { background: color-mix(in srgb, Canvas 78%, #c62828 22%); }
+        .diff-same { opacity: 0.55; }
     </style>
 </head>
 <body>
@@ -31,6 +36,7 @@
     <p class="lead">The aim is to shrink what the model must hold: in a later iteration it receives the compiled rules and calls the engine to prove conformance, instead of re-reading the full prose. <a href="playground.html">The playground</a> edits a rule set and runs it.</p>
 
     <h2>1. Select a prompt file</h2>
+    <p class="note">Every prompt file in the project is listed. One marked "not compiled" has no recorded rule set yet, so it has no rendered prose, comparison, or reduced file.</p>
     <label for="prompt">Prompt file</label>
     <select id="prompt"></select>
 
@@ -52,6 +58,10 @@
     <p class="note">Lines covered by a rule and present in the selected file are removed, and a pointer replaces them. A case drawn from another file is left alone: it is not part of this prompt.</p>
     <p><a id="download" download="reduced-prompt.md">Download the reduced prompt</a></p>
     <pre id="reduced" class="tall"></pre>
+
+    <h2>5a. The difference</h2>
+    <p class="note">Lines the reducer removed are marked <code>-</code>; lines it added are marked <code>+</code>.</p>
+    <div id="diff" class="diff"></div>
 
     <h2>6. Check a file or directory</h2>
     <p class="note">The selected rule set runs against facts extracted from the project's files at build time. A conforming file produces no finding; the Conventions rules report a file whose configurable indentation is 2 spaces.</p>

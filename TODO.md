@@ -17,3 +17,5 @@
 - [x] publish the demo with the project pages (`scripts/site-demo.sh`, `site.in/pages.nav`) and exclude it from the npm package (`files`) (2026-11-05).
 - [x] make the published demo a round-trip page: original prose, compiled rules, rendered prose, the comparison, and the run result; plus a playground page (2026-11-05).
 - [x] make the demo compile and check: select a compiled prompt (rules, rendered prose, comparison, reduced prompt), then select a project file or directory and run the rules against build-time facts (2026-11-05).
+- [x] list every prompt file in the demo and show the line-by-line difference between the original and the reduced prompt (2026-11-05).
+- [x] add `krank check <ruleset> [facts] [--fail-on-emit]`, the conformance entry point a model or test calls instead of reading the rules (2026-11-05).

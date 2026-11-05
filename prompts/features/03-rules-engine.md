@@ -24,6 +24,7 @@ the original intent.
 - `KRANK-R013` — A rule may carry an optional finite numeric `priority`; a higher priority fires first, and equal priorities keep document order.
 - `KRANK-R014` — A session must keep facts and refraction across `run` calls, and expose `assert`, `retract`, `facts`, `emitted`, `trace`, `reset`, and `forget_refraction`.
 - `KRANK-R015` — A condition naming a literal `type` must match only facts of that type, while a `$variable` or an operator on `type` must scan every fact.
+- `KRANK-R016` — The command-line tool must offer `check <ruleset.json> [facts.json] [--fail-on-emit]`: it runs the rule set against the supplied facts, prints the firings and emissions, and exits nonzero on any emission when `--fail-on-emit` is set, so a caller can gate on the engine's decision.
 
 ## Behavior
 

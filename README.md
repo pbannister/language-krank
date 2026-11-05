@@ -21,7 +21,7 @@ The package surface is `@bannister.us/krank`.
 
 - Install the library: `npm install @bannister.us/krank`.
 - Import it: `import { ruleset_run, ruleset_session, ruleset_render } from "@bannister.us/krank";`.
-- Run the tool without installing: `npx krank run ruleset.json`, or `npx krank render ruleset.json`.
+- Run the tool without installing: `npx krank run ruleset.json`, `npx krank render ruleset.json`, or `npx krank check ruleset.json facts.json` to supply facts and read the engine's decision (`--fail-on-emit` makes any emission exit nonzero, so it can gate a check).
 - In a browser, import the modules directly from a served URL, for example `import { ruleset_run } from "https://host/krank/sources/ruleset-run.mjs"`. The barrel and the two library modules carry no `node:` import, so they work in a browser; the command-line tool does not.
 
 During development, a sibling project can depend on this checkout by path (`"@bannister.us/krank": "file:../08-language-krank"`) or on a release tag once one is cut.
@@ -30,7 +30,7 @@ During development, a sibling project can depend on this checkout by path (`"@ba
 
 `sources/browser/` holds two zero-build pages that load `sources/krank.mjs` as a native ES module; the engine and renderer carry no `node:` import, so the same code runs in the browser.
 
-- `index.html` compiles and checks: select a prompt file to see its compiled rule set, the rules rendered back to prose, the comparison, and the reduced prompt that removes the covered lines; then select a project file or directory to run the selected rules against facts extracted at build time.
+- `index.html` compiles and checks: select any prompt file (the ones with a recorded compile show their rule set, rendered prose, comparison, reduced prompt, and the line-by-line difference between the original and the reduced file); then select a project file or directory and run the selected rules against facts extracted at build time.
 - `playground.html` edits a rule set and runs it.
 
 The compile is recorded: `scripts/site-catalog.mjs` assembles the compiled rule sets and the prompt text, and `scripts/site-facts.mjs` extracts the file facts, both at build time; the page neither calls a model nor reads the repository. `make demo` serves the pages locally at `http://127.0.0.1:8080/browser/`, exposing only `sources/`. `make site` publishes them with the project pages via `scripts/site-demo.sh` (library modules at the project root), and `site.in/pages.nav` lists them in the nav. The npm package does not include the demo; `package.json`'s `files` lists the library modules only.
