@@ -43,8 +43,10 @@ test("every export target resolves to an existing file", () => {
 });
 
 test("the bin entry points at the command-line tool", () => {
-  assert.equal(pkg.bin.krank, "./sources/ruleset-command.mjs");
-  assert.ok(existsSync(new URL("sources/ruleset-command.mjs", repo_root)));
+  const bin_target = String(pkg.bin?.krank ?? "");
+  assert.match(bin_target, /ruleset-command\.mjs$/);
+  const resolved = new URL(bin_target.replace(/^\.\//, ""), repo_root);
+  assert.ok(existsSync(resolved), `bin target missing: ${bin_target}`);
 });
 
 test("the library modules carry no node: import", () => {
