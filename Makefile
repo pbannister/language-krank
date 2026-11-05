@@ -17,6 +17,8 @@
 #		demo:   sh scripts/demo-serve.sh (serve the playground on 127.0.0.1)
 #		studio: build and serve the local prompt studio (not published; the
 #		        homelab strips a project-authored <nav>)
+#		coverage: node scripts/coverage-report.mjs (how much of the prompt
+#		        corpus is compiled into rules)
 #		clean:  rm -rf generated output (keeps .gitkeep placeholders)
 #		test:   npm test
 #		deploy: RETIRED - all publishing to labs.bannister.us goes through
@@ -76,6 +78,9 @@ studio-build:
 studio-serve:
 	node scripts/studio-serve.mjs 8090 dataflow.out/studio
 
+coverage:
+	node scripts/coverage-report.mjs
+
 clean:
 	rm -rf dataflow.out/* site.out/* logs/*
 
@@ -90,4 +95,4 @@ deploy:
 install:
 	@echo '==== No install yet defined'
 
-.PHONY: all build site state status maturity context check release publish publish-dry-run demo studio studio-build studio-serve clean test deploy install
+.PHONY: all build site state status maturity context check release publish publish-dry-run demo studio studio-build studio-serve coverage clean test deploy install
