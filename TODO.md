@@ -21,3 +21,5 @@
 - [x] add `krank check <ruleset> [facts] [--fail-on-emit]`, the conformance entry point a model or test calls instead of reading the rules (2026-11-05).
 - [x] add the `prefix` operator, so a protected path can name a prefix rather than an exact path (2026-11-05).
 - [x] add a `count` condition (`at_least`/`at_most`), so a "for all" is non-vacuous; the round-trip's `mark-complete` now requires at least one checklist (2026-11-05).
+- [x] build the first iteration of the prompt studio: a step rail with prompt, candidates, rules, prose, comparison with hints, reduced prompt with its diff, check, and approve (2026-11-05).
+- [x] give the conventions prompt two candidates (HTML indentation in or out), so the studio's choice is a real one (2026-11-05).

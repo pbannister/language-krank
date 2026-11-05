@@ -1,6 +1,7 @@
 {
     "id": "contract",
     "title": "Interaction contract — selected rules",
+    "explanation": "Five rules from the contract: refusal of an unstated change, refusal of a protected path, asking on a material ambiguity, permission for one verification line, and completion when the checklist is satisfied.",
     "source": "prompts/01-contract.md",
     "rules_file": "dataflow.in/round-trip.json",
     "cases_file": "sources/browser/cases.json"

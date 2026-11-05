@@ -1,14 +1,16 @@
-// site-catalog.mjs — assemble the compile catalog the demo page loads.
+// site-catalog.mjs — assemble the studio catalog the browser UI loads.
 //
-// Every prompt file under prompts/ becomes an entry, so the page can select any
-// of them. An authored entry in dataflow.in/compile/ carries the compiled rules
-// and cases; a prompt with no authored entry is listed with `compiled: false`,
-// so the page can say so instead of pretending.
+// Every prompt file under prompts/ becomes an entry. Authored candidates in
+// dataflow.in/compile/ supply the compiled rules, the comparison cases, and the
+// explanation; several files may name the same prompt, and each becomes a
+// candidate, so the reader can compare them. A prompt with no candidate is
+// listed with `compiled: false`, so the UI can say so instead of pretending.
 //
-// Output: { "entries": [ { id, title, source, compiled, markdown, rules, cases } ] }.
+// Output: { "entries": [ { source, compiled, markdown, candidates: [ { id, title,
+// explanation, rules, cases } ] } ] }.
 //
-// The compile itself is recorded, not run here: the rules were authored from the
-// prose in a session, and the page says so. This script only assembles them.
+// The compile is recorded, not run here: the candidates were authored from the
+// prose in sessions, and the UI says so.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -31,25 +33,54 @@ function walk(directory, files) {
     }
 }
 
+function resolve_rules(entry) {
+    if (entry.rules) {
+        return entry.rules;
+    }
+    if (entry.rules_file) {
+        return JSON.parse(readFileSync(join(root, entry.rules_file), "utf8"));
+    }
+    throw new Error(`${entry.id ?? entry.source}: no rules and no rules_file`);
+}
+
+function resolve_cases(entry) {
+    if (entry.cases) {
+        return entry.cases;
+    }
+    if (entry.cases_file) {
+        return JSON.parse(readFileSync(join(root, entry.cases_file), "utf8")).cases;
+    }
+    throw new Error(`${entry.id ?? entry.source}: no cases and no cases_file`);
+}
+
+function candidates_of(entry) {
+    if (entry.candidates) {
+        return entry.candidates.map((candidate) => ({
+            id: candidate.id,
+            title: candidate.title,
+            explanation: candidate.explanation ?? "",
+            rules: resolve_rules(candidate),
+            cases: resolve_cases(candidate),
+        }));
+    }
+    return [{
+        id: entry.id,
+        title: entry.title,
+        explanation: entry.explanation ?? "",
+        rules: resolve_rules(entry),
+        cases: resolve_cases(entry),
+    }];
+}
+
 const authored = new Map();
 for (const name of readdirSync(directory_compile)) {
     if (!name.endsWith(".json")) {
         continue;
     }
     const entry = JSON.parse(readFileSync(join(directory_compile, name), "utf8"));
-    if (!entry.rules) {
-        if (!entry.rules_file) {
-            throw new Error(`${name}: no rules and no rules_file`);
-        }
-        entry.rules = JSON.parse(readFileSync(join(root, entry.rules_file), "utf8"));
-    }
-    if (!entry.cases) {
-        if (!entry.cases_file) {
-            throw new Error(`${name}: no cases and no cases_file`);
-        }
-        entry.cases = JSON.parse(readFileSync(join(root, entry.cases_file), "utf8")).cases;
-    }
-    authored.set(entry.source, entry);
+    const list = authored.get(entry.source) ?? [];
+    list.push(...candidates_of(entry));
+    authored.set(entry.source, list);
 }
 
 const files = [];
@@ -58,19 +89,12 @@ walk(directory_prompts, files);
 const entries = files.sort().map((full) => {
     const source = relative(root, full);
     const markdown = readFileSync(full, "utf8");
-    const entry = authored.get(source);
-    if (entry) {
-        return { ...entry, compiled: true, markdown };
-    }
-    const id = source.replace(/^prompts\//, "").replace(/\.md$/, "").replace(/[/_]/g, "-");
+    const candidates = authored.get(source) ?? [];
     return {
-        id,
-        title: source.replace(/^prompts\//, ""),
         source,
-        compiled: false,
-        rules: { facts: [], rules: [] },
-        cases: [],
+        compiled: candidates.length > 0,
         markdown,
+        candidates,
     };
 });
 

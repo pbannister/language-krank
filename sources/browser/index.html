@@ -3,75 +3,149 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>krank — compile and check</title>
+    <title>krank — prompt studio</title>
     <style>
         :root { color-scheme: light dark; }
-        body { margin: 0 auto; max-width: 64rem; padding: 2rem 1rem; font-family: system-ui, sans-serif; line-height: 1.45; }
+        body { margin: 0 auto; max-width: 76rem; padding: 2rem 1rem; font-family: system-ui, sans-serif; line-height: 1.45; }
         h1 { margin: 0 0 0.25rem; }
-        h2 { margin: 2rem 0 0.5rem; font-size: 1.15rem; border-bottom: 1px solid color-mix(in srgb, Canvas 80%, CanvasText 20%); padding-bottom: 0.25rem; }
+        h2 { margin: 0 0 0.75rem; font-size: 1.15rem; border-bottom: 1px solid color-mix(in srgb, Canvas 80%, CanvasText 20%); padding-bottom: 0.25rem; }
+        h3 { margin: 1.25rem 0 0.5rem; font-size: 1rem; }
         p { margin: 0 0 1rem; }
-        .lead { max-width: 50rem; }
+        .lead { max-width: 52rem; }
+        .studio { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+        .steps { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0.25rem; }
+        .steps button { text-align: left; font: inherit; padding: 0.4rem 0.6rem; border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); border-radius: 0.25rem; background: transparent; cursor: pointer; }
+        .steps button.active { background: color-mix(in srgb, Canvas 82%, CanvasText 18%); font-weight: 600; }
+        .steps button:disabled { opacity: 0.4; cursor: default; }
+        .panel[hidden] { display: none; }
         pre { padding: 1rem; border-radius: 0.25rem; overflow: auto; background: color-mix(in srgb, Canvas 92%, CanvasText 8%); font-family: ui-monospace, monospace; font-size: 0.8125rem; }
-        pre.tall { max-height: 24rem; }
+        pre.tall { max-height: 26rem; }
+        textarea { width: 100%; font-family: ui-monospace, monospace; font-size: 0.8125rem; padding: 0.75rem; border-radius: 0.25rem; border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); background: color-mix(in srgb, Canvas 95%, CanvasText 5%); color: inherit; }
         table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
         th, td { border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); padding: 0.5rem; text-align: left; vertical-align: top; }
         th { background: color-mix(in srgb, Canvas 92%, CanvasText 8%); }
-        label { display: block; margin: 0.5rem 0 0.25rem; font-weight: 600; }
+        tr.missing td { opacity: 0.55; }
+        label { display: block; margin: 0.75rem 0 0.25rem; font-weight: 600; }
         select, button { font: inherit; padding: 0.35rem 0.6rem; max-width: 100%; }
-        .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.75rem 0; }
-        .note { opacity: 0.75; font-size: 0.875rem; max-width: 50rem; }
+        .row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin: 0.75rem 0; }
+        .note { opacity: 0.75; font-size: 0.875rem; max-width: 52rem; }
         .verdict { font-weight: 600; white-space: nowrap; }
-        code { background: color-mix(in srgb, Canvas 92%, CanvasText 8%); padding: 0.1em 0.3em; }
-        .diff { font-family: ui-monospace, monospace; font-size: 0.8125rem; border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); border-radius: 0.25rem; max-height: 24rem; overflow: auto; }
+        .hint { font-style: italic; }
+        .candidate { border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); border-radius: 0.35rem; padding: 0.75rem 1rem; margin: 0 0 0.75rem; }
+        .candidate.selected { border-color: color-mix(in srgb, Canvas 40%, #2e7d32 60%); box-shadow: 0 0 0 2px color-mix(in srgb, Canvas 70%, #2e7d32 30%); }
+        .candidate h3 { margin: 0 0 0.35rem; }
+        .candidate p { margin: 0 0 0.5rem; }
+        .badges { display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.8rem; margin: 0.35rem 0; }
+        .badges span { background: color-mix(in srgb, Canvas 88%, CanvasText 12%); border-radius: 0.25rem; padding: 0.1rem 0.5rem; }
+        .diff { font-family: ui-monospace, monospace; font-size: 0.8125rem; border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); border-radius: 0.25rem; max-height: 26rem; overflow: auto; }
         .diff-line { white-space: pre-wrap; padding: 0 0.75rem; }
         .diff-add { background: color-mix(in srgb, Canvas 78%, #2e7d32 22%); }
         .diff-remove { background: color-mix(in srgb, Canvas 78%, #c62828 22%); }
         .diff-same { opacity: 0.55; }
+        .summary { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.35rem 1rem; font-size: 0.9rem; }
+        .summary dt { font-weight: 600; }
+        .summary dd { margin: 0; }
+        code { background: color-mix(in srgb, Canvas 92%, CanvasText 8%); padding: 0.1em 0.3em; }
+        @media (max-width: 54rem) {
+            .studio { grid-template-columns: 1fr; }
+            .steps { position: static; flex-direction: row; flex-wrap: wrap; }
+        }
     </style>
 </head>
 <body>
     <!-- HOMELAB-NAV -->
-    <h1>krank — compile and check</h1>
-    <p class="lead">A human writes rules in prose. A model compiles them into a formal rule set; the engine renders the rules back into prose so a reader can compare, and runs them against the project's files. The compile is recorded: this page loads the compiled rule sets, it does not call a model.</p>
-    <p class="lead">The aim is to shrink what the model must hold: in a later iteration it receives the compiled rules and calls the engine to prove conformance, instead of re-reading the full prose. <a href="playground.html">The playground</a> edits a rule set and runs it.</p>
+    <h1>krank — prompt studio</h1>
+    <p class="lead">A human writes intent in prose. A model compiles it into a rule set; the engine renders the rules back into prose, and a reader compares. The compile is recorded: this page loads the candidates, it does not call a model.</p>
+    <p class="lead">The aim is to shrink what the model must hold: the model emits facts, runs <code>krank check</code>, and reads the decision instead of the rules. This page walks the steps of that exchange; the choice you make here is local to the page.</p>
 
-    <h2>1. Select a prompt file</h2>
-    <p class="note">Every prompt file in the project is listed. One marked "not compiled" has no recorded rule set yet, so it has no rendered prose, comparison, or reduced file.</p>
-    <label for="prompt">Prompt file</label>
-    <select id="prompt"></select>
+    <div class="studio">
+        <nav class="steps" aria-label="Steps">
+            <button type="button" data-step="prompt" class="active">1. Prompt</button>
+            <button type="button" data-step="candidates">2. Candidates</button>
+            <button type="button" data-step="rules">3. Rules</button>
+            <button type="button" data-step="prose">4. Prose</button>
+            <button type="button" data-step="compare">5. Comparison</button>
+            <button type="button" data-step="reduced">6. Reduced prompt</button>
+            <button type="button" data-step="check">7. Check</button>
+            <button type="button" data-step="approve">8. Approve</button>
+        </nav>
 
-    <h2>2. The compiled rule set</h2>
-    <pre id="rules" class="tall"></pre>
+        <main>
+            <section class="panel" data-panel="prompt">
+                <h2>1. The prompt</h2>
+                <p class="note">The prompt is the source. Edit it here to see what the mechanical reducer would drop; the compile itself is recorded, not run.</p>
+                <label for="prompt">Prompt file</label>
+                <select id="prompt"></select>
+                <label for="source">Prompt text</label>
+                <textarea id="source" rows="16" spellcheck="false"></textarea>
+                <div class="row">
+                    <button id="apply" type="button">Apply the edit</button>
+                    <button id="reset" type="button">Reset to the file</button>
+                </div>
+                <p class="note" id="edit-note"></p>
+            </section>
 
-    <h2>3. The rules rendered back to prose</h2>
-    <pre id="rendered" class="tall"></pre>
+            <section class="panel" data-panel="candidates" hidden>
+                <h2>2. Candidates</h2>
+                <p class="note">The model proposes the rule sets for this prompt. When the prose is unclear, more than one appears; choose the one that reads most faithfully.</p>
+                <div id="candidates"></div>
+            </section>
 
-    <h2>4. The comparison</h2>
-    <table>
-        <thead>
-            <tr><th>Original</th><th>Rendered</th><th>Verdict</th><th>What was kept and lost</th></tr>
-        </thead>
-        <tbody id="comparison"></tbody>
-    </table>
+            <section class="panel" data-panel="rules" hidden>
+                <h2>3. The compiled rules</h2>
+                <p class="note" id="rules-note"></p>
+                <pre id="rules" class="tall"></pre>
+                <p><a id="rules-download" download="rules.json">Download the rule set</a></p>
+            </section>
 
-    <h2>5. The reduced prompt</h2>
-    <p class="note">Lines covered by a rule and present in the selected file are removed, and a pointer replaces them. A case drawn from another file is left alone: it is not part of this prompt.</p>
-    <p><a id="download" download="reduced-prompt.md">Download the reduced prompt</a></p>
-    <pre id="reduced" class="tall"></pre>
+            <section class="panel" data-panel="prose" hidden>
+                <h2>4. The rules rendered back to prose</h2>
+                <pre id="prose" class="tall"></pre>
+            </section>
 
-    <h2>5a. The difference</h2>
-    <p class="note">Lines the reducer removed are marked <code>-</code>; lines it added are marked <code>+</code>.</p>
-    <div id="diff" class="diff"></div>
+            <section class="panel" data-panel="compare" hidden>
+                <h2>5. The comparison</h2>
+                <p class="note" id="compare-note"></p>
+                <table>
+                    <thead>
+                        <tr><th>Original</th><th>Rendered</th><th>Verdict</th><th>What was kept and lost</th><th>Hint for the prompt</th></tr>
+                    </thead>
+                    <tbody id="comparison"></tbody>
+                </table>
+            </section>
 
-    <h2>6. Check a file or directory</h2>
-    <p class="note">The selected rule set runs against facts extracted from the project's files at build time. A conforming file produces no finding; the Conventions rules report a file whose configurable indentation is 2 spaces.</p>
-    <label for="scope">Scope</label>
-    <select id="scope"></select>
-    <div class="row">
-        <button id="run" type="button">Run the rules</button>
+            <section class="panel" data-panel="reduced" hidden>
+                <h2>6. The reduced prompt</h2>
+                <p class="note">Lines a covered case still finds in the prompt are removed; a pointer replaces them. If an edit breaks a covered line, the line stays, and the comparison marks it.</p>
+                <p><a id="reduced-download" download="reduced-prompt.md">Download the reduced prompt</a></p>
+                <pre id="reduced" class="tall"></pre>
+                <h3>The difference</h3>
+                <div id="diff" class="diff"></div>
+            </section>
+
+            <section class="panel" data-panel="check" hidden>
+                <h2>7. Check a file or directory</h2>
+                <p class="note">The selected candidate's rules run against facts extracted from the project's files at build time.</p>
+                <label for="scope">Scope</label>
+                <select id="scope"></select>
+                <div class="row">
+                    <button id="run" type="button">Run the rules</button>
+                </div>
+                <pre id="check-output" aria-live="polite"></pre>
+            </section>
+
+            <section class="panel" data-panel="approve" hidden>
+                <h2>8. Approve</h2>
+                <p class="note">Approval records the choice in this page. Nothing is written to the repository; the downloads are the artifacts to review and commit.</p>
+                <dl class="summary" id="approve"></dl>
+                <div class="row">
+                    <a id="approve-rules" download="approved-rules.json">Download the approved rule set</a>
+                    <a id="approve-reduced" download="approved-reduced.md">Download the reduced prompt</a>
+                </div>
+            </section>
+        </main>
     </div>
-    <pre id="output" aria-live="polite"></pre>
 
-    <script type="module" src="./catalog.mjs"></script>
+    <script type="module" src="./studio.mjs"></script>
 </body>
 </html>

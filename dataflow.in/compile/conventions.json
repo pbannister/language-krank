@@ -1,6 +1,7 @@
 {
     "id": "conventions",
-    "title": "Conventions — formatting and filenames",
+    "title": "Separate file-hygiene rules",
+    "explanation": "One rule per property: a tab anywhere, a 2-space indentation unit in code and HTML, and a filename with a space or a non-ASCII character. The rules are narrow, so the comparison can name exactly what each one covers.",
     "source": "prompts/03-conventions.md",
     "rules": {
         "facts": [],
@@ -47,26 +48,30 @@
         {
             "rule": "indent-four",
             "original": "Use 4-space indents in code and Markdown when the format supports configurable indentation.",
-            "verdict": "faithful for code",
-            "note": "The rule reads the leading-space unit of a file. Markdown is excluded because its indentation is structural."
+            "verdict": "faithful for code and HTML",
+            "note": "The rule reads the leading-space unit of a file. Markdown is excluded because its indentation is structural.",
+            "suggestion": "Name the file types the rule covers, and say whether HTML indentation counts as code."
         },
         {
             "rule": "no-tabs",
             "original": "Use spaces where the format allows a choice.",
             "verdict": "core preserved",
-            "note": "A tab anywhere in the file is the violation. The rule does not distinguish a tab in a literal from one in indentation."
+            "note": "A tab anywhere in the file is the violation. The rule does not distinguish a tab in a literal from one in indentation.",
+            "suggestion": "Say \"no tab characters\" rather than \"use spaces\"."
         },
         {
             "rule": "no-space-in-name",
             "original": "free of spaces and non-ASCII characters.",
             "verdict": "faithful",
-            "note": "Checked against the file name only."
+            "note": "Checked against the file name only.",
+            "suggestion": "Say \"filenames contain no spaces or non-ASCII characters\" in one sentence."
         },
         {
             "rule": "no-non-ascii-in-name",
             "original": "free of spaces and non-ASCII characters.",
             "verdict": "faithful",
-            "note": "Checked against the file name only."
+            "note": "Checked against the file name only.",
+            "suggestion": "Say \"filenames contain no spaces or non-ASCII characters\" in one sentence."
         }
     ]
 }

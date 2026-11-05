@@ -1,0 +1,77 @@
+{
+    "id": "conventions-html-optional",
+    "title": "HTML indentation is cosmetic",
+    "explanation": "The same rules, but the indentation rule covers .mjs and .sh only. Choose this if the HTML template's 2-space style should not be a violation, and the tool should not flag a file for a cosmetic difference.",
+    "source": "prompts/03-conventions.md",
+    "rules": {
+        "facts": [],
+        "rules": [
+            {
+                "id": "no-tabs",
+                "when": [
+                    {"fact": {"type": "file", "has_tab": true, "path": "$p"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "tab", "path": "$p"}}
+                ]
+            },
+            {
+                "id": "indent-four",
+                "when": [
+                    {"fact": {"type": "file", "extension": {"in": [".mjs", ".sh"]}, "indent_unit": 2, "path": "$p"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "indent", "expected": 4, "path": "$p"}}
+                ]
+            },
+            {
+                "id": "no-space-in-name",
+                "when": [
+                    {"fact": {"type": "file", "has_space": true, "path": "$p"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "space-in-name", "path": "$p"}}
+                ]
+            },
+            {
+                "id": "no-non-ascii-in-name",
+                "when": [
+                    {"fact": {"type": "file", "has_non_ascii": true, "path": "$p"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "non-ascii-in-name", "path": "$p"}}
+                ]
+            }
+        ]
+    },
+    "cases": [
+        {
+            "rule": "indent-four",
+            "original": "Use 4-space indents in code and Markdown when the format supports configurable indentation.",
+            "verdict": "faithful for code only",
+            "note": "The rule checks .mjs and .sh. HTML is excluded, so the template is not flagged, and the original's \"code\" is read narrowly.",
+            "suggestion": "Say whether HTML indentation is covered; this candidate assumes it is not."
+        },
+        {
+            "rule": "no-tabs",
+            "original": "Use spaces where the format allows a choice.",
+            "verdict": "core preserved",
+            "note": "A tab anywhere in the file is the violation.",
+            "suggestion": "Say \"no tab characters\" rather than \"use spaces\"."
+        },
+        {
+            "rule": "no-space-in-name",
+            "original": "free of spaces and non-ASCII characters.",
+            "verdict": "faithful",
+            "note": "Checked against the file name only.",
+            "suggestion": "Say \"filenames contain no spaces or non-ASCII characters\" in one sentence."
+        },
+        {
+            "rule": "no-non-ascii-in-name",
+            "original": "free of spaces and non-ASCII characters.",
+            "verdict": "faithful",
+            "note": "Checked against the file name only.",
+            "suggestion": "Say \"filenames contain no spaces or non-ASCII characters\" in one sentence."
+        }
+    ]
+}

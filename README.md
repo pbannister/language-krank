@@ -30,8 +30,8 @@ During development, a sibling project can depend on this checkout by path (`"@ba
 
 `sources/browser/` holds two zero-build pages that load `sources/krank.mjs` as a native ES module; the engine and renderer carry no `node:` import, so the same code runs in the browser.
 
-- `index.html` compiles and checks: select any prompt file (the ones with a recorded compile show their rule set, rendered prose, comparison, reduced prompt, and the line-by-line difference between the original and the reduced file); then select a project file or directory and run the selected rules against facts extracted at build time.
-- `playground.html` edits a rule set and runs it.
+- `index.html` is the prompt studio: a step rail with one panel per step — prompt (editable), candidates (one or more rule sets, each with an explanation), rules, rendered prose, comparison with a hint per case, reduced prompt with its diff, check, and approve. Choosing a candidate updates every later panel; editing the prompt recomputes the reduced prompt and the diff without changing the recorded compile.
+- `playground.html` edits a single rule set and runs it.
 
 The compile is recorded: `scripts/site-catalog.mjs` assembles the compiled rule sets and the prompt text, and `scripts/site-facts.mjs` extracts the file facts, both at build time; the page neither calls a model nor reads the repository. `make demo` serves the pages locally at `http://127.0.0.1:8080/browser/`, exposing only `sources/`. `make site` publishes them with the project pages via `scripts/site-demo.sh` (library modules at the project root), and `site.in/pages.nav` lists them in the nav. The npm package does not include the demo; `package.json`'s `files` lists the library modules only.
 

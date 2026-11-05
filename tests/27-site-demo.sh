@@ -25,7 +25,7 @@ for file_expected in \
     "$DIRECTORY_TEST/site.out/browser/index.html" \
     "$DIRECTORY_TEST/site.out/browser/playground.html" \
     "$DIRECTORY_TEST/site.out/browser/demo.mjs" \
-    "$DIRECTORY_TEST/site.out/browser/catalog.mjs" \
+    "$DIRECTORY_TEST/site.out/browser/studio.mjs" \
     "$DIRECTORY_TEST/site.out/browser/prompt-diff.mjs" \
     "$DIRECTORY_TEST/site.out/browser/catalog.json" \
     "$DIRECTORY_TEST/site.out/browser/files.json" \
@@ -48,7 +48,7 @@ node -e 'const data = require(process.argv[1]); if (!Array.isArray(data.entries)
 node -e 'const data = require(process.argv[1]); if (!Array.isArray(data.files) || data.files.length === 0) process.exit(1);' \
     "$DIRECTORY_TEST/site.out/browser/files.json" || fail 'files.json has no files'
 
-grep -q '^browser/index.html|Demo$' "$REPOSITORY_ROOT/site.in/pages.nav" \
+grep -q '^browser/index.html|Studio$' "$REPOSITORY_ROOT/site.in/pages.nav" \
     || fail 'site.in/pages.nav does not declare the demo page'
 grep -q '^browser/playground.html|Playground$' "$REPOSITORY_ROOT/site.in/pages.nav" \
     || fail 'site.in/pages.nav does not declare the playground page'

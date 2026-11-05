@@ -1,6 +1,7 @@
 {
     "id": "naming",
     "title": "Semantic-sort naming",
+    "explanation": "Two rules: a filename must not mix lowercase and uppercase, and a script name must contain a hyphen. The rest of the naming prompt is not fact-shaped.",
     "source": "prompts/flavors/01-semantic-sort-naming.md",
     "rules": {
         "facts": [],
@@ -30,13 +31,15 @@
             "rule": "no-camel-case",
             "original": "Avoid CamelCase in filenames unless required by an external convention.",
             "verdict": "faithful",
-            "note": "A name with a lowercase-to-uppercase transition is flagged; the external-convention exception is not modelled."
+            "note": "A name with a lowercase-to-uppercase transition is flagged; the external-convention exception is not modelled.",
+            "suggestion": "Say \"filenames use hyphens, not camelCase\"."
         },
         {
             "rule": "scripts-have-dash",
             "original": "Use hyphens or underscores for readability.",
             "verdict": "partial",
-            "note": "The rule requires a hyphen in a script name. The underscore alternative is not accepted, because the project's scripts use hyphens."
+            "note": "The rule requires a hyphen in a script name. The underscore alternative is not accepted.",
+            "suggestion": "Say \"scripts use hyphens; underscores are not used\"."
         }
     ]
 }
