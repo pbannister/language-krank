@@ -1,4 +1,4 @@
-// render.mjs — render a rule set back into readable prose.
+// ruleset-render.mjs — render a rule set back into readable prose.
 //
 // This is step 2 of the round trip in documents/10-rule-notation.md. The output
 // is deterministic, so the same rule set always renders to the same prose and a

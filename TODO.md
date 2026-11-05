@@ -12,6 +12,6 @@
 
 - [x] create the project from `00-project-skeleton` and vendor the shared rules (2026-11-04).
 - [x] write the notation and semantics in `documents/10-rule-notation.md`.
-- [x] implement the interpreter `sources/engine.mjs`, the renderer `sources/render.mjs`, and the CLI `sources/cli.mjs`.
-- [x] add the engine and render tests (`tests/20-engine.sh`, `tests/21-render.sh` and their `.mjs` bodies).
+- [x] implement the interpreter `sources/ruleset-run.mjs`, the renderer `sources/ruleset-render.mjs`, and the CLI `sources/ruleset-command.mjs`.
+- [x] add the engine and render tests (`tests/20-ruleset-run.sh`, `tests/21-ruleset-render.sh` and their `.mjs` bodies).
 - [x] add feature `prompts/features/03-rules-engine.md` and the glossary terms for the notation.

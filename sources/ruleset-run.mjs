@@ -1,4 +1,4 @@
-// engine.mjs — a small, readable forward-chaining production-rule interpreter.
+// ruleset-run.mjs — a small, readable forward-chaining production-rule interpreter.
 //
 // A rule set is a JSON document: { facts: [FACT...], rules: [RULE...] }.
 // The notation and semantics are defined in documents/10-rule-notation.md.

@@ -1,9 +1,9 @@
-// 21-render.test.mjs — node:test cases for sources/render.mjs.
-// Invoked by tests/21-render.sh.
+// 21-ruleset-render.test.mjs — node:test cases for sources/ruleset-render.mjs.
+// Invoked by tests/21-ruleset-render.sh.
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { renderRule, renderRuleset, renderFact } from "../sources/render.mjs";
+import { renderRule, renderRuleset, renderFact } from "../sources/ruleset-render.mjs";
 
 test("renderFact produces a noun phrase with the right article", () => {
   assert.equal(renderFact({ type: "task", status: "open" }), 'a task with status "open"');

@@ -1,9 +1,9 @@
-// 20-engine.test.mjs — node:test cases for sources/engine.mjs.
-// Invoked by tests/20-engine.sh.
+// 20-ruleset-run.test.mjs — node:test cases for sources/ruleset-run.mjs.
+// Invoked by tests/20-ruleset-run.sh.
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { run, matches, factKey } from "../sources/engine.mjs";
+import { run, matches, factKey } from "../sources/ruleset-run.mjs";
 
 test("a matching fact fires a rule and emits", () => {
   const ruleset = {

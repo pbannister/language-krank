@@ -9,9 +9,9 @@ renderer translates the rule set back into prose, and the regenerated prose is
 compared to the original intent.
 
 - The notation and semantics: `documents/10-rule-notation.md`.
-- The interpreter: `sources/engine.mjs`.
-- The renderer: `sources/render.mjs`.
-- The command-line tool: `sources/cli.mjs` (`run` and `render`).
+- The interpreter: `sources/ruleset-run.mjs`.
+- The renderer: `sources/ruleset-render.mjs`.
+- The command-line tool: `sources/ruleset-command.mjs` (`run` and `render`).
 
 A coding agent begins at `AGENTS.md`, the tool-neutral entry point. The full
 mandatory load order is in `prompts/02-workflow.md` section 1:

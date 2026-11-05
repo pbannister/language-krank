@@ -1,19 +1,19 @@
 #!/usr/bin/env node
-// cli.mjs — run or render a rule set from a file.
+// ruleset-command.mjs — run or render a rule set from a file.
 //
 // Usage:
-//   node sources/cli.mjs run    <ruleset.json>
-//   node sources/cli.mjs render <ruleset.json>
+//   node sources/ruleset-command.mjs run    <ruleset.json>
+//   node sources/ruleset-command.mjs render <ruleset.json>
 //
 // The tool never prompts: it takes everything from its arguments, fails closed
 // on a missing file or invalid input, and exits nonzero on error.
 
 import { readFileSync } from "node:fs";
-import { run } from "./engine.mjs";
-import { renderRuleset } from "./render.mjs";
+import { run } from "./ruleset-run.mjs";
+import { renderRuleset } from "./ruleset-render.mjs";
 
 function usage() {
-  return "usage: node sources/cli.mjs run <ruleset.json> | render <ruleset.json>";
+  return "usage: node sources/ruleset-command.mjs run <ruleset.json> | render <ruleset.json>";
 }
 
 function fail(message) {
