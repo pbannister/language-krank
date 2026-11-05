@@ -11,7 +11,20 @@ compared to the original intent.
 - The notation and semantics: `documents/10-rule-notation.md`.
 - The interpreter: `sources/ruleset-run.mjs`.
 - The renderer: `sources/ruleset-render.mjs`.
+- The library barrel: `sources/krank.mjs` (re-exports the interpreter and renderer).
 - The command-line tool: `sources/ruleset-command.mjs` (`run` and `render`).
+
+## Consuming krank
+
+The interpreter and renderer are browser-safe ES modules with no dependencies.
+The package surface is `@bannister.us/krank`.
+
+- Install the library: `npm install @bannister.us/krank`.
+- Import it: `import { ruleset_run, ruleset_render } from "@bannister.us/krank";`.
+- Run the tool without installing: `npx krank run ruleset.json`, or `npx krank render ruleset.json`.
+- In a browser, import the modules directly from a served URL, for example `import { ruleset_run } from "https://host/krank/sources/ruleset-run.mjs"`. The barrel and the two library modules carry no `node:` import, so they work in a browser; the command-line tool does not.
+
+During development, a sibling project can depend on this checkout by path (`"@bannister.us/krank": "file:../08-language-krank"`) or on a release tag once one is cut.
 
 A coding agent begins at `AGENTS.md`, the tool-neutral entry point. The full
 mandatory load order is in `prompts/02-workflow.md` section 1:

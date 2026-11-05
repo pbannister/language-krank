@@ -1,5 +1,35 @@
 {
-    "scripts": {
-        "test": "sh scripts/tests-run.sh"
-    }
+  "name": "@bannister.us/krank",
+  "version": "0.1.0",
+  "description": "A minimal production-rules engine with an LLM-emittable notation and a prose round-trip renderer.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./sources/krank.mjs",
+    "./run": "./sources/ruleset-run.mjs",
+    "./render": "./sources/ruleset-render.mjs",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "krank": "./sources/ruleset-command.mjs"
+  },
+  "files": [
+    "sources/",
+    "documents/10-rule-notation.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "rules-engine",
+    "production-rules",
+    "forward-chaining",
+    "llm",
+    "round-trip"
+  ],
+  "scripts": {
+    "test": "sh scripts/tests-run.sh",
+    "prepublishOnly": "sh scripts/tests-run.sh"
+  }
 }
