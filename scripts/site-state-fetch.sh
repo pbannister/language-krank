@@ -39,6 +39,7 @@ state_fetched=$(tidy "$(date -Is 2>/dev/null || date)")
 state_host=$(tidy "$(hostname 2>/dev/null || echo unknown)")
 state_branch=$(tidy "$(git -C "$REPOSITORY_ROOT" symbolic-ref -q --short HEAD 2>/dev/null || echo unknown)")
 state_commit=$(tidy "$(git -C "$REPOSITORY_ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)")
+state_version=$(tidy "$(node -e 'const fs = require("fs"); const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); process.stdout.write(data.version);' "$REPOSITORY_ROOT/package.json" 2>/dev/null || echo unknown)")
 
 mkdir -p "$(dirname "$OUTPUT_FILE")"
 
@@ -47,6 +48,7 @@ FETCHED=$state_fetched
 HOST=$state_host
 BRANCH=$state_branch
 COMMIT=$state_commit
+VERSION=$state_version
 EOF
 
 echo "site-state-fetch: wrote $OUTPUT_FILE"

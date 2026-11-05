@@ -1,23 +1,64 @@
-<h1>Project status</h1>
+<h1>Language Krank</h1>
 
 <p>
-Aim of this project is to provide a common project skeleton.
-Should capture best practice in working with an LLM (asked of an LLM).
-Also capture practice from personal experience.
-With each project derived from this skeleton, aim to incorporate lessons learned.
+krank is a minimal production-rules engine whose notation a model can emit,
+with a prose round-trip renderer that checks a translation against the original rules.
 </p>
+
+<h2>The round trip</h2>
+
 <p>
-The skeleton is aimed at projects as part of a larger <b>homelab</b> project.
-There is a website associated with the homelab.
-Projects pages are published to the common homelab website.
+A human writes intent in prose.
+A model compiles the prose into a rule set: facts, and rules whose conditions and actions are JSON.
+The engine evaluates the rule set deterministically and forward.
+The renderer turns the rules back into prose, and a reader compares that prose with the original.
+That comparison is the evidence that the compilation kept the meaning.
 </p>
+
 <p>
-There are still some rough spots.
-Have not <i>entirely</i> sorted records, episodes, or tasks - but seems a good start.
+The aim is to shrink what the model must hold.
+In a later iteration it receives the compiled rules and calls the engine to prove conformance,
+instead of re-reading the full prose.
 </p>
+
 <p>
-The set of prompts inform and constrain the LLM well enough to produce result that I find acceptable.
+<a href="browser/index.html">The round-trip example</a> walks one translation:
+the original prose, the compiled rules, the rules rendered back, the comparison, and the result.
+<a href="browser/playground.html">The playground</a> edits a rule set and runs it.
+</p>
+
+<h2>The engine</h2>
+
+<p>
+A fact is a JSON object.
+A rule has an <code>id</code>, a <code>when</code> conjunction, a <code>then</code> list of actions, and an optional numeric <code>priority</code>.
+A condition matches by equality, by binding a value to a <code>$variable</code>, or by an operator object:
+<code>eq</code>, <code>ne</code>, <code>lt</code>, <code>lte</code>, <code>gt</code>, <code>gte</code>, <code>in</code>.
+A negated condition may reference a bound variable but may not bind a new one.
+An action asserts, retracts, or emits; a rule binding fires once.
+A <code>ruleset_session</code> keeps working memory and refraction across runs.
+</p>
+
+<p>
+The library and renderer are browser-safe ES modules with no dependencies;
+the command-line tool is Node-only.
+The package is <code>@bannister.us/krank</code>.
 </p>
 
 <h2>Status</h2>
 
+<p>
+Active.
+Tests cover the engine, the renderer, the package surface, the round-trip fixture, and these pages.
+</p>
+
+<table>
+  <tr><th>Item</th><th>Value</th></tr>
+  <tr><td>Version</td><td>__VERSION__</td></tr>
+  <tr><td>Branch</td><td>__BRANCH__</td></tr>
+  <tr><td>Commit</td><td>__COMMIT__</td></tr>
+  <tr><td>Fetched</td><td>__FETCHED__</td></tr>
+  <tr><td>Notation</td><td><a href="documents-10-rule-notation.html">documents/10-rule-notation.md</a></td></tr>
+  <tr><td>Round-trip record</td><td><a href="documents-11-round-trip.html">documents/11-round-trip.md</a></td></tr>
+  <tr><td>Feature</td><td><a href="prompts-features-04-browser-demo.html">prompts/features/04-browser-demo.md</a></td></tr>
+</table>
