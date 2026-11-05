@@ -6,31 +6,31 @@
 // The engine is deterministic: rules fire in document order, a rule binding
 // fires at most once, and assert/retract change the fact set for later scans.
 
-// sortKeys returns a deep copy with object keys sorted, so equal facts with
+// keys_sort returns a deep copy with object keys sorted, so equal facts with
 // different key order produce the same key.
-export function sortKeys(value) {
+export function keys_sort(value) {
   if (Array.isArray(value)) {
-    return value.map(sortKeys);
+    return value.map(keys_sort);
   }
   if (value !== null && typeof value === "object") {
     const out = {};
     for (const key of Object.keys(value).sort()) {
-      out[key] = sortKeys(value[key]);
+      out[key] = keys_sort(value[key]);
     }
     return out;
   }
   return value;
 }
 
-// factKey is the canonical identity of a fact: two facts are the same fact when
+// fact_key is the canonical identity of a fact: two facts are the same fact when
 // their keys and values are equal, regardless of key order.
-export function factKey(fact) {
-  return JSON.stringify(sortKeys(fact));
+export function fact_key(fact) {
+  return JSON.stringify(keys_sort(fact));
 }
 
-// matches reports whether fact satisfies pattern by subset equality: every key
+// is_match reports whether fact satisfies pattern by subset equality: every key
 // in the pattern has an equal value in the fact.
-export function matches(fact, pattern) {
+export function is_match(fact, pattern) {
   for (const key of Object.keys(pattern)) {
     if (!Object.is(fact[key], pattern[key])) {
       return false;
@@ -45,31 +45,31 @@ export function matches(fact, pattern) {
 // the rule has no binding at all.
 function* bindings(rule, facts) {
   for (const condition of rule.when) {
-    if (condition.not && facts.some((fact) => matches(fact, condition.fact))) {
+    if (condition.not && facts.some((fact) => is_match(fact, condition.fact))) {
       return;
     }
   }
 
   const positive = rule.when.filter((condition) => !condition.not);
-  const matchesPer = positive.map((condition) =>
-    facts.filter((fact) => matches(fact, condition.fact)),
+  const condition_matches = positive.map((condition) =>
+    facts.filter((fact) => is_match(fact, condition.fact)),
   );
-  for (const list of matchesPer) {
+  for (const list of condition_matches) {
     if (list.length === 0) {
       return;
     }
   }
 
-  const indexes = new Array(matchesPer.length).fill(0);
+  const indexes = new Array(condition_matches.length).fill(0);
   for (;;) {
-    yield matchesPer.map((list, i) => list[indexes[i]]);
-    let column = matchesPer.length - 1;
+    yield condition_matches.map((list, i) => list[indexes[i]]);
+    let column = condition_matches.length - 1;
     for (;;) {
       if (column < 0) {
         return;
       }
       indexes[column] += 1;
-      if (indexes[column] < matchesPer[column].length) {
+      if (indexes[column] < condition_matches[column].length) {
         break;
       }
       indexes[column] = 0;
@@ -78,7 +78,9 @@ function* bindings(rule, facts) {
   }
 }
 
-function assertShape(rule) {
+// rule_validate checks that a rule has the required shape: a string id, and
+// `when` and `then` arrays.
+function rule_validate(rule) {
   if (typeof rule.id !== "string" || rule.id === "") {
     throw new Error("every rule needs a non-empty string id");
   }
@@ -90,61 +92,61 @@ function assertShape(rule) {
   }
 }
 
-// run evaluates a rule set and returns { facts, emitted, trace, firings }.
-// options.maxFirings caps the number of firings (default 10000) so a rule set
+// ruleset_run evaluates a rule set and returns { facts, emitted, trace, firings }.
+// options.firings_max caps the number of firings (default 10000) so a rule set
 // that never reaches a fixpoint fails with an error instead of running forever.
-export function run(ruleset, options = {}) {
-  const maxFirings = options.maxFirings ?? 10000;
+export function ruleset_run(ruleset, options = {}) {
+  const firings_max = options.firings_max ?? 10000;
   let facts = Array.isArray(ruleset.facts) ? ruleset.facts.map((fact) => ({ ...fact })) : [];
   const rules = Array.isArray(ruleset.rules) ? ruleset.rules : [];
 
   for (const rule of rules) {
-    assertShape(rule);
+    rule_validate(rule);
   }
 
-  const assertFact = (fact) => {
-    const key = factKey(fact);
-    if (facts.some((existing) => factKey(existing) === key)) {
+  const fact_assert = (fact) => {
+    const key = fact_key(fact);
+    if (facts.some((existing) => fact_key(existing) === key)) {
       return false;
     }
     facts.push({ ...fact });
     return true;
   };
 
-  const retractFact = (pattern) => {
+  const fact_retract = (pattern) => {
     const before = facts.length;
-    facts = facts.filter((fact) => !matches(fact, pattern));
+    facts = facts.filter((fact) => !is_match(fact, pattern));
     return before - facts.length;
   };
 
-  const fired = new Set();
+  const fired_bindings = new Set();
   const emitted = [];
   const trace = [];
   let firings = 0;
 
-  let changed = true;
-  while (changed) {
-    changed = false;
+  let is_changed = true;
+  while (is_changed) {
+    is_changed = false;
     for (const rule of rules) {
-      let firedAny = false;
+      let is_fired = false;
       for (const binding of bindings(rule, facts)) {
-        const key = rule.id + "|" + binding.map(factKey).sort().join(",");
-        if (fired.has(key)) {
+        const key = rule.id + "|" + binding.map(fact_key).sort().join(",");
+        if (fired_bindings.has(key)) {
           continue;
         }
-        fired.add(key);
+        fired_bindings.add(key);
         firings += 1;
-        if (firings > maxFirings) {
-          throw new Error(`rule engine did not reach a fixpoint within ${maxFirings} firings`);
+        if (firings > firings_max) {
+          throw new Error(`rule engine did not reach a fixpoint within ${firings_max} firings`);
         }
 
         const entry = { rule: rule.id, matched: binding.map((fact) => ({ ...fact })), effects: [] };
         for (const action of rule.then) {
           if ("assert" in action) {
-            const added = assertFact(action.assert);
-            entry.effects.push(`assert ${factKey(action.assert)}${added ? "" : " (already present)"}`);
+            const added = fact_assert(action.assert);
+            entry.effects.push(`assert ${fact_key(action.assert)}${added ? "" : " (already present)"}`);
           } else if ("retract" in action) {
-            const removed = retractFact(action.retract);
+            const removed = fact_retract(action.retract);
             entry.effects.push(`retract ${removed} fact(s) matching ${JSON.stringify(action.retract)}`);
           } else if ("emit" in action) {
             emitted.push(action.emit);
@@ -154,11 +156,11 @@ export function run(ruleset, options = {}) {
           }
         }
         trace.push(entry);
-        firedAny = true;
+        is_fired = true;
         break;
       }
-      if (firedAny) {
-        changed = true;
+      if (is_fired) {
+        is_changed = true;
         break;
       }
     }

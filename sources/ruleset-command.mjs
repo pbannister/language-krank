@@ -9,8 +9,8 @@
 // on a missing file or invalid input, and exits nonzero on error.
 
 import { readFileSync } from "node:fs";
-import { run } from "./ruleset-run.mjs";
-import { renderRuleset } from "./ruleset-render.mjs";
+import { ruleset_run } from "./ruleset-run.mjs";
+import { ruleset_render } from "./ruleset-render.mjs";
 
 function usage() {
   return "usage: node sources/ruleset-command.mjs run <ruleset.json> | render <ruleset.json>";
@@ -43,7 +43,7 @@ try {
 
 if (command === "run") {
   try {
-    const result = run(ruleset);
+    const result = ruleset_run(ruleset);
     process.stdout.write(
       `${JSON.stringify({ facts: result.facts, emitted: result.emitted, firings: result.firings }, null, 2)}\n`,
     );
@@ -51,7 +51,7 @@ if (command === "run") {
     fail(error.message);
   }
 } else if (command === "render") {
-  process.stdout.write(`${renderRuleset(ruleset)}\n`);
+  process.stdout.write(`${ruleset_render(ruleset)}\n`);
 } else {
   console.error(usage());
   process.exit(2);

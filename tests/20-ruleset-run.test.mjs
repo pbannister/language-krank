@@ -3,7 +3,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { run, matches, factKey } from "../sources/ruleset-run.mjs";
+import { ruleset_run, is_match, fact_key } from "../sources/ruleset-run.mjs";
 
 test("a matching fact fires a rule and emits", () => {
   const ruleset = {
@@ -12,7 +12,7 @@ test("a matching fact fires a rule and emits", () => {
       { id: "r1", when: [{ fact: { type: "task", status: "open" } }], then: [{ emit: "open task" }] },
     ],
   };
-  const result = run(ruleset);
+  const result = ruleset_run(ruleset);
   assert.deepEqual(result.emitted, ["open task"]);
   assert.equal(result.firings, 1);
 });
@@ -24,7 +24,7 @@ test("a non-matching fact fires nothing", () => {
       { id: "r1", when: [{ fact: { type: "task", status: "open" } }], then: [{ emit: "open task" }] },
     ],
   };
-  const result = run(ruleset);
+  const result = ruleset_run(ruleset);
   assert.deepEqual(result.emitted, []);
   assert.equal(result.firings, 0);
 });
@@ -45,14 +45,14 @@ test("assert forward-chains into a second rule", () => {
       },
     ],
   };
-  const result = run(ruleset);
+  const result = ruleset_run(ruleset);
   assert.deepEqual(result.emitted, ["alert raised"]);
   assert.equal(result.firings, 2);
   assert.ok(result.facts.some((fact) => fact.type === "alert"));
 });
 
 test("negation holds only when no fact matches", () => {
-  const noAlert = {
+  const no_alert = {
     facts: [{ type: "task", status: "open" }],
     rules: [
       {
@@ -62,9 +62,9 @@ test("negation holds only when no fact matches", () => {
       },
     ],
   };
-  assert.deepEqual(run(noAlert).emitted, ["nothing to report"]);
+  assert.deepEqual(ruleset_run(no_alert).emitted, ["nothing to report"]);
 
-  const withAlert = {
+  const with_alert = {
     facts: [{ type: "task", status: "open" }, { type: "alert" }],
     rules: [
       {
@@ -74,7 +74,7 @@ test("negation holds only when no fact matches", () => {
       },
     ],
   };
-  assert.deepEqual(run(withAlert).emitted, []);
+  assert.deepEqual(ruleset_run(with_alert).emitted, []);
 });
 
 test("a rule binding fires once (refraction)", () => {
@@ -86,7 +86,7 @@ test("a rule binding fires once (refraction)", () => {
       { id: "once", when: [{ fact: { type: "task" } }], then: [{ emit: "seen" }] },
     ],
   };
-  const result = run(ruleset);
+  const result = ruleset_run(ruleset);
   assert.equal(result.firings, 1);
   assert.deepEqual(result.emitted, ["seen"]);
 });
@@ -98,7 +98,7 @@ test("assert of an equal fact is a no-op", () => {
       { id: "dup", when: [{ fact: { type: "task" } }], then: [{ assert: { type: "task", status: "open" } }] },
     ],
   };
-  const result = run(ruleset);
+  const result = ruleset_run(ruleset);
   assert.equal(result.facts.length, 1);
   assert.equal(result.firings, 1);
 });
@@ -114,7 +114,7 @@ test("retract removes every matching fact", () => {
       },
     ],
   };
-  const result = run(ruleset);
+  const result = ruleset_run(ruleset);
   assert.deepEqual(result.facts, [{ type: "task", status: "closed" }]);
 });
 
@@ -136,14 +136,14 @@ test("a retract-and-reassert cycle terminates (refraction, not the cap)", () => 
       },
     ],
   };
-  const result = run(ruleset);
+  const result = ruleset_run(ruleset);
   assert.equal(result.firings, 2);
   assert.deepEqual(result.facts, [{ type: "x", v: 1 }]);
 });
 
 test("a rule with no id is refused", () => {
   const ruleset = { facts: [], rules: [{ when: [], then: [] }] };
-  assert.throws(() => run(ruleset), /non-empty string id/);
+  assert.throws(() => ruleset_run(ruleset), /non-empty string id/);
 });
 
 test("an unknown action is refused", () => {
@@ -151,15 +151,15 @@ test("an unknown action is refused", () => {
     facts: [{ type: "task" }],
     rules: [{ id: "bad", when: [{ fact: { type: "task" } }], then: [{ poke: true }] }],
   };
-  assert.throws(() => run(ruleset), /no assert, retract, or emit/);
+  assert.throws(() => ruleset_run(ruleset), /no assert, retract, or emit/);
 });
 
-test("matches is subset equality and factKey ignores key order", () => {
-  assert.equal(matches({ type: "task", status: "open", priority: "high" }, { type: "task" }), true);
-  assert.equal(matches({ type: "task", status: "open" }, { type: "task", status: "closed" }), false);
+test("is_match is subset equality and fact_key ignores key order", () => {
+  assert.equal(is_match({ type: "task", status: "open", priority: "high" }, { type: "task" }), true);
+  assert.equal(is_match({ type: "task", status: "open" }, { type: "task", status: "closed" }), false);
   assert.equal(
-    factKey({ type: "task", status: "open" }),
-    factKey({ status: "open", type: "task" }),
+    fact_key({ type: "task", status: "open" }),
+    fact_key({ status: "open", type: "task" }),
   );
 });
 
@@ -168,7 +168,7 @@ test("a rule with only negative conditions fires once when they hold", () => {
     facts: [],
     rules: [{ id: "empty", when: [{ fact: { type: "anything" }, not: true }], then: [{ emit: "empty" }] }],
   };
-  const result = run(ruleset);
+  const result = ruleset_run(ruleset);
   assert.equal(result.firings, 1);
   assert.deepEqual(result.emitted, ["empty"]);
 });

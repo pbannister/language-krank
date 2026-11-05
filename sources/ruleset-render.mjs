@@ -4,24 +4,26 @@
 // is deterministic, so the same rule set always renders to the same prose and a
 // reviewer can compare it to the original intent.
 
-function renderValue(value) {
+// value_render renders a scalar value for prose.
+function value_render(value) {
   if (typeof value === "string") {
     return `"${value}"`;
   }
   return JSON.stringify(value);
 }
 
-// headNoun is the noun a fact phrase leads with: its type, or "fact".
-function headNoun(fact) {
+// fact_noun is the noun a fact phrase leads with: its type, or "fact".
+function fact_noun(fact) {
   return "type" in fact ? String(fact.type) : "fact";
 }
 
-function articleFor(fact) {
-  return /^[aeiou]/i.test(headNoun(fact)) ? "an" : "a";
+// fact_article is the article ("a" or "an") that precedes a fact's noun.
+function fact_article(fact) {
+  return /^[aeiou]/i.test(fact_noun(fact)) ? "an" : "a";
 }
 
-// bareFact renders a fact or pattern as a noun phrase without an article.
-export function bareFact(fact) {
+// fact_phrase renders a fact or pattern as a noun phrase without an article.
+export function fact_phrase(fact) {
   const keys = Object.keys(fact);
   if (keys.length === 0) {
     return "fact";
@@ -31,53 +33,53 @@ export function bareFact(fact) {
     if (rest.length === 0) {
       return String(fact.type);
     }
-    const attributes = rest.map((key) => `${key} ${renderValue(fact[key])}`).join(" and ");
+    const attributes = rest.map((key) => `${key} ${value_render(fact[key])}`).join(" and ");
     return `${fact.type} with ${attributes}`;
   }
-  const attributes = keys.map((key) => `${key} ${renderValue(fact[key])}`).join(" and ");
+  const attributes = keys.map((key) => `${key} ${value_render(fact[key])}`).join(" and ");
   return `fact with ${attributes}`;
 }
 
-// renderFact renders a fact or pattern with an article.
-export function renderFact(fact) {
-  return `${articleFor(fact)} ${bareFact(fact)}`;
+// fact_render renders a fact or pattern with an article.
+export function fact_render(fact) {
+  return `${fact_article(fact)} ${fact_phrase(fact)}`;
 }
 
-export function renderCondition(condition) {
+export function condition_render(condition) {
   if (condition.not) {
-    return `there is no ${bareFact(condition.fact)}`;
+    return `there is no ${fact_phrase(condition.fact)}`;
   }
-  return `there is ${renderFact(condition.fact)}`;
+  return `there is ${fact_render(condition.fact)}`;
 }
 
-export function renderAction(action) {
+export function action_render(action) {
   if ("assert" in action) {
-    return `assert ${renderFact(action.assert)}`;
+    return `assert ${fact_render(action.assert)}`;
   }
   if ("retract" in action) {
-    return `retract every fact matching ${renderFact(action.retract)}`;
+    return `retract every fact matching ${fact_render(action.retract)}`;
   }
   if ("emit" in action) {
-    return `emit ${renderValue(action.emit)}`;
+    return `emit ${value_render(action.emit)}`;
   }
   return "an unknown action";
 }
 
-export function renderRule(rule) {
-  const when = rule.when.map(renderCondition).join(" and ");
-  const then = rule.then.map(renderAction).join(", and ");
+export function rule_render(rule) {
+  const when = rule.when.map(condition_render).join(" and ");
+  const then = rule.then.map(action_render).join(", and ");
   return `Rule "${rule.id}": when ${when}, then ${then}.`;
 }
 
-export function renderRuleset(ruleset) {
-  const factLines = (ruleset.facts ?? []).map((fact) => `- ${renderFact(fact)}`);
-  const ruleLines = (ruleset.rules ?? []).map(renderRule);
+export function ruleset_render(ruleset) {
+  const fact_lines = (ruleset.facts ?? []).map((fact) => `- ${fact_render(fact)}`);
+  const rule_lines = (ruleset.rules ?? []).map(rule_render);
   const parts = [];
-  if (factLines.length > 0) {
-    parts.push(`Facts:\n${factLines.join("\n")}`);
+  if (fact_lines.length > 0) {
+    parts.push(`Facts:\n${fact_lines.join("\n")}`);
   }
-  if (ruleLines.length > 0) {
-    parts.push(`Rules:\n${ruleLines.join("\n\n")}`);
+  if (rule_lines.length > 0) {
+    parts.push(`Rules:\n${rule_lines.join("\n\n")}`);
   }
   return parts.join("\n\n");
 }
