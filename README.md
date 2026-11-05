@@ -26,6 +26,10 @@ The package surface is `@bannister.us/krank`.
 
 During development, a sibling project can depend on this checkout by path (`"@bannister.us/krank": "file:../08-language-krank"`) or on a release tag once one is cut.
 
+## Browser demo
+
+`sources/browser/` is a zero-build demo page. `make demo` serves it at `http://127.0.0.1:8080/browser/`, loading `sources/krank.mjs` as a native ES module; the engine and renderer carry no `node:` import, so the same code runs in the browser. Only `sources/` is served, so the rest of the repository is not exposed.
+
 ## Publishing
 
 `make publish` tags the current commit, pushes it, and publishes the package.

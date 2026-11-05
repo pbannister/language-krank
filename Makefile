@@ -13,6 +13,7 @@
 #		        a pipeline project extends this with its own validation mode
 #		release: sh scripts/release-package.sh (the files a release publishes)
 #		publish: sh scripts/release-publish.sh (tag, push, and publish to npm)
+#		demo:   sh scripts/demo-serve.sh (serve the browser demo on 127.0.0.1)
 #		clean:  rm -rf generated output (keeps .gitkeep placeholders)
 #		test:   npm test
 #		deploy: RETIRED - all publishing to labs.bannister.us goes through
@@ -60,6 +61,9 @@ publish:
 publish-dry-run:
 	sh scripts/release-publish.sh --dry-run
 
+demo:
+	sh scripts/demo-serve.sh
+
 clean:
 	rm -rf dataflow.out/* site.out/* logs/*
 
@@ -74,4 +78,4 @@ deploy:
 install:
 	@echo '==== No install yet defined'
 
-.PHONY: all build site state status maturity context check release publish publish-dry-run clean test deploy install
+.PHONY: all build site state status maturity context check release publish publish-dry-run demo clean test deploy install

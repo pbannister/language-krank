@@ -1,0 +1,36 @@
+{
+    "facts": [
+        {"type": "task", "id": "a", "score": 9, "owner": "me"},
+        {"type": "task", "id": "b", "score": 2, "owner": "you"}
+    ],
+    "rules": [
+        {
+            "id": "flag-urgent",
+            "priority": 10,
+            "when": [
+                {"fact": {"type": "task", "score": {"gte": 5}}}
+            ],
+            "then": [
+                {"assert": {"type": "flag", "level": "urgent"}}
+            ]
+        },
+        {
+            "id": "report-urgent",
+            "when": [
+                {"fact": {"type": "flag", "level": "urgent"}}
+            ],
+            "then": [
+                {"emit": "an urgent task exists"}
+            ]
+        },
+        {
+            "id": "echo-owner",
+            "when": [
+                {"fact": {"type": "task", "owner": "$o"}}
+            ],
+            "then": [
+                {"emit": {"owner": "$o"}}
+            ]
+        }
+    ]
+}

@@ -2,7 +2,6 @@
 
 ## Open Questions
 
-- [ ] decide whether `sources/` should grow a browser demo (the engine is already browser-safe; only the CLI reads files).
 - [ ] trim the inherited site-build and project-pages features, scripts, and tests once the rules engine no longer needs a complete-project fixture.
 
 ## Recently Completed
@@ -16,3 +15,4 @@
 - [x] add a priority agenda, a `ruleset_session` working-memory object, and a per-`type` fact index (2026-11-04).
 - [x] add `make publish` (`scripts/release-publish.sh`) to tag, push, and publish to npm (2026-11-04).
 - [x] run the round trip on real prose from `prompts/01-contract.md`, recorded in `documents/11-round-trip.md` with fixture `dataflow.in/round-trip.json` (2026-11-04).
+- [x] add a zero-build browser demo in `sources/browser/`, served by `make demo` (2026-11-05).

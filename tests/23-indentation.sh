@@ -18,6 +18,7 @@ fail() {
 }
 
 for file_check in "$REPOSITORY_ROOT"/sources/*.mjs \
+                  "$REPOSITORY_ROOT"/sources/*/*.mjs \
                   "$REPOSITORY_ROOT"/tests/*.mjs \
                   "$REPOSITORY_ROOT"/package.json; do
     [ -f "$file_check" ] || continue
