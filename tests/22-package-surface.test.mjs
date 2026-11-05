@@ -19,6 +19,12 @@ test("package.json declares name, version, license, and exports", () => {
   assert.equal(typeof pkg.exports, "object");
 });
 
+test("package.json links the repository and bug tracker", () => {
+  assert.equal(pkg.repository?.type, "git");
+  assert.match(pkg.repository?.url ?? "", /github\.com\/pbannister\/language-krank/);
+  assert.match(pkg.bugs?.url ?? "", /\/issues$/);
+});
+
 test("the files field is a whitelist that excludes the repository skeleton", () => {
   assert.ok(Array.isArray(pkg.files), "files must be a whitelist array");
   const forbidden = [
