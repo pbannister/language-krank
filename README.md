@@ -28,7 +28,9 @@ During development, a sibling project can depend on this checkout by path (`"@ba
 
 ## Browser demo
 
-`sources/browser/` is a zero-build demo page. `make demo` serves it at `http://127.0.0.1:8080/browser/`, loading `sources/krank.mjs` as a native ES module; the engine and renderer carry no `node:` import, so the same code runs in the browser. Only `sources/` is served, so the rest of the repository is not exposed.
+`sources/browser/` is a zero-build demo page. `make demo` serves it locally at `http://127.0.0.1:8080/browser/`, loading `sources/krank.mjs` as a native ES module; the engine and renderer carry no `node:` import, so the same code runs in the browser. Only `sources/` is served, so the rest of the repository is not exposed.
+
+`make site` publishes the demo with the project pages: `scripts/site-demo.sh` copies it to `browser/index.html`, with the library modules at the project root, and `site.in/pages.nav` lists it in the nav. The npm package does not include the demo; `package.json`'s `files` lists the library modules only.
 
 ## Publishing
 

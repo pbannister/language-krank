@@ -6,7 +6,8 @@
 #		all:    the project's primary artifact (a cheap no-op when current)
 #		build:  sh scripts/site-build.sh
 #		site:   sh scripts/site-build.sh + sh scripts/site-condense.sh
-#		        (the standard page set; see prompts/features/02-project-pages.md)
+#		        + sh scripts/site-demo.sh (the standard page set and the
+#		        browser demo; see prompts/features/02-project-pages.md)
 #		state:  sh scripts/site-state-fetch.sh (refresh the live state file;
 #		        run on the owning host)
 #		check:  validate generated output (the leak gate over site.out/);
@@ -36,6 +37,7 @@ build:
 site:
 	sh scripts/site-build.sh
 	sh scripts/site-condense.sh
+	sh scripts/site-demo.sh
 
 state:
 	sh scripts/site-state-fetch.sh

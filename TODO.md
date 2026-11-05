@@ -16,3 +16,4 @@
 - [x] add `make publish` (`scripts/release-publish.sh`) to tag, push, and publish to npm (2026-11-04).
 - [x] run the round trip on real prose from `prompts/01-contract.md`, recorded in `documents/11-round-trip.md` with fixture `dataflow.in/round-trip.json` (2026-11-04).
 - [x] add a zero-build browser demo in `sources/browser/`, served by `make demo` (2026-11-05).
+- [x] publish the demo with the project pages (`scripts/site-demo.sh`, `site.in/pages.nav`) and exclude it from the npm package (`files`) (2026-11-05).

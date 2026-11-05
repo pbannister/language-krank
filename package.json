@@ -22,7 +22,10 @@
         "krank": "sources/ruleset-command.mjs"
     },
     "files": [
-        "sources/",
+        "sources/krank.mjs",
+        "sources/ruleset-run.mjs",
+        "sources/ruleset-render.mjs",
+        "sources/ruleset-command.mjs",
         "documents/10-rule-notation.md"
     ],
     "sideEffects": false,

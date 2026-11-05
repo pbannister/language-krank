@@ -48,6 +48,22 @@ test("every export target resolves to an existing file", () => {
     }
 });
 
+test("the files list ships the library and not the demo", () => {
+    const files = pkg.files;
+    assert.ok(Array.isArray(files), "files must be an array");
+    for (const [specifier, target] of Object.entries(pkg.exports)) {
+        if (specifier === "./package.json") {
+            continue;
+        }
+        const rel = target.replace(/^\.\//, "");
+        assert.ok(files.includes(rel), `export target ${rel} is not in files`);
+    }
+    const bin_rel = String(pkg.bin.krank).replace(/^\.\//, "");
+    assert.ok(files.includes(bin_rel), `bin target ${bin_rel} is not in files`);
+    assert.ok(!files.some((entry) => entry.replace(/\/$/, "") === "sources"), "files must not sweep in all of sources/");
+    assert.ok(!files.some((entry) => entry.startsWith("sources/browser")), "the browser demo must not ship in the package");
+});
+
 test("the bin entry points at the command-line tool", () => {
     const bin_target = String(pkg.bin?.krank ?? "");
     assert.match(bin_target, /ruleset-command\.mjs$/);
