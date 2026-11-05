@@ -26,6 +26,15 @@ The package surface is `@bannister.us/krank`.
 
 During development, a sibling project can depend on this checkout by path (`"@bannister.us/krank": "file:../08-language-krank"`) or on a release tag once one is cut.
 
+## Publishing
+
+`make publish` tags the current commit, pushes it, and publishes the package.
+
+- `make publish-dry-run` runs the guards and prints the plan without changing anything.
+- The version in `package.json` is the contract, so the tag is `v<version>`.
+- `scripts/release-publish.sh` refuses a dirty working tree, a detached HEAD, an existing tag, an already-published version, missing npm authentication, or a failing test suite.
+- It runs the test suite before tagging, so a failure leaves no tag and no publish.
+
 A coding agent begins at `AGENTS.md`, the tool-neutral entry point. The full
 mandatory load order is in `prompts/02-workflow.md` section 1:
 

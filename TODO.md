@@ -17,3 +17,4 @@
 - [x] add feature `prompts/features/03-rules-engine.md` and the glossary terms for the notation.
 - [x] add variable binding and a small operator set (`eq`, `ne`, `lt`, `lte`, `gt`, `gte`, `in`) to the engine, renderer, and notation (2026-11-04).
 - [x] add a priority agenda, a `ruleset_session` working-memory object, and a per-`type` fact index (2026-11-04).
+- [x] add `make publish` (`scripts/release-publish.sh`) to tag, push, and publish to npm (2026-11-04).

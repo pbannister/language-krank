@@ -12,6 +12,7 @@
 #		check:  validate generated output (the leak gate over site.out/);
 #		        a pipeline project extends this with its own validation mode
 #		release: sh scripts/release-package.sh (the files a release publishes)
+#		publish: sh scripts/release-publish.sh (tag, push, and publish to npm)
 #		clean:  rm -rf generated output (keeps .gitkeep placeholders)
 #		test:   npm test
 #		deploy: RETIRED - all publishing to labs.bannister.us goes through
@@ -53,6 +54,12 @@ check:
 release:
 	sh scripts/release-package.sh
 
+publish:
+	sh scripts/release-publish.sh
+
+publish-dry-run:
+	sh scripts/release-publish.sh --dry-run
+
 clean:
 	rm -rf dataflow.out/* site.out/* logs/*
 
@@ -67,4 +74,4 @@ deploy:
 install:
 	@echo '==== No install yet defined'
 
-.PHONY: all build site state status maturity context check release clean test deploy install
+.PHONY: all build site state status maturity context check release publish publish-dry-run clean test deploy install
