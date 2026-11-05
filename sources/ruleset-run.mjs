@@ -3,11 +3,13 @@
 // A rule set is a JSON document: { facts: [FACT...], rules: [RULE...] }.
 // The notation and semantics are defined in documents/10-rule-notation.md.
 //
-// The engine is deterministic: rules fire in document order, a rule binding
-// fires at most once, and assert/retract change the fact set for later scans.
+// The engine is deterministic: rules fire in agenda order — priority descending,
+// then document order — a rule binding fires at most once, and assert/retract
+// change the fact set for later scans.
 
 const OPERATORS = new Set(["eq", "ne", "lt", "lte", "gt", "gte", "in"]);
 const VARIABLE_PATTERN = /^\$[A-Za-z_][A-Za-z0-9_]*$/;
+const NO_TYPE = Symbol("no literal type");
 
 // is_variable reports whether a value is a variable reference such as "$name".
 export function is_variable(value) {
@@ -151,31 +153,57 @@ function unify(pattern, fact, bindings, allow_new) {
     return extended;
 }
 
-// bindings yields every match of the rule's conditions, in canonical order.
-// A binding carries the matched facts and the variable assignments.
-function* bindings(rule, facts) {
-    yield* extend_conditions(rule.when, 0, facts, { matched: [], vars: {} });
+// literal_type returns a pattern's literal type key, or NO_TYPE when the type is
+// absent, a $variable, or an operator, so the type index cannot be used.
+function literal_type(pattern) {
+    if (!("type" in pattern)) {
+        return NO_TYPE;
+    }
+    const spec = pattern.type;
+    if (is_variable(spec)) {
+        return NO_TYPE;
+    }
+    if (spec !== null && typeof spec === "object") {
+        return NO_TYPE;
+    }
+    return spec;
 }
 
-function* extend_conditions(conditions, index, facts, state) {
+// candidates returns the facts a condition can match: the type bucket when the
+// pattern names a literal type, otherwise every fact.
+function candidates(pattern, context) {
+    const key = literal_type(pattern);
+    if (key !== NO_TYPE) {
+        return context.index.get(key) ?? [];
+    }
+    return context.facts;
+}
+
+// bindings yields every match of the rule's conditions, in canonical order.
+// A binding carries the matched facts and the variable assignments.
+function* bindings(rule, context) {
+    yield* extend_conditions(rule.when, 0, context, { matched: [], vars: {} });
+}
+
+function* extend_conditions(conditions, index, context, state) {
     if (index === conditions.length) {
         yield { facts: state.matched, vars: state.vars };
         return;
     }
     const condition = conditions[index];
     if (condition.not) {
-        for (const fact of facts) {
+        for (const fact of candidates(condition.fact, context)) {
             if (unify(condition.fact, fact, state.vars, false) !== null) {
                 return;
             }
         }
-        yield* extend_conditions(conditions, index + 1, facts, state);
+        yield* extend_conditions(conditions, index + 1, context, state);
         return;
     }
-    for (const fact of facts) {
+    for (const fact of candidates(condition.fact, context)) {
         const extended = unify(condition.fact, fact, state.vars, true);
         if (extended !== null) {
-            yield* extend_conditions(conditions, index + 1, facts, {
+            yield* extend_conditions(conditions, index + 1, context, {
                 matched: [...state.matched, fact],
                 vars: extended,
             });
@@ -297,6 +325,9 @@ function rule_validate(rule) {
     if (!Array.isArray(rule.then)) {
         throw new Error(`rule "${rule.id}" needs a "then" array`);
     }
+    if ("priority" in rule && (typeof rule.priority !== "number" || !Number.isFinite(rule.priority))) {
+        throw new Error(`rule "${rule.id}": "priority" must be a finite number`);
+    }
     const bound = new Set();
     for (const condition of rule.when) {
         if (
@@ -338,92 +369,191 @@ function substitute(value, bindings) {
     return value;
 }
 
-// ruleset_run evaluates a rule set and returns { facts, emitted, trace, firings }.
+// agenda_of orders rules by priority (descending), then by document order.
+function agenda_of(rules) {
+    return rules
+        .map((rule, position) => ({ rule, position }))
+        .sort((a, b) => (b.rule.priority ?? 0) - (a.rule.priority ?? 0) || a.position - b.position)
+        .map((entry) => entry.rule);
+}
+
+// ruleset_session creates a session that holds working memory across runs.
+// facts() and emitted() return snapshots. run() evaluates to a fixpoint and
+// returns { facts, emitted, trace, firings }, where emitted, trace, and firings
+// accumulate over the session's runs. reset() restores the initial facts and
+// clears refraction; forget_refraction() clears refraction without losing facts.
 // options.firings_max caps the number of firings (default 10000) so a rule set
 // that never reaches a fixpoint fails with an error instead of running forever.
-export function ruleset_run(ruleset, options = {}) {
+export function ruleset_session(ruleset, options = {}) {
     const firings_max = options.firings_max ?? 10000;
-    let facts = Array.isArray(ruleset.facts) ? ruleset.facts.map((fact) => ({ ...fact })) : [];
     const rules = Array.isArray(ruleset.rules) ? ruleset.rules : [];
 
     for (const rule of rules) {
         rule_validate(rule);
     }
+    const agenda = agenda_of(rules);
 
-    const fact_assert = (fact) => {
-        const key = fact_key(fact);
-        if (facts.some((existing) => fact_key(existing) === key)) {
-            return false;
+    const initial_facts = (Array.isArray(ruleset.facts) ? ruleset.facts : []).map((fact) => ({ ...fact }));
+    const facts = initial_facts.map((fact) => ({ ...fact }));
+    const index = new Map();
+    const context = { facts, index };
+
+    function rebuild_index() {
+        index.clear();
+        for (const fact of facts) {
+            if (!("type" in fact)) {
+                continue;
+            }
+            const bucket = index.get(fact.type);
+            if (bucket) {
+                bucket.push(fact);
+            } else {
+                index.set(fact.type, [fact]);
+            }
         }
-        facts.push({ ...fact });
-        return true;
-    };
-
-    const fact_retract = (pattern) => {
-        const before = facts.length;
-        facts = facts.filter((fact) => !is_match(fact, pattern));
-        return before - facts.length;
-    };
+    }
+    rebuild_index();
 
     const fired_bindings = new Set();
     const emitted = [];
     const trace = [];
     let firings = 0;
 
-    let is_changed = true;
-    while (is_changed) {
-        is_changed = false;
-        for (const rule of rules) {
-            let is_fired = false;
-            for (const binding of bindings(rule, facts)) {
-                const key =
-                    rule.id +
-                    "|" +
-                    binding.facts.map(fact_key).sort().join(",") +
-                    "|" +
-                    JSON.stringify(keys_sort(binding.vars));
-                if (fired_bindings.has(key)) {
-                    continue;
-                }
-                fired_bindings.add(key);
-                firings += 1;
-                if (firings > firings_max) {
-                    throw new Error(`rule engine did not reach a fixpoint within ${firings_max} firings`);
-                }
-
-                const entry = {
-                    rule: rule.id,
-                    matched: binding.facts.map((fact) => ({ ...fact })),
-                    vars: { ...binding.vars },
-                    effects: [],
-                };
-                for (const action of rule.then) {
-                    if ("assert" in action) {
-                        const fact = substitute(action.assert, binding.vars);
-                        const added = fact_assert(fact);
-                        entry.effects.push(`assert ${fact_key(fact)}${added ? "" : " (already present)"}`);
-                    } else if ("retract" in action) {
-                        const pattern = substitute(action.retract, binding.vars);
-                        const removed = fact_retract(pattern);
-                        entry.effects.push(`retract ${removed} fact(s) matching ${JSON.stringify(pattern)}`);
-                    } else if ("emit" in action) {
-                        const value = substitute(action.emit, binding.vars);
-                        emitted.push(value);
-                        entry.effects.push(`emit ${JSON.stringify(value)}`);
-                    } else {
-                        throw new Error(`rule "${rule.id}" has an action with no assert, retract, or emit`);
-                    }
-                }
-                trace.push(entry);
-                is_fired = true;
-                break;
-            }
-            if (is_fired) {
-                is_changed = true;
-                break;
+    const fact_assert = (fact) => {
+        const key = fact_key(fact);
+        if (facts.some((existing) => fact_key(existing) === key)) {
+            return false;
+        }
+        const stored = { ...fact };
+        facts.push(stored);
+        if ("type" in stored) {
+            const bucket = index.get(stored.type);
+            if (bucket) {
+                bucket.push(stored);
+            } else {
+                index.set(stored.type, [stored]);
             }
         }
+        return true;
+    };
+
+    const fact_retract = (pattern) => {
+        let removed = 0;
+        for (let i = facts.length - 1; i >= 0; i -= 1) {
+            if (is_match(facts[i], pattern)) {
+                facts.splice(i, 1);
+                removed += 1;
+            }
+        }
+        if (removed > 0) {
+            rebuild_index();
+        }
+        return removed;
+    };
+
+    function run() {
+        let is_changed = true;
+        while (is_changed) {
+            is_changed = false;
+            for (const rule of agenda) {
+                let is_fired = false;
+                for (const binding of bindings(rule, context)) {
+                    const key =
+                        rule.id +
+                        "|" +
+                        binding.facts.map(fact_key).sort().join(",") +
+                        "|" +
+                        JSON.stringify(keys_sort(binding.vars));
+                    if (fired_bindings.has(key)) {
+                        continue;
+                    }
+                    fired_bindings.add(key);
+                    firings += 1;
+                    if (firings > firings_max) {
+                        throw new Error(`rule engine did not reach a fixpoint within ${firings_max} firings`);
+                    }
+
+                    const entry = {
+                        rule: rule.id,
+                        priority: rule.priority ?? 0,
+                        matched: binding.facts.map((fact) => ({ ...fact })),
+                        vars: { ...binding.vars },
+                        effects: [],
+                    };
+                    for (const action of rule.then) {
+                        if ("assert" in action) {
+                            const fact = substitute(action.assert, binding.vars);
+                            const added = fact_assert(fact);
+                            entry.effects.push(`assert ${fact_key(fact)}${added ? "" : " (already present)"}`);
+                        } else if ("retract" in action) {
+                            const pattern = substitute(action.retract, binding.vars);
+                            const removed = fact_retract(pattern);
+                            entry.effects.push(`retract ${removed} fact(s) matching ${JSON.stringify(pattern)}`);
+                        } else if ("emit" in action) {
+                            const value = substitute(action.emit, binding.vars);
+                            emitted.push(value);
+                            entry.effects.push(`emit ${JSON.stringify(value)}`);
+                        } else {
+                            throw new Error(`rule "${rule.id}" has an action with no assert, retract, or emit`);
+                        }
+                    }
+                    trace.push(entry);
+                    is_fired = true;
+                    break;
+                }
+                if (is_fired) {
+                    is_changed = true;
+                    break;
+                }
+            }
+        }
+        return {
+            facts: facts.map((fact) => ({ ...fact })),
+            emitted: [...emitted],
+            trace: [...trace],
+            firings,
+        };
     }
 
-    return { facts, emitted, trace, firings };
+    return {
+        assert(fact) {
+            if (fact === null || typeof fact !== "object" || Array.isArray(fact)) {
+                throw new Error("a fact must be an object");
+            }
+            return fact_assert(fact);
+        },
+        retract(pattern) {
+            return fact_retract(pattern);
+        },
+        facts() {
+            return facts.map((fact) => ({ ...fact }));
+        },
+        emitted() {
+            return [...emitted];
+        },
+        trace() {
+            return trace.map((entry) => ({ ...entry }));
+        },
+        run,
+        reset() {
+            facts.length = 0;
+            for (const fact of initial_facts) {
+                facts.push({ ...fact });
+            }
+            fired_bindings.clear();
+            emitted.length = 0;
+            trace.length = 0;
+            firings = 0;
+            rebuild_index();
+        },
+        forget_refraction() {
+            fired_bindings.clear();
+        },
+    };
+}
+
+// ruleset_run evaluates a rule set once. It is the one-shot form of
+// ruleset_session and returns the same { facts, emitted, trace, firings }.
+export function ruleset_run(ruleset, options = {}) {
+    return ruleset_session(ruleset, options).run();
 }

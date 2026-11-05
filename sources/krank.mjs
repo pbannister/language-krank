@@ -12,6 +12,7 @@ export {
     variable_name,
     is_operator,
     ruleset_run,
+    ruleset_session,
 } from "./ruleset-run.mjs";
 export {
     fact_phrase,

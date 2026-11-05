@@ -21,6 +21,9 @@ the original intent.
 - `KRANK-R010` — An operator object must hold every one of its operators, drawn from `eq`, `ne`, `lt`, `lte`, `gt`, `gte`, and `in`.
 - `KRANK-R011` — A `$variable` in an action must be replaced by its bound value, in an `assert` or `retract` fact and in any leaf of an `emit` value.
 - `KRANK-R012` — The interpreter must refuse a rule that uses an unbound variable, and a negated condition that would bind a new variable.
+- `KRANK-R013` — A rule may carry an optional finite numeric `priority`; a higher priority fires first, and equal priorities keep document order.
+- `KRANK-R014` — A session must keep facts and refraction across `run` calls, and expose `assert`, `retract`, `facts`, `emitted`, `trace`, `reset`, and `forget_refraction`.
+- `KRANK-R015` — A condition naming a literal `type` must match only facts of that type, while a `$variable` or an operator on `type` must scan every fact.
 
 ## Behavior
 

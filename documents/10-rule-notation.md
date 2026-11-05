@@ -46,11 +46,13 @@ special to the engine.
 
 ### Rule
 
-A **rule** is an object with exactly three keys:
+A **rule** is an object with three required keys and one optional key:
 
 - `id` — a non-empty string, unique within the set.
 - `when` — an array of conditions; all must hold (a conjunction).
 - `then` — an array of actions, applied in order when the rule fires.
+- `priority` — an optional finite number, default 0. A higher priority fires
+  first; equal priorities keep document order.
 
 ### Condition
 
@@ -135,8 +137,9 @@ The interpreter is deterministic and forward-chaining.
 
 1. Load the facts (a set: two facts are the same fact when their keys and values
    are equal).
-2. Scan the rules in document order. For each rule, enumerate its **bindings** —
-   every way to satisfy its conditions — in canonical order.
+2. Scan the rules in agenda order: priority descending, then document order. For
+   each rule, enumerate its **bindings** — every way to satisfy its conditions —
+   in canonical order.
 3. Fire the first rule with a binding that has not fired before: apply its `then`
    in order, and record the firing.
 4. Refraction: a rule binding fires at most once. A binding is the rule id, the
@@ -152,6 +155,35 @@ rather than silently matching nothing.
 
 Two facts are the same fact when their keys and values are equal, so an `assert`
 of an equal fact is a no-op and a `retract` removes every equal fact.
+
+A condition that names a literal `type` is matched against the facts of that type
+only: the engine indexes facts by `type`. A `$variable` or an operator on `type`
+falls back to scanning every fact.
+
+## Session
+
+`ruleset_run` evaluates a rule set once and discards its state. A **session** keeps
+working memory across runs:
+
+```js
+const session = ruleset_session(ruleset);
+session.assert({ type: "task", priority: "high" });
+session.run();
+session.assert({ type: "cap", priority: "high" });
+session.run();          // only bindings the new fact enables fire
+```
+
+- `assert(fact)` adds a fact and returns whether it was new.
+- `retract(pattern)` removes matching facts and returns how many.
+- `facts()`, `emitted()`, and `trace()` return snapshots.
+- `run()` evaluates to a fixpoint and returns `{ facts, emitted, trace, firings }`;
+  `emitted`, `trace`, and `firings` accumulate over the session's runs.
+- `reset()` restores the initial facts and clears refraction.
+- `forget_refraction()` clears refraction without losing facts, so a binding may
+  fire again.
+
+`ruleset_run` is the one-shot form: `ruleset_run(rs)` is
+`ruleset_session(rs).run()`.
 
 ## Round trip
 
@@ -172,5 +204,6 @@ multiple rules), and three matchers (scalar equality, variable binding, operator
 object). Anything more is added only when a real rule set cannot be expressed
 without it.
 
-The engine has no certainty factors, no salience, no conflict resolution, and no
-Rete network. Firing order is document order; a rule binding fires once.
+The engine has no certainty factors, no conflict-resolution strategy beyond a
+rule's `priority`, and no Rete network. Firing order is priority descending, then
+document order; a rule binding fires once.

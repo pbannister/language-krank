@@ -5,6 +5,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
     ruleset_run,
+    ruleset_session,
     is_match,
     fact_key,
     is_variable,
@@ -364,4 +365,129 @@ test("an action must have exactly one of assert, retract, emit", () => {
         ],
     };
     assert.throws(() => ruleset_run(ruleset), /exactly one/);
+});
+
+test("a higher priority rule fires first", () => {
+    const ruleset = {
+        facts: [{ type: "task" }],
+        rules: [
+            { id: "low", priority: 1, when: [{ fact: { type: "task" } }], then: [{ emit: "low" }] },
+            { id: "high", priority: 10, when: [{ fact: { type: "task" } }], then: [{ emit: "high" }] },
+        ],
+    };
+    assert.deepEqual(ruleset_run(ruleset).emitted, ["high", "low"]);
+});
+
+test("equal priority keeps document order", () => {
+    const ruleset = {
+        facts: [{ type: "task" }],
+        rules: [
+            { id: "a", priority: 5, when: [{ fact: { type: "task" } }], then: [{ emit: "a" }] },
+            { id: "b", priority: 5, when: [{ fact: { type: "task" } }], then: [{ emit: "b" }] },
+        ],
+    };
+    assert.deepEqual(ruleset_run(ruleset).emitted, ["a", "b"]);
+});
+
+test("a non-numeric priority is refused", () => {
+    const ruleset = {
+        facts: [],
+        rules: [{ id: "bad", priority: "high", when: [], then: [{ emit: "x" }] }],
+    };
+    assert.throws(() => ruleset_run(ruleset), /priority/);
+});
+
+test("a session keeps facts and refraction across runs", () => {
+    const session = ruleset_session({
+        facts: [{ type: "task", priority: "high" }],
+        rules: [{ id: "echo", when: [{ fact: { type: "task", priority: "$p" } }], then: [{ emit: "$p" }] }],
+    });
+    const first = session.run();
+    assert.deepEqual(first.emitted, ["high"]);
+    assert.equal(first.firings, 1);
+
+    session.assert({ type: "task", priority: "low" });
+    const second = session.run();
+    assert.deepEqual(second.emitted, ["high", "low"]);
+    assert.equal(second.firings, 2);
+});
+
+test("a second run with no new facts fires nothing", () => {
+    const session = ruleset_session({
+        facts: [{ type: "task" }],
+        rules: [{ id: "once", when: [{ fact: { type: "task" } }], then: [{ emit: "seen" }] }],
+    });
+    session.run();
+    const again = session.run();
+    assert.equal(again.firings, 1);
+    assert.deepEqual(again.emitted, ["seen"]);
+});
+
+test("session assert is idempotent and retract removes", () => {
+    const session = ruleset_session({ facts: [], rules: [] });
+    assert.equal(session.assert({ type: "x" }), true);
+    assert.equal(session.assert({ type: "x" }), false);
+    assert.equal(session.retract({ type: "x" }), 1);
+    assert.deepEqual(session.facts(), []);
+});
+
+test("session reset restores the initial facts", () => {
+    const session = ruleset_session({ facts: [{ type: "seed" }], rules: [] });
+    session.assert({ type: "extra" });
+    assert.equal(session.facts().length, 2);
+    session.reset();
+    assert.deepEqual(session.facts(), [{ type: "seed" }]);
+});
+
+test("session forget_refraction lets a binding fire again", () => {
+    const session = ruleset_session({
+        facts: [{ type: "task" }],
+        rules: [{ id: "once", when: [{ fact: { type: "task" } }], then: [{ emit: "seen" }] }],
+    });
+    session.run();
+    assert.equal(session.run().firings, 1);
+    session.forget_refraction();
+    assert.equal(session.run().firings, 2);
+    assert.deepEqual(session.emitted(), ["seen", "seen"]);
+});
+
+test("a literal type pattern matches only facts of that type", () => {
+    const ruleset = {
+        facts: [
+            { type: "task", v: 1 },
+            { type: "cap", v: 2 },
+            { type: "task", v: 3 },
+        ],
+        rules: [{ id: "tasks", when: [{ fact: { type: "task" } }], then: [{ emit: "task" }] }],
+    };
+    const result = ruleset_run(ruleset);
+    assert.equal(result.firings, 2);
+    assert.deepEqual(result.emitted, ["task", "task"]);
+});
+
+test("a $variable type scans every fact", () => {
+    const ruleset = {
+        facts: [{ type: "task", v: 1 }, { type: "cap", v: 2 }],
+        rules: [{ id: "any", when: [{ fact: { type: "$t" } }], then: [{ emit: "$t" }] }],
+    };
+    const result = ruleset_run(ruleset);
+    assert.deepEqual(result.emitted.sort(), ["cap", "task"]);
+});
+
+test("the type index reflects an assert", () => {
+    const session = ruleset_session({
+        facts: [],
+        rules: [{ id: "tasks", when: [{ fact: { type: "task" } }], then: [{ emit: "task" }] }],
+    });
+    session.assert({ type: "task", v: 1 });
+    assert.deepEqual(session.run().emitted, ["task"]);
+});
+
+test("the type index reflects a retract", () => {
+    const session = ruleset_session({
+        facts: [{ type: "task", v: 1 }],
+        rules: [{ id: "tasks", when: [{ fact: { type: "task" } }], then: [{ emit: "task" }] }],
+    });
+    session.retract({ type: "task", v: 1 });
+    assert.deepEqual(session.run().emitted, []);
 });

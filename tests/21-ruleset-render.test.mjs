@@ -105,3 +105,8 @@ test("rule_render renders membership and a negated condition", () => {
     assert.ok(text.includes('priority in ["high", "critical"]'));
     assert.ok(text.includes("there is no cover with priority $p"));
 });
+
+test("rule_render shows a rule priority", () => {
+    const rule = { id: "x", priority: 7, when: [{ fact: { type: "task" } }], then: [{ emit: "y" }] };
+    assert.ok(rule_render(rule).startsWith('Rule "x" (priority 7):'));
+});

@@ -100,9 +100,10 @@ export function action_render(action) {
 }
 
 export function rule_render(rule) {
+    const priority = "priority" in rule ? ` (priority ${rule.priority})` : "";
     const when = rule.when.map(condition_render).join(" and ");
     const then = rule.then.map(action_render).join(", and ");
-    return `Rule "${rule.id}": when ${when}, then ${then}.`;
+    return `Rule "${rule.id}"${priority}: when ${when}, then ${then}.`;
 }
 
 export function ruleset_render(ruleset) {

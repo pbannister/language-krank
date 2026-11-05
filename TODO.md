@@ -16,3 +16,4 @@
 - [x] add the engine and render tests (`tests/20-ruleset-run.sh`, `tests/21-ruleset-render.sh` and their `.mjs` bodies).
 - [x] add feature `prompts/features/03-rules-engine.md` and the glossary terms for the notation.
 - [x] add variable binding and a small operator set (`eq`, `ne`, `lt`, `lte`, `gt`, `gte`, `in`) to the engine, renderer, and notation (2026-11-04).
+- [x] add a priority agenda, a `ruleset_session` working-memory object, and a per-`type` fact index (2026-11-04).
