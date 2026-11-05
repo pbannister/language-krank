@@ -24,3 +24,6 @@
 - [x] build the first iteration of the prompt studio: a step rail with prompt, candidates, rules, prose, comparison with hints, reduced prompt with its diff, check, and approve (2026-11-05).
 - [x] give the conventions prompt two candidates (HTML indentation in or out), so the studio's choice is a real one (2026-11-05).
 - [x] make the studio a local tool: `make studio` builds `dataflow.out/studio/` and serves it on 127.0.0.1; stop publishing it, because the homelab strips a project-authored `<nav>` and the step rail disappears (2026-11-05).
+- [x] generate candidates on demand: `POST /compile` on the studio server runs the compile task through the Harness (`scripts/compile-with-harness.mjs`) and returns validated candidates (2026-11-05).
+- [x] add the Harness client plugin `sources/harness/krank-studio/`: a Studio action that opens the local studio; installed into the web profile as a bundle (2026-11-05).
+- [x] measure the compile gap: `make coverage` reports bullets and compiled lines per prompt file (2026-11-05).

@@ -35,6 +35,10 @@ During development, a sibling project can depend on this checkout by path (`"@ba
 
 The compile is recorded: `scripts/site-catalog.mjs` assembles the compiled rule sets and the prompt text, and `scripts/site-facts.mjs` extracts the file facts. `make site` publishes the playground with the project pages via `scripts/site-demo.sh` (library modules at the project root), and `site.in/pages.nav` lists it in the nav. The npm package does not include the browser pages; `package.json`'s `files` lists the library modules only.
 
+**Generating candidates.** The studio's **Generate candidates** button posts the selected prompt to the studio server's `POST /compile`. The server runs `scripts/compile-with-harness.mjs`, which runs the task through the DeepSeek Harness headless profile, and validates the returned rules with the engine before replying. The server holds no model credential; the Harness owns the provider. Set `DSH_BIN` if `dsh` is not on `PATH`, and `STUDIO_COMPILER_SCRIPT` to point at a different backend.
+
+**In the Harness.** `sources/harness/krank-studio/` is a Harness client plugin that adds a **Studio** action to the conversation session header and opens the local studio. Install it into the web profile with `dsh plugin --profile web add -w sources/harness/krank-studio`, then reload the page. It is a launcher, not a second copy of the studio, and it is never published.
+
 ## Publishing
 
 `make publish` tags the current commit, pushes it, and publishes the package.

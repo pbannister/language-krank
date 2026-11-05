@@ -44,8 +44,24 @@ node -e 'const data = require(process.argv[1]); if (!Array.isArray(data.entries)
 node -e 'const data = require(process.argv[1]); if (!Array.isArray(data.files) || data.files.length === 0) process.exit(1);' \
     "$DIRECTORY_TREE/browser/files.json" || fail 'files.json has no files'
 
+cat > "$DIRECTORY_TEST/fake-compiler.mjs" <<'JS'
+process.stdout.write(JSON.stringify({
+    candidates: [{
+        id: "fake",
+        title: "Fake candidate",
+        explanation: "A candidate the test compiler returns.",
+        rules: {
+            facts: [],
+            rules: [{ id: "always", when: [{ fact: { type: "file", path: "$p" } }], then: [{ emit: "seen" }] }],
+        },
+        cases: [{ rule: "always", source: "prompts/x.md", original: "A line.", verdict: "ok", note: "n", suggestion: "s" }],
+    }],
+}));
+JS
+
 PORT=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')
-node "$REPOSITORY_ROOT/scripts/studio-serve.mjs" "$PORT" "$DIRECTORY_TREE" \
+STUDIO_COMPILER_SCRIPT="$DIRECTORY_TEST/fake-compiler.mjs" \
+    node "$REPOSITORY_ROOT/scripts/studio-serve.mjs" "$PORT" "$DIRECTORY_TREE" \
     > "$DIRECTORY_TEST/serve.log" 2>&1 &
 SERVER_PID=$!
 trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
@@ -66,6 +82,13 @@ grep -qi 'content-type: text/javascript' "$DIRECTORY_TEST/headers" \
     || fail 'studio.mjs is not served as text/javascript'
 curl -sf "http://127.0.0.1:$PORT/browser/catalog.json" > /dev/null \
     || fail 'catalog.json is not served'
+
+curl -sf -X POST -H 'content-type: application/json' \
+    -d '{"source":"prompts/x.md","text":"A line."}' \
+    "http://127.0.0.1:$PORT/compile" > "$DIRECTORY_TEST/compile.json" \
+    || fail 'the compile endpoint failed'
+node -e 'const data = require(process.argv[1]); const candidate = data.candidates[0]; if (!candidate || candidate.rules.rules.length !== 1 || candidate.cases.length !== 1) process.exit(1);' \
+    "$DIRECTORY_TEST/compile.json" || fail 'the compile endpoint returned a bad candidate'
 
 kill "$SERVER_PID" 2>/dev/null || true
 trap - EXIT

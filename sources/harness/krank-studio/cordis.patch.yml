@@ -1,0 +1,8 @@
+# The krank-studio bundle patch: insert the Studio action into the web surface.
+#
+# The row is the package itself: its host half (lib/index.js) is empty, and its
+# client half (lib/client.js) is loaded by the Web Client because the package
+# declares dsh.client.
+- insert:
+    - id: krank-studio
+      name: dsh-krank-studio

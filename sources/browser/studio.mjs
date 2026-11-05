@@ -337,6 +337,36 @@ document.querySelector("#reset").addEventListener("click", () => {
     render();
 });
 
+document.querySelector("#generate").addEventListener("click", async () => {
+    const button = document.querySelector("#generate");
+    const note = document.querySelector("#generate-note");
+    button.disabled = true;
+    note.textContent = "Compiling… the Harness is running the task; this can take a while.";
+    try {
+        const response = await fetch("/compile", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ source: entry.source, text: textarea.value }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error ?? `HTTP ${response.status}`);
+        }
+        entry = { ...entry, compiled: true, candidates: data.candidates };
+        candidate = entry.candidates[0];
+        working = textarea.value;
+        edited = working !== entry.markdown;
+        last_check = null;
+        note.textContent = `Generated ${data.candidates.length} candidate(s); choose one in the next panel.`;
+        render();
+        show("candidates");
+    } catch (error) {
+        note.textContent = `Generation failed: ${error.message}`;
+    } finally {
+        button.disabled = false;
+    }
+});
+
 document.querySelector("#run").addEventListener("click", () => {
     if (!candidate) {
         check_output.textContent = "No candidate rule set to run.";
