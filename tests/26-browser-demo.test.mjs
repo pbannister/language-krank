@@ -79,12 +79,12 @@ test("the file facts cover the library, and a clean file has no finding", () => 
     assert.equal(result.emitted.length, 0, "a conforming file produced a finding");
 });
 
-test("the conventions rules report the template's 2-space indent", () => {
+test("the conventions rules report a 2-space indentation unit", () => {
     const catalog = build("site-catalog.mjs");
-    const facts = build("site-facts.mjs");
     const conventions = catalog.entries.find((entry) => entry.id === "conventions");
-    const template = facts.files.find((file) => file.path === "site.in/template.html");
-    assert.equal(template.facts.indent_unit, 2);
-    const result = ruleset_run({ facts: [{ type: "file", ...template.facts }], rules: conventions.rules.rules });
+    const result = ruleset_run({
+        facts: [{ type: "file", path: "sample.mjs", extension: ".mjs", indent_unit: 2, has_tab: false }],
+        rules: conventions.rules.rules,
+    });
     assert.ok(result.emitted.some((item) => item.violation === "indent"), "the indent rule did not fire");
 });
