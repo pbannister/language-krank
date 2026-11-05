@@ -14,7 +14,9 @@
 #		        a pipeline project extends this with its own validation mode
 #		release: sh scripts/release-package.sh (the files a release publishes)
 #		publish: sh scripts/release-publish.sh (tag, push, and publish to npm)
-#		demo:   sh scripts/demo-serve.sh (serve the browser demo on 127.0.0.1)
+#		demo:   sh scripts/demo-serve.sh (serve the playground on 127.0.0.1)
+#		studio: build and serve the local prompt studio (not published; the
+#		        homelab strips a project-authored <nav>)
 #		clean:  rm -rf generated output (keeps .gitkeep placeholders)
 #		test:   npm test
 #		deploy: RETIRED - all publishing to labs.bannister.us goes through
@@ -66,6 +68,14 @@ publish-dry-run:
 demo:
 	sh scripts/demo-serve.sh
 
+studio: studio-build studio-serve
+
+studio-build:
+	sh scripts/studio-build.sh
+
+studio-serve:
+	node scripts/studio-serve.mjs 8090 dataflow.out/studio
+
 clean:
 	rm -rf dataflow.out/* site.out/* logs/*
 
@@ -80,4 +90,4 @@ deploy:
 install:
 	@echo '==== No install yet defined'
 
-.PHONY: all build site state status maturity context check release publish publish-dry-run demo clean test deploy install
+.PHONY: all build site state status maturity context check release publish publish-dry-run demo studio studio-build studio-serve clean test deploy install

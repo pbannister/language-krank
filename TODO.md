@@ -23,3 +23,4 @@
 - [x] add a `count` condition (`at_least`/`at_most`), so a "for all" is non-vacuous; the round-trip's `mark-complete` now requires at least one checklist (2026-11-05).
 - [x] build the first iteration of the prompt studio: a step rail with prompt, candidates, rules, prose, comparison with hints, reduced prompt with its diff, check, and approve (2026-11-05).
 - [x] give the conventions prompt two candidates (HTML indentation in or out), so the studio's choice is a real one (2026-11-05).
+- [x] make the studio a local tool: `make studio` builds `dataflow.out/studio/` and serves it on 127.0.0.1; stop publishing it, because the homelab strips a project-authored `<nav>` and the step rail disappears (2026-11-05).

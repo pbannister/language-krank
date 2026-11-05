@@ -30,10 +30,10 @@ During development, a sibling project can depend on this checkout by path (`"@ba
 
 `sources/browser/` holds two zero-build pages that load `sources/krank.mjs` as a native ES module; the engine and renderer carry no `node:` import, so the same code runs in the browser.
 
-- `index.html` is the prompt studio: a step rail with one panel per step — prompt (editable), candidates (one or more rule sets, each with an explanation), rules, rendered prose, comparison with a hint per case, reduced prompt with its diff, check, and approve. Choosing a candidate updates every later panel; editing the prompt recomputes the reduced prompt and the diff without changing the recorded compile.
-- `playground.html` edits a single rule set and runs it.
+- `index.html` is the **prompt studio**, a local tool: a step rail with one panel per step — prompt (editable), candidates (one or more rule sets, each with an explanation), rules, rendered prose, comparison with a hint per case, reduced prompt with its diff, check, and approve. `make studio` builds it into `dataflow.out/studio/` and serves it on `127.0.0.1` (the server sends `text/javascript` for `.mjs`). It is not published: the homelab strips a project-authored `<nav>`, which the step rail needs.
+- `playground.html` edits a single rule set and runs it. `make demo` serves it locally from `sources/`.
 
-The compile is recorded: `scripts/site-catalog.mjs` assembles the compiled rule sets and the prompt text, and `scripts/site-facts.mjs` extracts the file facts, both at build time; the page neither calls a model nor reads the repository. `make demo` serves the pages locally at `http://127.0.0.1:8080/browser/`, exposing only `sources/`. `make site` publishes them with the project pages via `scripts/site-demo.sh` (library modules at the project root), and `site.in/pages.nav` lists them in the nav. The npm package does not include the demo; `package.json`'s `files` lists the library modules only.
+The compile is recorded: `scripts/site-catalog.mjs` assembles the compiled rule sets and the prompt text, and `scripts/site-facts.mjs` extracts the file facts. `make site` publishes the playground with the project pages via `scripts/site-demo.sh` (library modules at the project root), and `site.in/pages.nav` lists it in the nav. The npm package does not include the browser pages; `package.json`'s `files` lists the library modules only.
 
 ## Publishing
 
