@@ -13,46 +13,46 @@ import { ruleset_run } from "./ruleset-run.mjs";
 import { ruleset_render } from "./ruleset-render.mjs";
 
 function usage() {
-  return "usage: node sources/ruleset-command.mjs run <ruleset.json> | render <ruleset.json>";
+    return "usage: node sources/ruleset-command.mjs run <ruleset.json> | render <ruleset.json>";
 }
 
 function fail(message) {
-  console.error(`krank: ${message}`);
-  process.exit(1);
+    console.error(`krank: ${message}`);
+    process.exit(1);
 }
 
 const [command, file] = process.argv.slice(2);
 if (!command || !file) {
-  console.error(usage());
-  process.exit(2);
+    console.error(usage());
+    process.exit(2);
 }
 
 let text;
 try {
-  text = readFileSync(file, "utf8");
+    text = readFileSync(file, "utf8");
 } catch (error) {
-  fail(`cannot read ${file}: ${error.message}`);
+    fail(`cannot read ${file}: ${error.message}`);
 }
 
 let ruleset;
 try {
-  ruleset = JSON.parse(text);
+    ruleset = JSON.parse(text);
 } catch (error) {
-  fail(`${file} is not valid JSON: ${error.message}`);
+    fail(`${file} is not valid JSON: ${error.message}`);
 }
 
 if (command === "run") {
-  try {
-    const result = ruleset_run(ruleset);
-    process.stdout.write(
-      `${JSON.stringify({ facts: result.facts, emitted: result.emitted, firings: result.firings }, null, 2)}\n`,
-    );
-  } catch (error) {
-    fail(error.message);
-  }
+    try {
+        const result = ruleset_run(ruleset);
+        process.stdout.write(
+            `${JSON.stringify({ facts: result.facts, emitted: result.emitted, firings: result.firings }, null, 2)}\n`,
+        );
+    } catch (error) {
+        fail(error.message);
+    }
 } else if (command === "render") {
-  process.stdout.write(`${ruleset_render(ruleset)}\n`);
+    process.stdout.write(`${ruleset_render(ruleset)}\n`);
 } else {
-  console.error(usage());
-  process.exit(2);
+    console.error(usage());
+    process.exit(2);
 }

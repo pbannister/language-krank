@@ -1,0 +1,15 @@
+root = true
+
+# The project convention is 4-space indentation (prompts/03-conventions.md
+# section 1). Tabs are reserved for Makefile recipes, which require them.
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+
+[*.{mjs,js,json,md,sh}]
+indent_style = space
+indent_size = 4
+
+[Makefile]
+indent_style = tab

@@ -27,14 +27,14 @@ A rule set is one JSON document:
 
 ```json
 {
-  "facts": [ {"type": "task", "status": "open", "priority": "high"} ],
-  "rules": [
-    {
-      "id": "flag-open-high-priority",
-      "when": [ {"fact": {"type": "task", "status": "open", "priority": "high"}} ],
-      "then": [ {"emit": "an open high-priority task exists"} ]
-    }
-  ]
+    "facts": [ {"type": "task", "status": "open", "priority": "high"} ],
+    "rules": [
+        {
+            "id": "flag-open-high-priority",
+            "when": [ {"fact": {"type": "task", "status": "open", "priority": "high"}} ],
+            "then": [ {"emit": "an open high-priority task exists"} ]
+        }
+    ]
 }
 ```
 
@@ -99,9 +99,9 @@ bound, never one a later condition binds.
 
 ```json
 {
-  "id": "echo-priority",
-  "when": [ {"fact": {"type": "task", "priority": "$p"}} ],
-  "then": [ {"assert": {"type": "alert", "priority": "$p"}} ]
+    "id": "echo-priority",
+    "when": [ {"fact": {"type": "task", "priority": "$p"}} ],
+    "then": [ {"assert": {"type": "alert", "priority": "$p"}} ]
 }
 ```
 
