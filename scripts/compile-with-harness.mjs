@@ -11,6 +11,11 @@
 //             DSH_PROFILE (default "headless").
 //   DSH_PROFILE  default "headless".
 //
+// The headless profile makes a model call, so it needs the provider credential in
+// its own environment: export DEEPSEEK_API_KEY before starting the studio. The
+// web profile's stored key (the Models page) is not visible to a separate
+// process, and a missing key fails with MISSING_CREDENTIAL.
+//
 // Usage: printf 'task' | node scripts/compile-with-harness.mjs
 
 import { execFile } from "node:child_process";

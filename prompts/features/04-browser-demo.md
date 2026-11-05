@@ -31,6 +31,7 @@ it on `127.0.0.1`.
 - `BROWSER-DEMO-R014` — The approve panel must summarize the prompt, the chosen candidate, the rule and case counts, whether the prompt was edited, and the last check; it must offer the rule set and the reduced prompt as downloads, and write nothing.
 - `BROWSER-DEMO-R015` — A prompt with no candidate must be listed and marked, and the page must say so rather than render an empty rule set; it must not claim a compile it does not have.
 - `BROWSER-DEMO-R016` — The compile catalog and the file facts must be generated from the repository at build time (`scripts/site-catalog.mjs`, `scripts/site-facts.mjs`); the studio page must not read the repository, and the compile itself is recorded, not run by the page.
+- `BROWSER-DEMO-R017` — The studio server must accept `POST /compile` with `{source, text}`, run the compile through a separate backend that holds the model credential, validate the returned candidates with the engine, and return `{candidates}` or an error; the server itself must hold no credential.
 
 ## Behavior
 
