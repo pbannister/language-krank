@@ -73,6 +73,7 @@ function candidates_of(entry) {
 }
 
 const authored = new Map();
+const approved = new Map();
 for (const name of readdirSync(directory_compile)) {
     if (!name.endsWith(".json")) {
         continue;
@@ -81,6 +82,9 @@ for (const name of readdirSync(directory_compile)) {
     const list = authored.get(entry.source) ?? [];
     list.push(...candidates_of(entry));
     authored.set(entry.source, list);
+    if (entry.approved) {
+        approved.set(entry.source, entry.approved);
+    }
 }
 
 const files = [];
@@ -95,6 +99,7 @@ const entries = files.sort().map((full) => {
         compiled: candidates.length > 0,
         markdown,
         candidates,
+        approved: approved.get(source),
     };
 });
 

@@ -6,5 +6,6 @@
 - `04-browser-demo.md` — Browser Demo: the playground published with the project pages, and the local prompt studio.
 - `05-harness-studio.md` — Harness Studio: the DeepSeek Harness client plugin that opens the local studio.
 - `06-fact-extractors.md` — Fact Extractors: file, task, feature, and test facts for the check workflow.
+- `07-prompts-output.md` — Prompts Output: the generated formal form `prompts.out/` with markers, reduced prose, and rules.
 
 - The site-build and project-pages features are worked examples inherited from the skeleton, not requirements of the rules engine.

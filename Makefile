@@ -19,6 +19,8 @@
 #		        homelab strips a project-authored <nav>)
 #		coverage: node scripts/coverage-report.mjs (how much of the prompt
 #		        corpus is compiled into rules)
+#		prompts: node scripts/prompts-build.mjs (generate prompts.out/ from
+#		        the approved candidates)
 #		clean:  rm -rf generated output (keeps .gitkeep placeholders)
 #		test:   npm test
 #		deploy: RETIRED - all publishing to labs.bannister.us goes through
@@ -81,6 +83,9 @@ studio-serve:
 coverage:
 	node scripts/coverage-report.mjs
 
+prompts:
+	node scripts/prompts-build.mjs
+
 clean:
 	rm -rf dataflow.out/* site.out/* logs/*
 
@@ -95,4 +100,4 @@ deploy:
 install:
 	@echo '==== No install yet defined'
 
-.PHONY: all build site state status maturity context check release publish publish-dry-run demo studio studio-build studio-serve coverage clean test deploy install
+.PHONY: all build site state status maturity context check release publish publish-dry-run demo studio studio-build studio-serve coverage prompts clean test deploy install

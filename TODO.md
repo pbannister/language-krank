@@ -15,9 +15,9 @@ updates can batch before the formal model moves.
 The round trip between `prompts/` and `prompts.out/`, deferred until
 `prompts.out/` exists:
 
-* [ ] adopt the marker convention (`documents/13-markers.md`) and make the reducer use rule markers instead of substring matching.
-* [ ] add a `make prompts` target that generates `prompts.out/` (markers, reduced prose, rules) from `prompts/`, the approved object model, and the approved candidates.
-* [ ] add a coverage rule: every compiled `prompts/` line carries a rule marker in `prompts.out/`, and every marker maps to a rule that exists.
+* [x] adopt the marker convention (`documents/13-markers.md`) and make the reducer use rule markers instead of substring matching.
+* [x] add a `make prompts` target that generates `prompts.out/` (markers, reduced prose, rules) from `prompts/`, the approved object model, and the approved candidates.
+* [x] add a coverage rule: every compiled `prompts/` line carries a rule marker in `prompts.out/`, and every marker maps to a rule that exists (`tests/31-prompts-build`).
 * [ ] (deferred) extract the remaining runtime families — session, goal, failure, boundary, credential, delegation — from `## KRANK facts` markers, once `prompts.out/` carries them.
 
 ## Recently Completed

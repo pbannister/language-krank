@@ -9,37 +9,89 @@
             {
                 "id": "no-tabs",
                 "when": [
-                    {"fact": {"type": "file", "has_tab": true, "path": "$p"}}
+                    {
+                        "fact": {
+                            "type": "file",
+                            "has_tab": true,
+                            "path": "$p"
+                        }
+                    }
                 ],
                 "then": [
-                    {"emit": {"violation": "tab", "path": "$p"}}
+                    {
+                        "emit": {
+                            "violation": "tab",
+                            "path": "$p"
+                        }
+                    }
                 ]
             },
             {
                 "id": "indent-four",
                 "when": [
-                    {"fact": {"type": "file", "extension": {"in": [".mjs", ".html", ".sh"]}, "indent_unit": 2, "path": "$p"}}
+                    {
+                        "fact": {
+                            "type": "file",
+                            "extension": {
+                                "in": [
+                                    ".mjs",
+                                    ".html",
+                                    ".sh"
+                                ]
+                            },
+                            "indent_unit": 2,
+                            "path": "$p"
+                        }
+                    }
                 ],
                 "then": [
-                    {"emit": {"violation": "indent", "expected": 4, "path": "$p"}}
+                    {
+                        "emit": {
+                            "violation": "indent",
+                            "expected": 4,
+                            "path": "$p"
+                        }
+                    }
                 ]
             },
             {
                 "id": "no-space-in-name",
                 "when": [
-                    {"fact": {"type": "file", "has_space": true, "path": "$p"}}
+                    {
+                        "fact": {
+                            "type": "file",
+                            "has_space": true,
+                            "path": "$p"
+                        }
+                    }
                 ],
                 "then": [
-                    {"emit": {"violation": "space-in-name", "path": "$p"}}
+                    {
+                        "emit": {
+                            "violation": "space-in-name",
+                            "path": "$p"
+                        }
+                    }
                 ]
             },
             {
                 "id": "no-non-ascii-in-name",
                 "when": [
-                    {"fact": {"type": "file", "has_non_ascii": true, "path": "$p"}}
+                    {
+                        "fact": {
+                            "type": "file",
+                            "has_non_ascii": true,
+                            "path": "$p"
+                        }
+                    }
                 ],
                 "then": [
-                    {"emit": {"violation": "non-ascii-in-name", "path": "$p"}}
+                    {
+                        "emit": {
+                            "violation": "non-ascii-in-name",
+                            "path": "$p"
+                        }
+                    }
                 ]
             }
         ]
@@ -73,5 +125,6 @@
             "note": "Checked against the file name only.",
             "suggestion": "Say \"filenames contain no spaces or non-ASCII characters\" in one sentence."
         }
-    ]
+    ],
+    "approved": "conventions"
 }

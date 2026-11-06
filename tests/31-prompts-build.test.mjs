@@ -1,0 +1,67 @@
+// 31-prompts-build.test.mjs — node:test cases for scripts/prompts-build.mjs.
+// Invoked by tests/31-prompts-build.sh.
+//
+// prompts.out/ is the generated formal form. This test builds it and checks the
+// coverage gate: every compiled prompt has a tree, every case is marked, every
+// covered line is gone from the reduced form, and the manifest reports no
+// missing marker.
+
+import test from "node:test";
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
+const root = fileURLToPath(new URL("..", import.meta.url));
+const out = `${root}tests.out/31-prompts-build/prompts.out`;
+rmSync(out, { recursive: true, force: true });
+mkdirSync(`${root}tests.out/31-prompts-build`, { recursive: true });
+
+const catalog = JSON.parse(execFileSync(process.execPath, [`${root}scripts/site-catalog.mjs`], { encoding: "utf8" }));
+execFileSync(process.execPath, [`${root}scripts/prompts-build.mjs`, out], { encoding: "utf8" });
+const manifest = JSON.parse(readFileSync(`${out}/manifest.json`, "utf8"));
+
+function slug_of(source) {
+    return source.replace(/^prompts\//, "").replace(/\.md$/, "").replace(/[/_]/g, "-");
+}
+
+function candidate_of(entry) {
+    return entry.candidates.find((item) => item.id === entry.approved) ?? entry.candidates[0];
+}
+
+test("prompts.out/ has one tree per compiled prompt", () => {
+    const compiled = catalog.entries.filter((entry) => entry.compiled);
+    assert.ok(compiled.length >= 7, "too few compiled prompts");
+    assert.equal(manifest.entries.length, compiled.length);
+    for (const entry of compiled) {
+        const directory = `${out}/${slug_of(entry.source)}`;
+        assert.ok(existsSync(`${directory}/rules.json`), `${entry.source}: no rules.json`);
+        assert.ok(existsSync(`${directory}/marked.md`), `${entry.source}: no marked.md`);
+        assert.ok(existsSync(`${directory}/reduced.md`), `${entry.source}: no reduced.md`);
+    }
+});
+
+test("every case is marked and removed", () => {
+    for (const entry of catalog.entries.filter((item) => item.compiled)) {
+        const cases = candidate_of(entry).cases.filter((item) => (item.source ?? entry.source) === entry.source);
+        const marked = readFileSync(`${out}/${slug_of(entry.source)}/marked.md`, "utf8");
+        const reduced = readFileSync(`${out}/${slug_of(entry.source)}/reduced.md`, "utf8");
+        for (const item of cases) {
+            assert.ok(
+                marked.includes(`<!-- krank: {"rule":"${item.rule}"} -->`),
+                `${entry.source}: ${item.rule} is not marked`,
+            );
+            assert.ok(
+                !reduced.includes(item.original),
+                `${entry.source}: ${item.rule} is still present in the reduced form`,
+            );
+        }
+    }
+});
+
+test("the manifest reports no missing markers", () => {
+    assert.ok(manifest.entries.length > 0);
+    for (const entry of manifest.entries) {
+        assert.equal(entry.markers_missing, 0, `${entry.source}: ${entry.markers_missing} marker(s) missing`);
+    }
+});
