@@ -45,7 +45,9 @@ node -e 'const data = require(process.argv[1]); if (!Array.isArray(data.files) |
     "$DIRECTORY_TREE/browser/files.json" || fail 'files.json has no files'
 
 cat > "$DIRECTORY_TEST/fake-compiler.mjs" <<'JS'
-process.stdout.write(JSON.stringify({
+process.stdout.write(JSON.stringify({ type: "session", sessionId: "fake" }) + "\n");
+process.stdout.write(JSON.stringify({ type: "status", phase: "turn_start", turn: 1 }) + "\n");
+const candidates = {
     candidates: [{
         id: "fake",
         title: "Fake candidate",
@@ -56,7 +58,8 @@ process.stdout.write(JSON.stringify({
         },
         cases: [{ rule: "always", source: "prompts/x.md", original: "A line.", verdict: "ok", note: "n", suggestion: "s" }],
     }],
-}));
+};
+process.stdout.write(JSON.stringify({ type: "final", sessionId: "fake", reason: "done", text: JSON.stringify(candidates) }) + "\n");
 JS
 
 PORT=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')
@@ -85,10 +88,10 @@ curl -sf "http://127.0.0.1:$PORT/browser/catalog.json" > /dev/null \
 
 curl -sf -X POST -H 'content-type: application/json' \
     -d '{"source":"prompts/x.md","text":"A line."}' \
-    "http://127.0.0.1:$PORT/compile" > "$DIRECTORY_TEST/compile.json" \
+    "http://127.0.0.1:$PORT/compile" > "$DIRECTORY_TEST/compile.sse" \
     || fail 'the compile endpoint failed'
-node -e 'const data = require(process.argv[1]); const candidate = data.candidates[0]; if (!candidate || candidate.rules.rules.length !== 1 || candidate.cases.length !== 1) process.exit(1);' \
-    "$DIRECTORY_TEST/compile.json" || fail 'the compile endpoint returned a bad candidate'
+node -e 'const fs = require("fs"); const text = fs.readFileSync(process.argv[1], "utf8"); const events = [...text.matchAll(/^data: (.*)$/gm)].map((m) => JSON.parse(m[1])); if (!events.some((e) => e.type === "phase" && e.phase === "start")) process.exit(1); const done = events.find((e) => e.type === "done"); if (!done) process.exit(1); const candidate = done.candidates[0]; if (!candidate || candidate.rules.rules.length !== 1 || candidate.cases.length !== 1) process.exit(1);' \
+    "$DIRECTORY_TEST/compile.sse" || fail 'the compile endpoint returned a bad candidate'
 
 kill "$SERVER_PID" 2>/dev/null || true
 trap - EXIT

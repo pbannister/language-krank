@@ -3,17 +3,21 @@
 //
 // GET requests serve the tree studio-build.sh writes, with the MIME types a
 // browser module needs (.mjs is text/javascript; a plain directory server may
-// guess wrong). POST /compile takes { source, text } and runs the compile task
-// through a model backend, returning { candidates }.
+// guess wrong). POST /compile takes { source, text }, runs the compile task
+// through a model backend, and streams Server-Sent Events: a `start` phase,
+// the model's run events as `status`, a `parsing` phase, and a terminal
+// `done` (with the candidates) or `error`. The events let the studio show
+// progress instead of one static message while the model runs.
 //
 // The model backend is a separate Node script (STUDIO_COMPILER_SCRIPT, default
-// scripts/compile-with-harness.mjs) that reads the task on stdin and prints the
-// model's answer. This server holds no model credential; the backend does.
+// scripts/compile-with-harness.mjs) that reads the task on stdin and streams
+// the Harness run events as newline-delimited JSON. This server holds no model
+// credential; the backend does.
 //
 // Usage: node scripts/studio-serve.mjs [port] [root]
 // Defaults: port 8090, root dataflow.out/studio.
 
-import { execFile } from "node:child_process";
+import { spawn } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, resolve } from "node:path";
@@ -106,23 +110,71 @@ function parse_candidates(output) {
     return { candidates: data.candidates };
 }
 
-function compile(task) {
+function compile(task, on_event) {
     return new Promise((resolve, reject) => {
-        const child = execFile(
-            process.execPath,
-            [compiler],
-            { timeout: 600000, maxBuffer: 16 * 1024 * 1024 },
-            (error, stdout, stderr) => {
-                if (error) {
-                    reject(new Error((stderr || error.message).trim()));
-                    return;
+        const child = spawn(process.execPath, [compiler], { stdio: ["pipe", "pipe", "pipe"] });
+        let buffer = "";
+        let final_text = null;
+        let stderr = "";
+        child.stdout.on("data", (chunk) => {
+            buffer += chunk.toString();
+            let index;
+            while ((index = buffer.indexOf("\n")) !== -1) {
+                const line = buffer.slice(0, index).trim();
+                buffer = buffer.slice(index + 1);
+                if (!line) {
+                    continue;
                 }
-                resolve(stdout);
-            },
-        );
+                let event;
+                try {
+                    event = JSON.parse(line);
+                } catch {
+                    continue;
+                }
+                if (event.type === "final") {
+                    final_text = event.text;
+                }
+                if (on_event) {
+                    on_event(event);
+                }
+            }
+        });
+        child.stderr.on("data", (chunk) => {
+            stderr += chunk.toString();
+        });
+        child.on("error", (error) => reject(new Error(error.message)));
+        child.on("close", (code) => {
+            if (code !== 0) {
+                reject(new Error(stderr.trim() || `compiler exited ${code}`));
+            } else if (final_text === null) {
+                reject(new Error("the compiler returned no final answer"));
+            } else {
+                resolve(final_text);
+            }
+        });
         child.stdin.on("error", () => {});
         child.stdin.end(task);
     });
+}
+
+// Distill a Harness run event into the compact status the studio shows.
+function progress_event(event) {
+    switch (event.type) {
+        case "session":
+            return { type: "status", phase: "session" };
+        case "status":
+            return { type: "status", phase: event.phase, turn: event.turn, step: event.step };
+        case "thinking":
+            return { type: "status", phase: "thinking" };
+        case "text":
+            return { type: "status", phase: "text" };
+        case "tool_call":
+            return { type: "status", phase: "tool_call", tool: event.tool };
+        case "tool_result":
+            return { type: "status", phase: "tool_result", status: event.status };
+        default:
+            return null;
+    }
 }
 
 function body_of(request) {
@@ -161,18 +213,38 @@ const server = createServer((request, response) => {
 
     if (request.method === "POST" && pathname === "/compile") {
         (async () => {
+            let stream_open = false;
             try {
                 const body = JSON.parse(await body_of(request));
                 if (typeof body.source !== "string" || typeof body.text !== "string") {
                     throw new Error("source and text are required");
                 }
-                const output = await compile(build_task(body.source, body.text));
-                const data = parse_candidates(output);
-                response.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
-                response.end(JSON.stringify(data));
+                response.writeHead(200, {
+                    "content-type": "text/event-stream; charset=utf-8",
+                    "cache-control": "no-store",
+                    "connection": "keep-alive",
+                });
+                stream_open = true;
+                const send = (event) => response.write(`data: ${JSON.stringify(event)}\n\n`);
+                send({ type: "phase", phase: "start", message: "the Harness started; waiting for the model" });
+                const answer = await compile(build_task(body.source, body.text), (event) => {
+                    const progress = progress_event(event);
+                    if (progress) {
+                        send(progress);
+                    }
+                });
+                send({ type: "phase", phase: "parsing", message: "the model finished; parsing candidates" });
+                const data = parse_candidates(answer);
+                send({ type: "done", candidates: data.candidates });
+                response.end();
             } catch (error) {
-                response.writeHead(500, { "content-type": "application/json", "cache-control": "no-store" });
-                response.end(JSON.stringify({ error: error.message }));
+                if (stream_open) {
+                    response.write(`data: ${JSON.stringify({ type: "error", message: error.message })}\n\n`);
+                    response.end();
+                } else {
+                    response.writeHead(500, { "content-type": "application/json", "cache-control": "no-store" });
+                    response.end(JSON.stringify({ error: error.message }));
+                }
             }
         })();
         return;

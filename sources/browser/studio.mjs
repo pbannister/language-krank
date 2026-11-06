@@ -337,32 +337,98 @@ document.querySelector("#reset").addEventListener("click", () => {
     render();
 });
 
+function status_text(event) {
+    switch (event.phase) {
+        case "session":
+            return "the Harness session started";
+        case "turn_start":
+            return "the model turn started";
+        case "step_start":
+            return "the model is working";
+        case "thinking":
+            return "the model is reasoning";
+        case "text":
+            return "the model is writing";
+        case "tool_call":
+            return `the model is calling a tool (${event.tool ?? "?"})`;
+        case "tool_result":
+            return "a tool returned";
+        case "step_end":
+            return "a step finished";
+        case "turn_end":
+            return "the turn finished";
+        default:
+            return event.phase ?? "working";
+    }
+}
+
 document.querySelector("#generate").addEventListener("click", async () => {
     const button = document.querySelector("#generate");
     const note = document.querySelector("#generate-note");
     button.disabled = true;
-    note.textContent = "Compiling… the Harness is running the task; this can take a while.";
+    let phase = "waiting for the Harness";
+    const started = Date.now();
+    const update = () => {
+        const seconds = Math.round((Date.now() - started) / 1000);
+        note.textContent = `Compiling… ${seconds}s elapsed; ${phase}`;
+    };
+    update();
+    const timer = setInterval(update, 1000);
     try {
         const response = await fetch("/compile", {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ source: entry.source, text: textarea.value }),
         });
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.error ?? `HTTP ${response.status}`);
+        if (!response.ok || !response.body) {
+            throw new Error(`HTTP ${response.status}`);
         }
-        entry = { ...entry, compiled: true, candidates: data.candidates };
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let candidates = null;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
+            }
+            buffer += decoder.decode(value, { stream: true });
+            let index;
+            while ((index = buffer.indexOf("\n\n")) !== -1) {
+                const frame = buffer.slice(0, index);
+                buffer = buffer.slice(index + 2);
+                for (const line of frame.split("\n")) {
+                    if (!line.startsWith("data: ")) {
+                        continue;
+                    }
+                    const event = JSON.parse(line.slice(6));
+                    if (event.type === "phase") {
+                        phase = event.message ?? event.phase;
+                    } else if (event.type === "status") {
+                        phase = status_text(event);
+                    } else if (event.type === "done") {
+                        candidates = event.candidates;
+                    } else if (event.type === "error") {
+                        throw new Error(event.message);
+                    }
+                }
+            }
+        }
+        if (!candidates) {
+            throw new Error("the compiler returned no candidates");
+        }
+        entry = { ...entry, compiled: true, candidates };
         candidate = entry.candidates[0];
         working = textarea.value;
         edited = working !== entry.markdown;
         last_check = null;
-        note.textContent = `Generated ${data.candidates.length} candidate(s); choose one in the next panel.`;
+        note.textContent = `Generated ${candidates.length} candidate(s); choose one in the next panel.`;
         render();
         show("candidates");
     } catch (error) {
         note.textContent = `Generation failed: ${error.message}`;
     } finally {
+        clearInterval(timer);
         button.disabled = false;
     }
 });
