@@ -393,7 +393,7 @@ function reasoning_tail(text) {
     if (!cleaned) {
         return "thinking";
     }
-    const tail = 60;
+    const tail = 80;
     const clipped = cleaned.length > tail ? `…${cleaned.slice(-tail)}` : cleaned;
     return `thinking: ${clipped}`;
 }
