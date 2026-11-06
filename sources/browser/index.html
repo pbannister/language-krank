@@ -6,7 +6,7 @@
     <title>krank — prompt studio</title>
     <style>
         :root { color-scheme: light dark; }
-        html, body { height: 100%; }
+        html, body { height: 100%; box-sizing: border-box; }
         body { margin: 0 auto; max-width: 76rem; padding: 2rem 1rem; font-family: system-ui, sans-serif; line-height: 1.45; display: flex; flex-direction: column; }
         h1 { margin: 0 0 0.25rem; }
         h2 { margin: 0 0 0.75rem; font-size: 1.15rem; border-bottom: 1px solid color-mix(in srgb, Canvas 80%, CanvasText 20%); padding-bottom: 0.25rem; }
@@ -83,8 +83,6 @@
 
         <main>
             <section class="panel" data-panel="prompt">
-                <h2>1. The prompt</h2>
-                <p class="note">The prompt is the source. Edit it here to see what the mechanical reducer would drop; the compile itself is recorded, not run.</p>
                 <div class="tabs" role="tablist">
                     <button type="button" class="tab active" data-tab="prompt" role="tab" aria-selected="true">Prompt</button>
                     <button type="button" class="tab" data-tab="history" role="tab" aria-selected="false">History</button>
@@ -106,8 +104,6 @@
                     <p class="note" id="generate-note"></p>
                 </div>
                 <div class="tab-panel" id="tab-history" data-tab="history" hidden>
-                    <p class="note">The progress of the last generation. Elapsed time advances even while the model is thinking.</p>
-                    <p class="note" id="history-status" aria-live="polite">No generation yet.</p>
                     <pre id="history-log" class="history"></pre>
                 </div>
                 <div class="tab-panel" id="tab-about" data-tab="about" hidden>

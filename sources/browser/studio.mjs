@@ -30,7 +30,6 @@ const diff_box = document.querySelector("#diff");
 const check_output = document.querySelector("#check-output");
 const approve = document.querySelector("#approve");
 const history_log = document.querySelector("#history-log");
-const history_status = document.querySelector("#history-status");
 
 let entry = catalog.entries.find((item) => item.compiled) ?? catalog.entries[0];
 let candidate = entry.candidates[0] ?? null;
@@ -375,9 +374,32 @@ function activate_tab(name) {
     }
 }
 
-function append_history(seconds, text) {
-    history_log.textContent += `[${seconds}s] ${text}\n`;
+let history_entries = [];
+
+function render_history() {
+    history_log.textContent = history_entries.map((entry) => `[${entry.seconds}s] ${entry.text}`).join("\n") + "\n";
     history_log.scrollTop = history_log.scrollHeight;
+}
+
+function append_history(seconds, text) {
+    history_entries.push({ seconds, text });
+    render_history();
+}
+
+function update_history(seconds, text) {
+    if (history_entries.length === 0) {
+        history_entries.push({ seconds, text });
+    } else {
+        history_entries[history_entries.length - 1] = { seconds, text };
+    }
+    render_history();
+}
+
+function tick_history(seconds) {
+    if (history_entries.length > 0) {
+        history_entries[history_entries.length - 1].seconds = seconds;
+        render_history();
+    }
 }
 
 function reasoning_tail(text) {
@@ -397,14 +419,13 @@ document.querySelector("#generate").addEventListener("click", async () => {
     let reasoning = "";
     let reasoning_logged = false;
     const started = Date.now();
-    history_log.textContent = "";
+    history_entries = [];
     activate_tab("history");
     append_history(0, "generation started");
     const update = () => {
         const seconds = Math.round((Date.now() - started) / 1000);
-        const line = `Compiling… ${seconds}s elapsed; ${phase}`;
-        note.textContent = line;
-        history_status.textContent = line;
+        tick_history(seconds);
+        note.textContent = `Compiling… ${seconds}s elapsed; ${phase}`;
     };
     update();
     const timer = setInterval(update, 1000);
@@ -448,6 +469,8 @@ document.querySelector("#generate").addEventListener("click", async () => {
                         if (!reasoning_logged) {
                             reasoning_logged = true;
                             append_history(Math.round((Date.now() - started) / 1000), "the model is reasoning");
+                        } else {
+                            update_history(Math.round((Date.now() - started) / 1000), phase);
                         }
                     } else if (event.type === "done") {
                         candidates = event.candidates;
@@ -471,7 +494,6 @@ document.querySelector("#generate").addEventListener("click", async () => {
         show("candidates");
     } catch (error) {
         note.textContent = `Generation failed: ${error.message}`;
-        history_status.textContent = `Generation failed: ${error.message}`;
         append_history(Math.round((Date.now() - started) / 1000), `failed: ${error.message}`);
     } finally {
         clearInterval(timer);
