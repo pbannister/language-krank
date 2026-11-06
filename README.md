@@ -3,10 +3,12 @@
 This repository holds **krank**, a small production-rules engine whose notation an
 LLM can emit reliably, plus the round-trip renderer used to check a translation.
 
-A human writes intent in prose. A model translates the prose into a rule set. The
-engine evaluates the rule set against facts, deterministically and forward. A
-renderer translates the rule set back into prose, and the regenerated prose is
-compared to the original intent.
+A human writes intent in prose. A model translates the prose into a rigorous,
+exact form — the object model and the rule set. The engine evaluates the rule set
+deterministically and forward, the renderer writes it back into prose, and the
+human compares the two to verify and elaborate the captured intent before the
+rules are used. The aim is the general pattern the project skeleton records as
+"Intent, exactness, iteration", instantiated here.
 
 - The notation and semantics: `documents/10-rule-notation.md`.
 - The interpreter and session: `sources/ruleset-run.mjs` (`ruleset_run`, `ruleset_session`).
