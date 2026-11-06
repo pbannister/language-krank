@@ -30,6 +30,7 @@ const diff_box = document.querySelector("#diff");
 const check_output = document.querySelector("#check-output");
 const approve = document.querySelector("#approve");
 const history_log = document.querySelector("#history-log");
+const prompt_panel = document.querySelector('.panel[data-panel="prompt"]');
 
 let entry = catalog.entries.find((item) => item.compiled) ?? catalog.entries[0];
 let candidate = entry.candidates[0] ?? null;
@@ -363,13 +364,14 @@ function status_text(event) {
     }
 }
 
-function activate_tab(name) {
-    for (const button of document.querySelectorAll(".tab")) {
+function activate_tab(name, scope) {
+    const container = scope ?? document;
+    for (const button of container.querySelectorAll(".tab")) {
         const active = button.dataset.tab === name;
         button.classList.toggle("active", active);
         button.setAttribute("aria-selected", String(active));
     }
-    for (const panel of document.querySelectorAll(".tab-panel")) {
+    for (const panel of container.querySelectorAll(".tab-panel")) {
         panel.hidden = panel.dataset.tab !== name;
     }
 }
@@ -405,7 +407,7 @@ document.querySelector("#generate").addEventListener("click", async () => {
     let last_appended = null;
     const started = Date.now();
     history_entries = [];
-    activate_tab("history");
+    activate_tab("history", prompt_panel);
     const update = () => {
         const seconds = Math.round((Date.now() - started) / 1000);
         if (phase !== last_appended) {
@@ -509,7 +511,7 @@ for (const button of document.querySelectorAll(".steps button")) {
 }
 
 for (const button of document.querySelectorAll(".tab")) {
-    button.addEventListener("click", () => activate_tab(button.dataset.tab));
+    button.addEventListener("click", () => activate_tab(button.dataset.tab, button.closest(".panel")));
 }
 
 populate_prompts();

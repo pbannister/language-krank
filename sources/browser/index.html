@@ -115,9 +115,17 @@
             </section>
 
             <section class="panel" data-panel="candidates" hidden>
-                <h2>2. Candidates</h2>
-                <p class="note">The model proposes the rule sets for this prompt. When the prose is unclear, more than one appears; choose the one that reads most faithfully.</p>
-                <div id="candidates"></div>
+                <div class="tabs" role="tablist">
+                    <button type="button" class="tab active" data-tab="candidates" role="tab" aria-selected="true">Candidates</button>
+                    <button type="button" class="tab" data-tab="about" role="tab" aria-selected="false">About</button>
+                </div>
+                <div class="tab-panel" id="tab-candidates" data-tab="candidates">
+                    <p class="note">The model reads the prompt and turns it into rules. Each card is one reading: the rules it found and the prompt lines they came from. When a line is ambiguous, the model offers more than one reading and explains the difference. Pick the one that says what you meant. The choice only changes this page; nothing is written until you download it in step 8.</p>
+                    <div id="candidates"></div>
+                </div>
+                <div class="tab-panel" id="tab-candidates-about" data-tab="about" hidden>
+                    <p class="lead">This step turns prose into rules you can verify. The prompt is the source of truth; a candidate is the model's reading of it. Choosing one decides what the next steps render, compare, and check. Nothing here writes back to the repository.</p>
+                </div>
             </section>
 
             <section class="panel" data-panel="rules" hidden>
