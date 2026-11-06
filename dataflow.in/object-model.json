@@ -421,7 +421,8 @@
                 "band",
                 "tier",
                 "covers",
-                "hermetic"
+                "hermetic",
+                "known_tier"
             ],
             "source": "tests/README.md"
         },

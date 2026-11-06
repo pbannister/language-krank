@@ -211,9 +211,9 @@ engine's binding and negation already express it.
 The compile families added these extractor-fed types to the registry:
 `task_section`, `task_op_line`, `task_file_row`, `task_verify`, `task_feature`,
 `task_acceptance`, `task_scope`, `feature_section`, `feature_dependency`,
-`test_tier`, and `privacy`. They are the vocabulary for the task, feature, and
-workflow extractors; the rules that use them are written, but no extractor
-produces the facts yet.
+`test_tier`, and `privacy`. The task, feature, and test extractors now produce
+these facts; `site-facts.mjs` publishes them beside each file's own facts. The
+episode, record, release, session, and boundary families still need theirs.
 
 ## Coverage map
 
@@ -262,9 +262,9 @@ file whose objects have no extractor cannot be compiled, whatever its notation.
 
 ## Next steps
 
-1. **Extractors.** One extractor per object family: task, feature, episode,
-   record, page, version, release, boundary, failure. A type without an extractor
-   is a vocabulary entry, not a check.
+1. **Extractors.** Task, feature, and test exist (`scripts/site-facts.mjs`).
+   Next: episode, record, page, version, release, boundary, failure. A type
+   without an extractor is a vocabulary entry, not a check.
 2. **Classify before compiling.** For every bullet: object/operation/relation,
    or `human`. The classification is the coverage plan.
 3. **Compile the validator's checks.** It already speaks these objects

@@ -302,7 +302,7 @@ function selected_facts() {
     const files = kind === "dir"
         ? bundle.files.filter((file) => file.facts.directory === target)
         : bundle.files.filter((file) => file.path === target);
-    return files.map((file) => ({ type: "file", ...file.facts }));
+    return files.flatMap((file) => file.entities ?? [{ type: "file", ...file.facts }]);
 }
 
 function show(step) {

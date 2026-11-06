@@ -152,3 +152,54 @@ test("the file facts cover the library, and a clean file has no finding", () => 
     const result = ruleset_run({ facts: [{ type: "file", ...clean.facts }], rules: conventions.rules.rules });
     assert.equal(result.emitted.length, 0, "a conforming file produced a finding");
 });
+
+test("the task extractor reads a task's sections, scope, and verification", () => {
+    const facts = build("site-facts.mjs");
+    const task = facts.files.find((file) => file.path === "prompts/tasks/01-site-build-implement.md");
+    assert.ok(task, "the task file is not extracted");
+    const entities = task.entities.filter((item) => item.type !== "file");
+    assert.ok(entities.some((item) => item.type === "task" && item.conforming === true));
+    assert.ok(entities.some((item) => item.type === "task_section" && item.name === "TASK-VERIFY" && item.present));
+    assert.ok(entities.some((item) => item.type === "task_op_line" && item.verb === "create"));
+    assert.ok(entities.some((item) => item.type === "task_file_row"));
+    assert.ok(entities.some((item) => item.type === "task_verify" && item.expected === "observable"));
+    assert.ok(entities.some((item) => item.type === "task_acceptance"));
+});
+
+test("the feature extractor reads a feature's sections and requirements", () => {
+    const facts = build("site-facts.mjs");
+    const feature = facts.files.find((file) => file.path === "prompts/features/03-rules-engine.md");
+    assert.ok(feature, "the feature file is not extracted");
+    const entities = feature.entities.filter((item) => item.type !== "file");
+    assert.ok(entities.some((item) => item.type === "feature_section" && item.name === "Requirements" && item.present));
+    assert.ok(entities.some((item) => item.type === "requirement" && item.id_shape === "ok"));
+});
+
+test("the test extractor reads a declared tier", () => {
+    const facts = build("site-facts.mjs");
+    assert.ok(facts.files.some((file) => file.entities.some((item) => item.type === "test" && item.tier)));
+});
+
+test("the extracted facts drive the task and feature rules", () => {
+    const catalog = build("site-catalog.mjs");
+    const facts = build("site-facts.mjs");
+    const entities_of = (path) => facts.files.find((file) => file.path === path).entities;
+
+    const task = ruleset_run({
+        facts: entities_of("prompts/tasks/01-site-build-implement.md"),
+        rules: candidates(catalog, "task-format").rules.rules,
+    });
+    assert.equal(task.emitted.length, 0, "the conforming task produced a finding");
+
+    const feature = ruleset_run({
+        facts: entities_of("prompts/features/03-rules-engine.md"),
+        rules: candidates(catalog, "feature-format").rules.rules,
+    });
+    assert.equal(feature.emitted.length, 0, "the conforming feature produced a finding");
+
+    const unknown = ruleset_run({
+        facts: [{ type: "test", path: "tests/x.sh", tier: "unknown" }],
+        rules: candidates(catalog, "workflow").rules.rules,
+    });
+    assert.ok(unknown.emitted.some((item) => item.violation === "unknown-test-tier"));
+});
