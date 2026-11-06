@@ -70,9 +70,12 @@ test("each page loads its module", () => {
 
 test("the studio page carries the step rail and its panels", () => {
     const html = read("sources/browser/index.html");
-    for (const step of ["prompt", "candidates", "rules", "prose", "compare", "reduced", "check", "approve"]) {
+    for (const step of ["prompt", "candidates", "rules", "check", "approve"]) {
         assert.ok(html.includes(`data-step="${step}"`), `the rail has no ${step}`);
         assert.ok(html.includes(`data-panel="${step}"`), `no panel for ${step}`);
+    }
+    for (const tab of ["prompt", "history", "about", "candidates", "rules", "prose", "comparison", "reduced"]) {
+        assert.ok(html.includes(`data-tab="${tab}"`), `no tab for ${tab}`);
     }
     for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve"]) {
         assert.ok(html.includes(`id="${id}"`), `the page has no #${id}`);
