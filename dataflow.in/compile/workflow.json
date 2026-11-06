@@ -1,0 +1,78 @@
+{
+    "id": "workflow",
+    "title": "Workflow execution",
+    "explanation": "The workflow steps that are fact-shaped: a conforming task, a resolved operation path, a known test tier, and a hermetic test. The facts come from the task and test extractors.",
+    "source": "prompts/02-workflow.md",
+    "rules": {
+        "facts": [],
+        "rules": [
+            {
+                "id": "task-malformed",
+                "when": [
+                    {"fact": {"type": "task", "id": "$t", "conforming": false}}
+                ],
+                "then": [
+                    {"emit": {"violation": "malformed-task", "task": "$t"}}
+                ]
+            },
+            {
+                "id": "operation-path-missing",
+                "when": [
+                    {"fact": {"type": "operation", "task": "$t", "verb": {"in": ["modify", "delete", "rename"]}, "path": "$p", "exists": false}}
+                ],
+                "then": [
+                    {"emit": {"missing_path": {"path": "$p"}}}
+                ]
+            },
+            {
+                "id": "test-tier-unknown",
+                "when": [
+                    {"fact": {"type": "test", "path": "$p", "tier": "$t"}},
+                    {"fact": {"type": "test_tier", "name": "$t"}, "not": true}
+                ],
+                "then": [
+                    {"emit": {"violation": "unknown-test-tier", "path": "$p", "tier": "$t"}}
+                ]
+            },
+            {
+                "id": "test-not-hermetic",
+                "when": [
+                    {"fact": {"type": "test", "path": "$p", "hermetic": false}}
+                ],
+                "then": [
+                    {"emit": {"violation": "test-not-hermetic", "path": "$p"}}
+                ]
+            }
+        ]
+    },
+    "cases": [
+        {
+            "rule": "task-malformed",
+            "original": "Execute only a conforming task; report a malformed one instead of guessing what it meant.",
+            "verdict": "faithful",
+            "note": "The extractor reports whether the task conforms; the rule refuses a malformed one. What counts as malformed is the extractor's definition, not the engine's.",
+            "suggestion": "Name the sections a task must have, so conformance is a checklist."
+        },
+        {
+            "rule": "operation-path-missing",
+            "original": "For a `modify`, `delete`, or `rename` operation, verify that the referenced path exists or report that it is missing.",
+            "verdict": "faithful",
+            "note": "A missing path is emitted as a finding, not a refusal; the task decides what to do.",
+            "suggestion": "Keep the three verbs in one list; say whether a missing path stops the task."
+        },
+        {
+            "rule": "test-tier-unknown",
+            "original": "Classify every test into one tier:",
+            "verdict": "partial",
+            "note": "The rule checks that the tier is one the project defines; whether the classification is right is a review.",
+            "suggestion": "List the allowed tiers in one sentence the extractor can read."
+        },
+        {
+            "rule": "test-not-hermetic",
+            "original": "A test never touches the real system: sandbox `HOME` and XDG paths into a temporary directory, serve HTTP on `127.0.0.1`, and use no outside network.",
+            "verdict": "partial",
+            "note": "The extractor reports whether the test is hermetic; the specific isolation mechanisms are not each checked.",
+            "suggestion": "Say \"a test declares itself hermetic and names its isolation mechanism\"."
+        }
+    ]
+}

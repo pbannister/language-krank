@@ -1,0 +1,79 @@
+{
+    "id": "universal-scope",
+    "title": "Universal scope and risk",
+    "explanation": "The failure-prevention rules that are fact-shaped: a change outside the declared scope, an unlabeled assumption, a risky change without a fallback, and an operation on off-limits content.",
+    "source": "prompts/common/01-universal-rules.md",
+    "rules": {
+        "facts": [],
+        "rules": [
+            {
+                "id": "scope-change-unrelated",
+                "when": [
+                    {"fact": {"type": "change", "task": "$t", "path": "$p"}},
+                    {"fact": {"type": "task_scope", "task": "$t", "path": "$p"}, "not": true}
+                ],
+                "then": [
+                    {"emit": {"violation": "change-outside-scope", "task": "$t", "path": "$p"}}
+                ]
+            },
+            {
+                "id": "assumption-unlabeled",
+                "when": [
+                    {"fact": {"type": "assumption", "task": "$t", "text": "$x", "labeled": false}}
+                ],
+                "then": [
+                    {"emit": {"violation": "assumption-unlabeled", "task": "$t", "assumption": "$x"}}
+                ]
+            },
+            {
+                "id": "risky-no-fallback",
+                "when": [
+                    {"fact": {"type": "risk", "task": "$t", "fallback": false}}
+                ],
+                "then": [
+                    {"emit": {"violation": "risky-change-without-fallback", "task": "$t"}}
+                ]
+            },
+            {
+                "id": "privacy-touched",
+                "when": [
+                    {"fact": {"type": "privacy", "kind": "off_limits", "path": "$p"}},
+                    {"fact": {"type": "operation", "path": "$p"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "off-limits-content-touched", "path": "$p"}}
+                ]
+            }
+        ]
+    },
+    "cases": [
+        {
+            "rule": "scope-change-unrelated",
+            "original": "Change only what the task requires: the declared scope, and nothing beyond it.",
+            "verdict": "faithful",
+            "note": "A change with no matching task_scope fact is out of scope; the extractor supplies both.",
+            "suggestion": "Say \"every changed path has an operation line in the task\"."
+        },
+        {
+            "rule": "assumption-unlabeled",
+            "original": "When an ambiguity cannot change the output, scope, or safety, proceed and state the assumption in the output.",
+            "verdict": "faithful",
+            "note": "The extractor marks whether the assumption is labeled in the output; the rule refuses an unlabeled one.",
+            "suggestion": "Say \"state every assumption as an assumption in the output\"."
+        },
+        {
+            "rule": "risky-no-fallback",
+            "original": "Before changing a system through its only access path, stage a fallback: a backup, a rollback point, or a second access path.",
+            "verdict": "partial",
+            "note": "The extractor records whether a fallback exists; whether it is adequate is a judgement.",
+            "suggestion": "Name the fallback kind the task stages (backup, rollback point, or second path)."
+        },
+        {
+            "rule": "privacy-touched",
+            "original": "Leave off-limits content untouched: no introspection, indexing, backup, summary, or reference.",
+            "verdict": "faithful for paths",
+            "note": "The rule joins an off-limits path to an operation on it; the wider meaning (index, summarise, reference) is a review.",
+            "suggestion": "Name the off-limits paths in a list the extractor can read."
+        }
+    ]
+}

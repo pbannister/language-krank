@@ -1,0 +1,93 @@
+{
+    "id": "contract-output",
+    "title": "Contract output and file hygiene",
+    "explanation": "The contract rules that are fact-shaped outside the task chain: one verification line, generated output not edited, workspace-relative paths, rules.lock untouched, and files placed in the declared structure.",
+    "source": "prompts/01-contract.md",
+    "rules": {
+        "facts": [],
+        "rules": [
+            {
+                "id": "verification-line-count",
+                "when": [
+                    {"count": {"fact": {"type": "output", "kind": "verification"}, "at_least": 2}}
+                ],
+                "then": [
+                    {"emit": {"violation": "multiple-verification-lines"}}
+                ]
+            },
+            {
+                "id": "generated-edited",
+                "when": [
+                    {"fact": {"type": "file", "generated": true, "edited_by_hand": true, "path": "$p"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "generated-edited", "path": "$p"}}
+                ]
+            },
+            {
+                "id": "absolute-home-path",
+                "when": [
+                    {"fact": {"type": "file", "absolute_home_path": true, "path": "$p"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "absolute-home-path", "path": "$p"}}
+                ]
+            },
+            {
+                "id": "lock-edited",
+                "when": [
+                    {"fact": {"type": "file", "path": "rules.lock", "edited_by_hand": true}}
+                ],
+                "then": [
+                    {"emit": {"violation": "lock-edited", "path": "rules.lock"}}
+                ]
+            },
+            {
+                "id": "file-unplaced",
+                "when": [
+                    {"fact": {"type": "file", "path": "$p", "placed": false}}
+                ],
+                "then": [
+                    {"emit": {"violation": "file-unplaced", "path": "$p"}}
+                ]
+            }
+        ]
+    },
+    "cases": [
+        {
+            "rule": "verification-line-count",
+            "original": "A single `VERIFICATION:` line is always permitted output, regardless of the requested format",
+            "verdict": "faithful",
+            "note": "The count condition enforces \"single\": two or more verification facts are a violation. The round-trip's older rule still permits the line without the count; this candidate adds the limit.",
+            "suggestion": "Say \"at most one VERIFICATION line\", so the count is explicit."
+        },
+        {
+            "rule": "generated-edited",
+            "original": "Generated output is produced by the script or workflow step that owns it, never edited in place.",
+            "verdict": "faithful",
+            "note": "The extractor reports whether a generated file differs from what its script produced; the rule refuses a hand edit.",
+            "suggestion": "Say \"a generated file's content comes from its generator and is never edited in place\"."
+        },
+        {
+            "rule": "absolute-home-path",
+            "original": "Committed tool configuration uses workspace-relative paths; never an absolute home path.",
+            "verdict": "faithful",
+            "note": "The extractor flags an absolute home path; the rule refuses it.",
+            "suggestion": "Keep \"workspace-relative\", and name the variable form (for example \"the workspace folder\")."
+        },
+        {
+            "rule": "lock-edited",
+            "original": "Exception: `rules.lock` is never edited by hand, by a task or a workflow step; only `tools/rules-vendor.sh` writes it.",
+            "verdict": "faithful",
+            "note": "The rule is narrow: the path and the hand-edit fact. The vendor script is the only writer.",
+            "suggestion": "Keep the exception; the path is a fact, so it compiles cleanly."
+        },
+        {
+            "rule": "file-unplaced",
+            "original": "Place every new file in a directory listed here or in the permitted root set.",
+            "verdict": "partial",
+            "note": "The extractor reports whether a new path belongs to the declared structure; whether the chosen directory is the right one is a review.",
+            "suggestion": "Say \"a new file's directory is in the declared structure\"."
+        }
+    ]
+}

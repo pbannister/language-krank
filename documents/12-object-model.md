@@ -208,6 +208,13 @@ A worked join:
 The rule joins four facts by `$t` and `$f`. No new operator is needed; the
 engine's binding and negation already express it.
 
+The compile families added these extractor-fed types to the registry:
+`task_section`, `task_op_line`, `task_file_row`, `task_verify`, `task_feature`,
+`task_acceptance`, `task_scope`, `feature_section`, `feature_dependency`,
+`test_tier`, and `privacy`. They are the vocabulary for the task, feature, and
+workflow extractors; the rules that use them are written, but no extractor
+produces the facts yet.
+
 ## Coverage map
 
 Which prompts speak in which objects. This is the map a compile pass follows: a

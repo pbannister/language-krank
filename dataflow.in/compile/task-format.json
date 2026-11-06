@@ -1,0 +1,140 @@
+{
+    "id": "task-format",
+    "title": "Task format",
+    "explanation": "A task is the unit of authorized work, and its shape is fact-shaped: the required sections, the operation lines, the TASK-FILES rows, the verification, the feature references, and the acceptance identifiers. The facts come from a task extractor.",
+    "source": "prompts/how-to-write-tasks.md",
+    "rules": {
+        "facts": [],
+        "rules": [
+            {
+                "id": "task-section-missing",
+                "when": [
+                    {"fact": {"type": "task", "id": "$t"}},
+                    {"fact": {"type": "task_section", "task": "$t", "name": "$n", "present": false}}
+                ],
+                "then": [
+                    {"emit": {"violation": "missing-section", "task": "$t", "section": "$n"}}
+                ]
+            },
+            {
+                "id": "task-op-line-without-row",
+                "when": [
+                    {"fact": {"type": "task_op_line", "task": "$t", "verb": "$v", "path": "$p"}},
+                    {"fact": {"type": "task_file_row", "task": "$t", "verb": "$v", "path": "$p"}, "not": true}
+                ],
+                "then": [
+                    {"emit": {"violation": "op-line-without-row", "task": "$t", "verb": "$v", "path": "$p"}}
+                ]
+            },
+            {
+                "id": "task-row-without-op-line",
+                "when": [
+                    {"fact": {"type": "task_file_row", "task": "$t", "verb": "$v", "path": "$p"}},
+                    {"fact": {"type": "task_op_line", "task": "$t", "verb": "$v", "path": "$p"}, "not": true}
+                ],
+                "then": [
+                    {"emit": {"violation": "row-without-op-line", "task": "$t", "verb": "$v", "path": "$p"}}
+                ]
+            },
+            {
+                "id": "task-verify-observable",
+                "when": [
+                    {"fact": {"type": "task_verify", "task": "$t", "expected": "judgment"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "verification-is-judgment", "task": "$t"}}
+                ]
+            },
+            {
+                "id": "task-output-line",
+                "when": [
+                    {"fact": {"type": "task", "id": "$t", "has_output_line": false}}
+                ],
+                "then": [
+                    {"emit": {"violation": "missing-output-line", "task": "$t"}}
+                ]
+            },
+            {
+                "id": "task-feature-reference",
+                "when": [
+                    {"fact": {"type": "task", "id": "$t", "applies_features": true}},
+                    {"fact": {"type": "task_feature", "task": "$t"}, "not": true}
+                ],
+                "then": [
+                    {"emit": {"violation": "no-feature-reference", "task": "$t"}}
+                ]
+            },
+            {
+                "id": "task-acceptance-belongs",
+                "when": [
+                    {"fact": {"type": "task_acceptance", "task": "$t", "requirement": "$r"}},
+                    {"fact": {"type": "requirement", "id": "$r", "feature": "$f"}},
+                    {"fact": {"type": "task_feature", "task": "$t", "feature": "$f"}, "not": true}
+                ],
+                "then": [
+                    {"emit": {"violation": "acceptance-outside-features", "task": "$t", "requirement": "$r"}}
+                ]
+            },
+            {
+                "id": "task-relative-path",
+                "when": [
+                    {"fact": {"type": "task_op_line", "task": "$t", "path": "$p", "relative": false}}
+                ],
+                "then": [
+                    {"emit": {"violation": "path-not-relative", "task": "$t", "path": "$p"}}
+                ]
+            }
+        ]
+    },
+    "cases": [
+        {
+            "rule": "task-section-missing",
+            "original": "Every task must contain these sections in order:",
+            "verdict": "faithful",
+            "note": "One rule covers every required section; the extractor reports each section's presence.",
+            "suggestion": "List the required sections as a checklist, one per line."
+        },
+        {
+            "rule": "task-op-line-without-row",
+            "original": "TASK-FILES and the operation lines of TASK-DESCRIPTION must agree: every row here has an operation line there, and every operation line there has a row here.",
+            "verdict": "faithful for both directions",
+            "note": "Two rules cover the agreement: an operation line with no row, and a row with no operation line.",
+            "suggestion": "Keep the sentence; it names both directions, and both are compiled."
+        },
+        {
+            "rule": "task-verify-observable",
+            "original": "The `Expected:` line describes an observable result — an exit status, an output, or a count — not a judgment such as \"looks correct\", \"works\", or \"no problems\".",
+            "verdict": "partial",
+            "note": "The extractor classifies the expected result as observable or judgment; the rule refuses a judgment. The list of acceptable kinds is a judgement the extractor makes.",
+            "suggestion": "Name the observable kind the task expects (exit status, output, or count)."
+        },
+        {
+            "rule": "task-output-line",
+            "original": "The task file ends with one `OUTPUT:` line that restates the response representation in a sentence, including whether the response ends with the `VERIFICATION:` line.",
+            "verdict": "faithful",
+            "note": "Presence of the final OUTPUT line is a fact; its wording is not checked.",
+            "suggestion": "State the OUTPUT line once, at the end, and keep it a restatement."
+        },
+        {
+            "rule": "task-feature-reference",
+            "original": "A task must reference applicable feature files explicitly.",
+            "verdict": "faithful",
+            "note": "The extractor reports whether the task applies feature requirements; the rule requires a TASK-FEATURES entry when it does.",
+            "suggestion": "Say \"a task that applies feature requirements lists them in TASK-FEATURES\"."
+        },
+        {
+            "rule": "task-acceptance-belongs",
+            "original": "`TASK-ACCEPTANCE` identifiers must belong to a feature listed here.",
+            "verdict": "faithful",
+            "note": "A join over task, acceptance, requirement, and feature; the engine binds the identifiers.",
+            "suggestion": "Name the feature file beside each acceptance identifier in the prose."
+        },
+        {
+            "rule": "task-relative-path",
+            "original": "Use repository-relative paths, in backticks.",
+            "verdict": "faithful",
+            "note": "The extractor marks an operation path relative or absolute; an absolute path is the violation.",
+            "suggestion": "Say \"paths are repository-relative and never absolute\"."
+        }
+    ]
+}

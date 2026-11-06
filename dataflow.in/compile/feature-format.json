@@ -1,0 +1,95 @@
+{
+    "id": "feature-format",
+    "title": "Feature format",
+    "explanation": "A feature file is a stable list of requirements with a fixed shape: the four sections, an identifier per requirement, one requirement per bullet, no task status, and a dependency list that matches the references.",
+    "source": "prompts/how-to-write-features.md",
+    "rules": {
+        "facts": [],
+        "rules": [
+            {
+                "id": "feature-section-missing",
+                "when": [
+                    {"fact": {"type": "feature", "id": "$f"}},
+                    {"fact": {"type": "feature_section", "feature": "$f", "name": "$n", "present": false}}
+                ],
+                "then": [
+                    {"emit": {"violation": "missing-section", "feature": "$f", "section": "$n"}}
+                ]
+            },
+            {
+                "id": "requirement-id-shape",
+                "when": [
+                    {"fact": {"type": "requirement", "id": "$r", "id_shape": "bad"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "requirement-id-shape", "requirement": "$r"}}
+                ]
+            },
+            {
+                "id": "requirement-separate-bullet",
+                "when": [
+                    {"fact": {"type": "requirement", "id": "$r", "separate_bullet": false}}
+                ],
+                "then": [
+                    {"emit": {"violation": "requirement-not-a-bullet", "requirement": "$r"}}
+                ]
+            },
+            {
+                "id": "feature-no-todo",
+                "when": [
+                    {"fact": {"type": "feature", "id": "$f", "mentions_todo": true}}
+                ],
+                "then": [
+                    {"emit": {"violation": "feature-mentions-todo", "feature": "$f"}}
+                ]
+            },
+            {
+                "id": "feature-dependency-listed",
+                "when": [
+                    {"fact": {"type": "feature", "id": "$f", "depends_on": "$d"}},
+                    {"fact": {"type": "feature_dependency", "feature": "$f", "dependency": "$d"}, "not": true}
+                ],
+                "then": [
+                    {"emit": {"violation": "dependency-not-listed", "feature": "$f", "dependency": "$d"}}
+                ]
+            }
+        ]
+    },
+    "cases": [
+        {
+            "rule": "feature-section-missing",
+            "original": "Every feature must contain these sections in order:",
+            "verdict": "faithful",
+            "note": "One rule covers every required section; the extractor reports each section's presence.",
+            "suggestion": "Keep the section list; the rule reads it as a checklist."
+        },
+        {
+            "rule": "requirement-id-shape",
+            "original": "Give every top-level requirement a stable identifier, `<FEATURE-NAME>-R<NNN>`, prefixed to the bullet.",
+            "verdict": "faithful for the shape",
+            "note": "The extractor classifies the identifier shape; the rule refuses a malformed one. Stability over time is not checkable from one snapshot.",
+            "suggestion": "Say \"identifiers are never renumbered; add a new one instead\"."
+        },
+        {
+            "rule": "requirement-separate-bullet",
+            "original": "Each requirement must be stated as a separate bullet.",
+            "verdict": "faithful",
+            "note": "The extractor reports whether a requirement spans more than one bullet.",
+            "suggestion": "Keep one requirement per bullet, and give each its own identifier."
+        },
+        {
+            "rule": "feature-no-todo",
+            "original": "Do not include TODO status, task sequencing, or response-format instructions in a feature file.",
+            "verdict": "partial",
+            "note": "The extractor reports TODO mentions; task sequencing and response-format instructions are left to review.",
+            "suggestion": "Say \"a feature file states requirements only; status and sequencing belong elsewhere\"."
+        },
+        {
+            "rule": "feature-dependency-listed",
+            "original": "A feature's `Dependencies` section names the features it requires, by file reference.",
+            "verdict": "faithful",
+            "note": "A join between the dependency facts and the Dependencies section entries.",
+            "suggestion": "Name each dependency by its file path in the Dependencies section."
+        }
+    ]
+}

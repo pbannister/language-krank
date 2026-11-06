@@ -9,6 +9,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
+import { ruleset_run } from "../sources/krank.mjs";
 
 const model = JSON.parse(readFileSync(new URL("../dataflow.in/object-model.json", import.meta.url), "utf8"));
 const objects = new Set(model.objects.map((object) => object.id));
@@ -59,6 +60,12 @@ function rulesets() {
     }
     return found;
 }
+
+test("every candidate's rules are valid", () => {
+    for (const ruleset of rulesets()) {
+        ruleset_run({ facts: ruleset.facts ?? [], rules: ruleset.rules ?? [] });
+    }
+});
 
 test("every fact type in the fixtures and candidates is registered", () => {
     for (const ruleset of rulesets()) {

@@ -27,3 +27,5 @@
 - [x] generate candidates on demand: `POST /compile` on the studio server runs the compile task through the Harness (`scripts/compile-with-harness.mjs`) and returns validated candidates (2026-11-05).
 - [x] add the Harness client plugin `sources/harness/krank-studio/`: a Studio action that opens the local studio; installed into the web profile as a bundle (2026-11-05).
 - [x] measure the compile gap: `make coverage` reports bullets and compiled lines per prompt file (2026-11-05).
+- [x] compile the task, feature, universal, workflow, and contract-output families: 26 rules across 7 prompt files; coverage 9 -> 33 lines (0.9% -> 3.2%) (2026-11-05).
+- [x] use the count condition for "a single `VERIFICATION:` line", so the limit is enforced rather than noted as lost (2026-11-05).
