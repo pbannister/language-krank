@@ -28,6 +28,27 @@ One core, three surfaces; the design is `documents/14-interaction-cycle.md`, the
 * [ ] grow the Harness plugin from a launcher into a panel that embeds the web renderer and calls `/compile`.
 * [ ] (deferred) VSCode extension: a thin webview over the frozen contract and the same renderer.
 
+## Object Model
+
+* [ ] run the classification pass: the model proposes, per prompt bullet, `rule` | `fact` | `human`, with schema additions under `## Suggestions`; the human promotes them.
+* [ ] fill the fields of the objects the newly compiled families use; add the still-missing types only when a rule needs them.
+* [ ] compile the families the classification names: episodes and research, the capability families (version, session, failure, release, boundary), records, and the conventions remainder.
+* [ ] extend `tests/30` with a registry-hygiene check: every object has a field a rule or an extractor uses; an unused type is a deletion candidate.
+
+## On-Demand Compile
+
+* [ ] record the source digest in `prompts.out/manifest.json`, and recompile a file only when its digest changes.
+* [ ] add a single-file compile (`krank compile <prompt.md>` or a `POST /compile` file path), so a watcher targets one file.
+* [ ] add `--watch` to `scripts/studio-serve.mjs` (or `make prompts --watch`): recompile a changed `prompts/` file, debounced, and re-run the coverage gate.
+* [ ] report a failed compile in the watcher output and keep the last good `prompts.out/` entry.
+
+## Harness Extension
+
+* [ ] build the plugin in the DSH checkout and run `dsh web --port 3081` as the isolated test instance.
+* [ ] find the slot that hosts a full page or an iframe, and grow the plugin from the launcher into an iframe panel over the studio.
+* [ ] test it: `--dump-config` shows the plugin, the served client bundle resolves, and a DSH vitest component test mounts the action.
+* [ ] keep the standalone web as the embedded renderer and the contract frozen.
+
 ## Recently Completed
 
 - [x] create the project from `00-project-skeleton` and vendor the shared rules (2026-11-04).
