@@ -370,8 +370,9 @@ function activate_tab(name) {
         button.classList.toggle("active", active);
         button.setAttribute("aria-selected", String(active));
     }
-    document.querySelector("#tab-prompt").hidden = name !== "prompt";
-    document.querySelector("#tab-history").hidden = name !== "history";
+    for (const panel of document.querySelectorAll(".tab-panel")) {
+        panel.hidden = panel.dataset.tab !== name;
+    }
 }
 
 function append_history(seconds, text) {
