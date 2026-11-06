@@ -41,7 +41,7 @@ This table records authority and precedence. What each file defines is described
 | `prompts/03-conventions.md` | conventions | always |
 | `prompts/flavors/01-semantic-sort-naming.md` | conventions | always |
 | `prompts/flavors/02-cpp-conventions.md` | conventions | only when the task targets C++ |
-| `prompts/capabilities/*.md` | conventions | only when the task touches that capability |
+| `prompts/capabilities/artifacts/*.md`, `prompts/capabilities/execution/*.md` | conventions | only when the task touches that capability |
 | `prompts/how-to-write-tasks.md` | conventions | when a task is written, interpreted, or validated |
 | `prompts/how-to-write-features.md` | conventions | when a feature file is written or validated |
 | `prompts/how-to-write-episodes.md` | conventions | when an episode is written, dispatched, or validated |

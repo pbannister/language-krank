@@ -3,7 +3,7 @@
 Applies only when the project uses this capability; load it only for a task that touches it (see the Applicability section of `prompts/03-conventions.md`).
 
 A release publishes an artifact; it must be the artifact of the commit it
-names. The build-time version in `prompts/capabilities/02-version-information.md`
+names. The build-time version in `prompts/capabilities/artifacts/02-version-information.md`
 is what makes that checkable.
 
 - A release refuses a version that carries `-changes` (the tree was dirty at

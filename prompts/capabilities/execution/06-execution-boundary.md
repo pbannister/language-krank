@@ -24,7 +24,7 @@ Instruction-layer injection resistance is `prompts/01-contract.md` section 8; th
 - A task that needs a credential declares where the credential lives and which pattern carries it.
 - A credential never enters the working tree, a prompt file, a task file, a record, a log, or output.
 - Narrow scope on a credential is not a substitute for unreachability; a token that a smarter model cannot misuse is an assumption, not a boundary.
-- A credential does not cross a delegation boundary (`prompts/capabilities/08-delegation-authority.md`).
+- A credential does not cross a delegation boundary (`prompts/capabilities/execution/08-delegation-authority.md`).
 
 ## 3. Declare the boundary
 
@@ -34,3 +34,13 @@ Instruction-layer injection resistance is `prompts/01-contract.md` section 8; th
 - Confinement belongs to the platform that runs the sandbox; when the platform does not provide one, the project states that rather than assuming it.
 - A hand's third-party checkouts follow `prompts/03-conventions.md` section 6.1.
 - A project records which boundary its platform provides, so a checkout moved to a host without one is a known change and not a silent loss.
+
+## 4. Attribute a failure to the boundary, not the host
+
+- A failure observed from inside the boundary is evidence about the boundary first, and about the host second.
+- The boundary reshapes what a tool observes: file ownership, process identifiers, temporary paths, mount modes, and network reach may differ from the host.
+- Test whether the anomaly is systemic before calling it a host defect: an ordinary system file or directory that shows the same unexpected property is the boundary, not the host.
+- Test whether the action succeeds when the boundary is bypassed: run it with the interfering layer removed, or on the host outside the boundary.
+- Report a host fault only after it reproduces outside the boundary.
+- Never propose a change to a host file, service, or configuration from an observation made inside the boundary; state the boundary and the uncertainty instead.
+- Example: a boundary that maps one uid shows root-owned files as an unmapped user; a tool that checks file ownership then refuses a system configuration file that is correct on the host.

@@ -5,16 +5,16 @@ These conventions define formatting, naming, and repository structure.
 ## Applicability
 
 - Every section of this file applies to every task.
-- The capability conventions live in `prompts/capabilities/` and apply only when the project uses that capability; a project that does not use a capability ignores those rules, and a task that does not touch the capability does not load them.
-    - `01-generated-documentation.md`
-    - `02-version-information.md`
-    - `03-generated-data-products.md`
-    - `04-release-and-publishing.md`
-    - `05-pinned-dependencies.md`
-    - `06-execution-boundary.md`
-    - `07-session-log.md`
-    - `08-delegation-authority.md`
-    - `09-failure-attribution.md`
+- The capability conventions live in `prompts/capabilities/artifacts/` and `prompts/capabilities/execution/` and apply only when the project uses that capability; a project that does not use a capability ignores those rules, and a task that does not touch the capability does not load them.
+    - `artifacts/01-generated-documentation.md`
+    - `artifacts/02-version-information.md`
+    - `artifacts/03-generated-data-products.md`
+    - `artifacts/04-release-and-publishing.md`
+    - `artifacts/05-pinned-dependencies.md`
+    - `execution/06-execution-boundary.md`
+    - `execution/07-session-log.md`
+    - `execution/08-delegation-authority.md`
+    - `execution/09-failure-attribution.md`
 
 ## 1. Formatting
 
@@ -118,7 +118,7 @@ It is an input a task may read, never a directory the project commits.
 - The host checkout root is a host path and is not the repository's `sources/` directory; the two share a name and nothing else.
 - Write it environment-relative as `$HOME/sources/`; a literal absolute home path is refused by the committed-path rule in `prompts/01-contract.md` section 7.
 - A project whose host checkout root differs declares it in its project section.
-- Pin a checkout the project depends on, per `prompts/capabilities/05-pinned-dependencies.md`.
+- Pin a checkout the project depends on, per `prompts/capabilities/artifacts/05-pinned-dependencies.md`.
 - A checkout found inside the working tree is a defect: move it to the host checkout root and remove the in-tree copy.
 
 ## 7. File Operations

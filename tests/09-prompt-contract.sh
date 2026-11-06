@@ -239,7 +239,7 @@ for path in sorted(glob.glob(os.path.join(root, "prompts/episodes/[0-9][0-9]-*.m
 # 8. Every universal rule file is in the registry.
 universal = []
 for pattern in ("prompts/common/*.md", "prompts/flavors/*.md",
-                "prompts/capabilities/*.md",
+                "prompts/capabilities/*/*.md",
                 "prompts/how-to-write-*.md", "prompts/0[0-9]-*.md"):
     universal.extend(glob.glob(os.path.join(root, pattern)))
 for path in sorted(universal):
@@ -496,13 +496,13 @@ RULE_FAMILIES = (
      r"The capability conventions live in"),
     ("third-party checkouts", "prompts/03-conventions.md",
      r"Clone a third-party repository under the host checkout root"),
-    ("execution boundary", "prompts/capabilities/06-execution-boundary.md",
+    ("execution boundary", "prompts/capabilities/execution/06-execution-boundary.md",
      r"Credentials are never reachable from the sandbox"),
-    ("session log", "prompts/capabilities/07-session-log.md",
+    ("session log", "prompts/capabilities/execution/07-session-log.md",
      r"The session log is not the model's context window"),
-    ("delegation authority", "prompts/capabilities/08-delegation-authority.md",
+    ("delegation authority", "prompts/capabilities/execution/08-delegation-authority.md",
      r"Isolation is not authority"),
-    ("failure attribution", "prompts/capabilities/09-failure-attribution.md",
+    ("failure attribution", "prompts/capabilities/execution/09-failure-attribution.md",
      r"Attribution is the work of deciding which layer failed"),
 )
 
@@ -552,9 +552,9 @@ match_applicability = re.search(r"^## Applicability\s*$(.*?)(?=^## )", conventio
 applicability = match_applicability.group(1) if match_applicability else ""
 if not applicability:
     failures.append("prompts/03-conventions.md: no Applicability section")
-for path in sorted(glob.glob(os.path.join(root, "prompts/capabilities/*.md"))):
-    rel = os.path.relpath(path, root)
-    if f"`{os.path.basename(rel)}`" not in applicability:
+for path in sorted(glob.glob(os.path.join(root, "prompts/capabilities/*/*.md"))):
+    rel = os.path.relpath(path, os.path.join(root, "prompts", "capabilities"))
+    if f"`{rel}`" not in applicability:
         failures.append(f"capability convention is not listed in the Applicability section: {rel}")
 
 # 14. Every tracked top-level directory is one the contract names, so a

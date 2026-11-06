@@ -36,7 +36,7 @@ Each lesson names where the skeleton now encodes it.
 
 - A network model in `sources/` and a generator script produced the diagram documents.
 - Generated documents carried provenance headers and were never hand-edited.
-- Encoded in: `prompts/capabilities/01-generated-documentation.md`.
+- Encoded in: `prompts/capabilities/artifacts/01-generated-documentation.md`.
 
 ## 6. Live-state facts go stale fast
 

@@ -11,7 +11,7 @@
 - `common/03-glossary.md` defines project terminology and protocol concepts; it is a reference, loaded when a term's meaning decides the work.
 - `flavors/01-semantic-sort-naming.md` defines the canonical semantic-sort naming rules.
 - `flavors/02-cpp-conventions.md` applies naming and compilation rules when project targets C++.
-- `capabilities/` contains the optional capability conventions, loaded only for a task that touches one.
+- `capabilities/artifacts/` and `capabilities/execution/` contain the optional capability conventions, loaded only for a task that touches one.
 - `features/` contains feature-specific requirements.
 - `tasks/` contains task-specific prompt definitions.
 - `episodes/` contains episode work orders.
@@ -38,12 +38,12 @@ The following filenames are canonical and must not be renamed or duplicated with
 - `common/03-glossary.md`
 - `flavors/01-semantic-sort-naming.md`
 - `flavors/02-cpp-conventions.md`
-- `capabilities/01-generated-documentation.md`
-- `capabilities/02-version-information.md`
-- `capabilities/03-generated-data-products.md`
-- `capabilities/04-release-and-publishing.md`
-- `capabilities/05-pinned-dependencies.md`
-- `capabilities/06-execution-boundary.md`
-- `capabilities/07-session-log.md`
-- `capabilities/08-delegation-authority.md`
-- `capabilities/09-failure-attribution.md`
+- `capabilities/artifacts/01-generated-documentation.md`
+- `capabilities/artifacts/02-version-information.md`
+- `capabilities/artifacts/03-generated-data-products.md`
+- `capabilities/artifacts/04-release-and-publishing.md`
+- `capabilities/artifacts/05-pinned-dependencies.md`
+- `capabilities/execution/06-execution-boundary.md`
+- `capabilities/execution/07-session-log.md`
+- `capabilities/execution/08-delegation-authority.md`
+- `capabilities/execution/09-failure-attribution.md`

@@ -161,72 +161,72 @@ authoritative file; the glossary never states a rule.
 ## Brain
 
 - The model and its harness: the part of an agent system that decides.
-- Rules: `prompts/capabilities/06-execution-boundary.md`.
+- Rules: `prompts/capabilities/execution/06-execution-boundary.md`.
 
 ## Cattle
 
 - A disposable, interchangeable instance that is replaced rather than repaired.
-- Rules: `prompts/capabilities/06-execution-boundary.md`.
+- Rules: `prompts/capabilities/execution/06-execution-boundary.md`.
 
 ## Compaction
 
 - A lossy transformation that summarizes the context window.
-- Rules: `prompts/capabilities/07-session-log.md`.
+- Rules: `prompts/capabilities/execution/07-session-log.md`.
 
 ## Context window
 
 - What the model can see at one time; it is not the session.
-- Rules: `prompts/capabilities/07-session-log.md`.
+- Rules: `prompts/capabilities/execution/07-session-log.md`.
 
 ## Credential proxy
 
 - A component that holds a credential and makes an authenticated call on a session's behalf, so neither the harness nor the sandbox holds it.
-- Rules: `prompts/capabilities/06-execution-boundary.md`.
+- Rules: `prompts/capabilities/execution/06-execution-boundary.md`.
 
 ## Event
 
 - One recorded occurrence in a session log.
-- Rules: `prompts/capabilities/07-session-log.md`.
+- Rules: `prompts/capabilities/execution/07-session-log.md`.
 
 ## Execution boundary
 
 - The declared reach of a sandbox: which paths it writes, which commands it runs, and which hosts it contacts.
-- Rules: `prompts/capabilities/06-execution-boundary.md`.
+- Rules: `prompts/capabilities/execution/06-execution-boundary.md`.
 
 ## Hand
 
 - An execution environment or tool that performs an action, reached only through a tool call.
-- Rules: `prompts/capabilities/06-execution-boundary.md`.
+- Rules: `prompts/capabilities/execution/06-execution-boundary.md`.
 
 ## Harness
 
 - The loop that calls the model and routes its tool calls to the hands.
-- Rules: `prompts/capabilities/07-session-log.md`.
+- Rules: `prompts/capabilities/execution/07-session-log.md`.
 
 ## Provisioning
 
 - Creating a sandbox from a recipe when a tool call needs it.
-- Rules: `prompts/capabilities/06-execution-boundary.md`.
+- Rules: `prompts/capabilities/execution/06-execution-boundary.md`.
 
 ## Sandbox
 
 - The execution environment where model-generated or third-party code runs.
-- Rules: `prompts/capabilities/06-execution-boundary.md`.
+- Rules: `prompts/capabilities/execution/06-execution-boundary.md`.
 
 ## Session
 
 - The append-only log of everything that happened in a unit of work.
-- Rules: `prompts/capabilities/07-session-log.md`.
+- Rules: `prompts/capabilities/execution/07-session-log.md`.
 
 ## Session identifier
 
 - The name that ties a run's events, logs, and records together.
-- Rules: `prompts/capabilities/09-failure-attribution.md`.
+- Rules: `prompts/capabilities/execution/09-failure-attribution.md`.
 
 ## Session log
 
 - The durable store of session events, outside the harness and outside the context window.
-- Rules: `prompts/capabilities/07-session-log.md`.
+- Rules: `prompts/capabilities/execution/07-session-log.md`.
 
 ## Host checkout root
 

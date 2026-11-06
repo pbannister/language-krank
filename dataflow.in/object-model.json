@@ -371,7 +371,7 @@
                 "commit",
                 "version"
             ],
-            "source": "prompts/capabilities/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
         },
         {
             "id": "version",
@@ -383,7 +383,7 @@
                 "hash",
                 "changes"
             ],
-            "source": "prompts/capabilities/02-version-information.md"
+            "source": "prompts/capabilities/artifacts/02-version-information.md"
         },
         {
             "id": "release",
@@ -395,7 +395,7 @@
                 "notes",
                 "title"
             ],
-            "source": "prompts/capabilities/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
         },
         {
             "id": "changelog",
@@ -403,7 +403,7 @@
                 "version",
                 "entries"
             ],
-            "source": "prompts/capabilities/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
         },
         {
             "id": "lock",
@@ -444,7 +444,7 @@
                 "source",
                 "indexed"
             ],
-            "source": "prompts/capabilities/01-generated-documentation.md"
+            "source": "prompts/capabilities/artifacts/01-generated-documentation.md"
         },
         {
             "id": "page",
@@ -507,7 +507,7 @@
                 "authority",
                 "boundary"
             ],
-            "source": "prompts/capabilities/08-delegation-authority.md"
+            "source": "prompts/capabilities/execution/08-delegation-authority.md"
         },
         {
             "id": "human",
@@ -523,7 +523,7 @@
                 "path",
                 "role"
             ],
-            "source": "prompts/capabilities/01-generated-documentation.md"
+            "source": "prompts/capabilities/artifacts/01-generated-documentation.md"
         },
         {
             "id": "sandbox",
@@ -532,7 +532,7 @@
                 "reach",
                 "disposable"
             ],
-            "source": "prompts/capabilities/06-execution-boundary.md 1"
+            "source": "prompts/capabilities/execution/06-execution-boundary.md 1"
         },
         {
             "id": "boundary",
@@ -543,7 +543,7 @@
                 "hosts",
                 "credentials"
             ],
-            "source": "prompts/capabilities/06-execution-boundary.md 3"
+            "source": "prompts/capabilities/execution/06-execution-boundary.md 3"
         },
         {
             "id": "credential",
@@ -554,7 +554,7 @@
                 "reachable",
                 "scope"
             ],
-            "source": "prompts/capabilities/06-execution-boundary.md 2"
+            "source": "prompts/capabilities/execution/06-execution-boundary.md 2"
         },
         {
             "id": "session",
@@ -564,7 +564,7 @@
                 "log",
                 "events"
             ],
-            "source": "prompts/capabilities/07-session-log.md"
+            "source": "prompts/capabilities/execution/07-session-log.md"
         },
         {
             "id": "goal",
@@ -575,7 +575,7 @@
                 "state",
                 "rounds"
             ],
-            "source": "prompts/capabilities/07-session-log.md 3"
+            "source": "prompts/capabilities/execution/07-session-log.md 3"
         },
         {
             "id": "delegation",
@@ -586,7 +586,7 @@
                 "budget",
                 "task"
             ],
-            "source": "prompts/capabilities/08-delegation-authority.md 2"
+            "source": "prompts/capabilities/execution/08-delegation-authority.md 2"
         },
         {
             "id": "failure",
@@ -597,14 +597,14 @@
                 "tool_call",
                 "input"
             ],
-            "source": "prompts/capabilities/09-failure-attribution.md 1"
+            "source": "prompts/capabilities/execution/09-failure-attribution.md 1"
         },
         {
             "id": "layer",
             "fields": [
                 "name"
             ],
-            "source": "prompts/capabilities/09-failure-attribution.md 1"
+            "source": "prompts/capabilities/execution/09-failure-attribution.md 1"
         },
         {
             "id": "incident",
@@ -626,7 +626,7 @@
                 "script",
                 "product"
             ],
-            "source": "prompts/capabilities/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
         },
         {
             "id": "work_product",
@@ -637,7 +637,7 @@
                 "produced_at",
                 "provenance"
             ],
-            "source": "prompts/capabilities/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
         },
         {
             "id": "dataset",
@@ -646,7 +646,7 @@
                 "source",
                 "digest"
             ],
-            "source": "prompts/capabilities/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
         },
         {
             "id": "provenance",
@@ -658,7 +658,7 @@
                 "fetched_at",
                 "commit"
             ],
-            "source": "prompts/capabilities/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
         },
         {
             "id": "ruleset",
@@ -887,49 +887,49 @@
             "subject": "agent",
             "object": "tag",
             "effect": "the commit is named",
-            "source": "prompts/capabilities/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
         },
         {
             "id": "release",
             "subject": "agent",
             "object": "release",
             "effect": "the artifact is published",
-            "source": "prompts/capabilities/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
         },
         {
             "id": "install",
             "subject": "agent",
             "object": "release",
             "effect": "the artifact is installed",
-            "source": "prompts/capabilities/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
         },
         {
             "id": "delegate",
             "subject": "agent",
             "object": "delegation",
             "effect": "a delegate acts under the dispatch",
-            "source": "prompts/capabilities/08-delegation-authority.md"
+            "source": "prompts/capabilities/execution/08-delegation-authority.md"
         },
         {
             "id": "dispatch",
             "subject": "agent",
             "object": "task",
             "effect": "the delegate receives authority",
-            "source": "prompts/capabilities/08-delegation-authority.md 1"
+            "source": "prompts/capabilities/execution/08-delegation-authority.md 1"
         },
         {
             "id": "resume",
             "subject": "agent",
             "object": "session",
             "effect": "the log resumes",
-            "source": "prompts/capabilities/07-session-log.md 1"
+            "source": "prompts/capabilities/execution/07-session-log.md 1"
         },
         {
             "id": "emit_event",
             "subject": "agent",
             "object": "session",
             "effect": "the log grows",
-            "source": "prompts/capabilities/07-session-log.md"
+            "source": "prompts/capabilities/execution/07-session-log.md"
         },
         {
             "id": "compile",
@@ -964,35 +964,35 @@
             "subject": "script",
             "object": "document",
             "effect": "a document is derived",
-            "source": "prompts/capabilities/01-generated-documentation.md"
+            "source": "prompts/capabilities/artifacts/01-generated-documentation.md"
         },
         {
             "id": "derive",
             "subject": "script",
             "object": "version",
             "effect": "the build names itself",
-            "source": "prompts/capabilities/02-version-information.md"
+            "source": "prompts/capabilities/artifacts/02-version-information.md"
         },
         {
             "id": "pin",
             "subject": "project",
             "object": "lock",
             "effect": "a dependency is fixed",
-            "source": "prompts/capabilities/05-pinned-dependencies.md"
+            "source": "prompts/capabilities/artifacts/05-pinned-dependencies.md"
         },
         {
             "id": "upgrade",
             "subject": "project",
             "object": "lock",
             "effect": "a pinned version moves",
-            "source": "prompts/capabilities/05-pinned-dependencies.md"
+            "source": "prompts/capabilities/artifacts/05-pinned-dependencies.md"
         },
         {
             "id": "fetch",
             "subject": "script",
             "object": "dataset",
             "effect": "raw input is cached",
-            "source": "prompts/capabilities/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
         },
         {
             "id": "sanitize",
@@ -1141,28 +1141,28 @@
             "from": "tag",
             "to": "commit",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
         },
         {
             "id": "release_names_commit",
             "from": "release",
             "to": "commit",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
         },
         {
             "id": "release_carries_version",
             "from": "release",
             "to": "version",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
         },
         {
             "id": "version_describes_commit",
             "from": "version",
             "to": "commit",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/02-version-information.md"
+            "source": "prompts/capabilities/artifacts/02-version-information.md"
         },
         {
             "id": "test_covers_requirement",
@@ -1183,7 +1183,7 @@
             "from": "log",
             "to": "session",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/07-session-log.md"
+            "source": "prompts/capabilities/execution/07-session-log.md"
         },
         {
             "id": "page_in_page_set",
@@ -1211,56 +1211,56 @@
             "from": "document",
             "to": "rule_file",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/01-generated-documentation.md"
+            "source": "prompts/capabilities/artifacts/01-generated-documentation.md"
         },
         {
             "id": "session_has_goal",
             "from": "session",
             "to": "goal",
             "cardinality": "one-to-one",
-            "source": "prompts/capabilities/07-session-log.md 3"
+            "source": "prompts/capabilities/execution/07-session-log.md 3"
         },
         {
             "id": "delegation_from_agent",
             "from": "delegation",
             "to": "agent",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/08-delegation-authority.md"
+            "source": "prompts/capabilities/execution/08-delegation-authority.md"
         },
         {
             "id": "delegation_to_agent",
             "from": "delegation",
             "to": "agent",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/08-delegation-authority.md"
+            "source": "prompts/capabilities/execution/08-delegation-authority.md"
         },
         {
             "id": "delegation_authorized_by",
             "from": "delegation",
             "to": "task",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/08-delegation-authority.md 1"
+            "source": "prompts/capabilities/execution/08-delegation-authority.md 1"
         },
         {
             "id": "boundary_of_sandbox",
             "from": "boundary",
             "to": "sandbox",
             "cardinality": "one-to-one",
-            "source": "prompts/capabilities/06-execution-boundary.md 3"
+            "source": "prompts/capabilities/execution/06-execution-boundary.md 3"
         },
         {
             "id": "credential_held_by",
             "from": "credential",
             "to": "host",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/06-execution-boundary.md 2"
+            "source": "prompts/capabilities/execution/06-execution-boundary.md 2"
         },
         {
             "id": "failure_attributed_to",
             "from": "failure",
             "to": "layer",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/09-failure-attribution.md 1"
+            "source": "prompts/capabilities/execution/09-failure-attribution.md 1"
         },
         {
             "id": "incident_records_failure",
@@ -1281,28 +1281,28 @@
             "from": "stage",
             "to": "work_product",
             "cardinality": "one-to-many",
-            "source": "prompts/capabilities/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
         },
         {
             "id": "work_product_has_provenance",
             "from": "work_product",
             "to": "provenance",
             "cardinality": "one-to-one",
-            "source": "prompts/capabilities/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
         },
         {
             "id": "provenance_names_dataset",
             "from": "provenance",
             "to": "dataset",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
         },
         {
             "id": "stage_matches_feature",
             "from": "stage",
             "to": "feature",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
         },
         {
             "id": "ruleset_contains_rule",

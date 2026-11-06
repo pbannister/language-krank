@@ -24,7 +24,7 @@
 #
 # This script is POSIX sh on purpose: it may be piped into any shell.
 #
-# See prompts/capabilities/04-release-and-publishing.md.
+# See prompts/capabilities/artifacts/04-release-and-publishing.md.
 set -eu
 
 PREFIX=${PREFIX:-$HOME/.local}

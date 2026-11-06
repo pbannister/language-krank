@@ -343,7 +343,7 @@ reset; sed -i 's#`scripts/site-build.sh`#`tests.out/03-leak-gate/page.html`#' "$
 expect_reject 12 'a task authorizing the test working directory' 'authorizes a protected path'
 
 # --- check 13: capability registry ---
-reset; sed -i '/^    - `06-execution-boundary.md`$/d' "$DIRECTORY_ROOT/prompts/03-conventions.md"
+reset; sed -i '\#^    - `execution/06-execution-boundary.md`$#d' "$DIRECTORY_ROOT/prompts/03-conventions.md"
 expect_reject 13 'capability convention missing from Applicability' 'not listed in the Applicability section'
 
 # --- check 14: undeclared top-level directories ---

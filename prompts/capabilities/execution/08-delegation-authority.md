@@ -23,6 +23,6 @@ Isolation is not authority. A worktree separates writers; it does not decide wha
 
 - A hand is an execution environment reached by a tool call; a brain may be given a hand that another brain provisioned.
 - Passing a hand passes a capability, not an identity: the receiving brain acts under its own authority.
-- A delegate inherits neither a credential nor a session (`prompts/capabilities/06-execution-boundary.md`, `prompts/capabilities/07-session-log.md`).
+- A delegate inherits neither a credential nor a session (`prompts/capabilities/execution/06-execution-boundary.md`, `prompts/capabilities/execution/07-session-log.md`).
 - Concurrent writers still isolate per `prompts/02-workflow.md` section 3.1; delegation does not relax it.
 - The parent owns the delegated work in the record; a delegate's verification does not discharge the parent's.

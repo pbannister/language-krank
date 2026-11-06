@@ -6,7 +6,7 @@
 #
 # The version in package.json is the npm contract, so the tag is `v<version>`.
 # That is an explicit tag, allowed to override the `v<date>-<branch>` default in
-# prompts/capabilities/04-release-and-publishing.md.
+# prompts/capabilities/artifacts/04-release-and-publishing.md.
 #
 # The script is unattended and fails closed. It refuses to run when:
 #   * the working tree has uncommitted changes;

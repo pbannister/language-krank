@@ -114,7 +114,7 @@ if has_text prompts/02-workflow.md 'its own git worktree'; then score_parallel=2
 # The top score needs isolation plus a delegation-authority rule that the
 # validator holds to one home, so deleting the rule fails the check suite.
 if [ "$score_parallel" = 2 ] \
-    && has_text prompts/capabilities/08-delegation-authority.md 'Isolation is not authority' \
+    && has_text prompts/capabilities/execution/08-delegation-authority.md 'Isolation is not authority' \
     && has_text tests/09-prompt-contract.sh 'delegation authority'; then
     score_parallel=3
 fi
