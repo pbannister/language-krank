@@ -2,10 +2,12 @@
 // compile-with-harness.mjs — run the studio's compile task through the Harness.
 //
 // The studio server writes the task on stdin; this script runs it through the
-// Harness headless profile with --json and streams the run events to stdout as
-// newline-delimited JSON (the same projection the Harness emits). The terminal
-// `final` event carries the answer text; diagnostics go to stderr. This script
-// holds no credential itself: the Harness owns the provider.
+// Harness headless profile in plain mode and streams progress. Plain mode writes
+// the provider's reasoning to stderr as it happens, so this script forwards each
+// stderr chunk as a `reasoning` event on stdout (newline-delimited JSON) and, at
+// the end, emits a terminal `final` event carrying the answer text. Diagnostics
+// go to stderr. This script holds no credential itself: the Harness owns the
+// provider.
 //
 // The Harness launcher is resolved in this order:
 //   1. DSH_BIN, when set (a path ending in ".js" is run with the current Node);
@@ -52,12 +54,22 @@ const command = bin.endsWith(".js") ? process.execPath : bin;
 const prefix = bin.endsWith(".js") ? [bin] : [];
 
 // The headless app reads the task from stdin (absent or "-"), so the task is
-// piped rather than passed as a positional.
-const child = spawn(command, [...prefix, "--profile", profile, "--json"], { stdio: ["pipe", "pipe", "pipe"] });
+// piped rather than passed as a positional. Plain mode streams the reasoning to
+// stderr, which is the only signal available while the model is thinking.
+const child = spawn(command, [...prefix, "--profile", profile], { stdio: ["pipe", "pipe", "pipe"] });
 child.stdin.on("error", () => {});
 child.stdin.end(task);
-child.stdout.pipe(process.stdout);
-child.stderr.pipe(process.stderr);
+
+let answer = "";
+let diagnostics = "";
+child.stdout.on("data", (chunk) => {
+    answer += chunk.toString();
+});
+child.stderr.on("data", (chunk) => {
+    const text = chunk.toString();
+    diagnostics += text;
+    process.stdout.write(`${JSON.stringify({ type: "reasoning", text })}\n`);
+});
 child.on("error", (error) => {
     const hint = error.code === "ENOENT"
         ? "Set DSH_BIN to the Harness launcher path (for example ~/.npm/_npx/1e7f6d9597241db0/node_modules/@deepseek-ai/dsh/lib/bin.js)."
@@ -66,5 +78,15 @@ child.on("error", (error) => {
     process.exitCode = 1;
 });
 child.on("close", (code) => {
-    process.exitCode = code ?? 1;
+    if (code !== 0) {
+        const lines = diagnostics
+            .split("\n")
+            .filter((line) => line.startsWith("dsh: ") && !line.startsWith("dsh: reasoning"))
+            .join("\n");
+        process.stderr.write(lines || `compiler exited ${code}`);
+        process.exitCode = code;
+        return;
+    }
+    process.stdout.write(`${JSON.stringify({ type: "final", text: answer.trim() })}\n`);
+    process.exitCode = 0;
 });

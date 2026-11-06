@@ -379,11 +379,22 @@ function append_history(seconds, text) {
     history_log.scrollTop = history_log.scrollHeight;
 }
 
+function reasoning_tail(text) {
+    const cleaned = text.replace(/dsh: reasoning:\s*/g, "").replace(/\s+/g, " ").trim();
+    if (!cleaned) {
+        return "the model is thinking";
+    }
+    const clipped = cleaned.length > 120 ? `…${cleaned.slice(-120)}` : cleaned;
+    return `thinking: ${clipped}`;
+}
+
 document.querySelector("#generate").addEventListener("click", async () => {
     const button = document.querySelector("#generate");
     const note = document.querySelector("#generate-note");
     button.disabled = true;
     let phase = "waiting for the Harness";
+    let reasoning = "";
+    let reasoning_logged = false;
     const started = Date.now();
     history_log.textContent = "";
     activate_tab("history");
@@ -430,6 +441,13 @@ document.querySelector("#generate").addEventListener("click", async () => {
                     } else if (event.type === "status") {
                         phase = status_text(event);
                         append_history(Math.round((Date.now() - started) / 1000), phase);
+                    } else if (event.type === "reasoning") {
+                        reasoning += event.text;
+                        phase = reasoning_tail(reasoning);
+                        if (!reasoning_logged) {
+                            reasoning_logged = true;
+                            append_history(Math.round((Date.now() - started) / 1000), "the model is reasoning");
+                        }
                     } else if (event.type === "done") {
                         candidates = event.candidates;
                     } else if (event.type === "error") {

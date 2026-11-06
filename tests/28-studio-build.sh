@@ -47,6 +47,7 @@ node -e 'const data = require(process.argv[1]); if (!Array.isArray(data.files) |
 cat > "$DIRECTORY_TEST/fake-compiler.mjs" <<'JS'
 process.stdout.write(JSON.stringify({ type: "session", sessionId: "fake" }) + "\n");
 process.stdout.write(JSON.stringify({ type: "status", phase: "turn_start", turn: 1 }) + "\n");
+process.stdout.write(JSON.stringify({ type: "reasoning", text: "dsh: reasoning:\nI am compiling this prompt.\n" }) + "\n");
 const candidates = {
     candidates: [{
         id: "fake",
@@ -90,7 +91,7 @@ curl -sf -X POST -H 'content-type: application/json' \
     -d '{"source":"prompts/x.md","text":"A line."}' \
     "http://127.0.0.1:$PORT/compile" > "$DIRECTORY_TEST/compile.sse" \
     || fail 'the compile endpoint failed'
-node -e 'const fs = require("fs"); const text = fs.readFileSync(process.argv[1], "utf8"); const events = [...text.matchAll(/^data: (.*)$/gm)].map((m) => JSON.parse(m[1])); if (!events.some((e) => e.type === "phase" && e.phase === "start")) process.exit(1); const done = events.find((e) => e.type === "done"); if (!done) process.exit(1); const candidate = done.candidates[0]; if (!candidate || candidate.rules.rules.length !== 1 || candidate.cases.length !== 1) process.exit(1);' \
+node -e 'const fs = require("fs"); const text = fs.readFileSync(process.argv[1], "utf8"); const events = [...text.matchAll(/^data: (.*)$/gm)].map((m) => JSON.parse(m[1])); if (!events.some((e) => e.type === "phase" && e.phase === "start")) process.exit(1); if (!events.some((e) => e.type === "reasoning")) process.exit(1); const done = events.find((e) => e.type === "done"); if (!done) process.exit(1); const candidate = done.candidates[0]; if (!candidate || candidate.rules.rules.length !== 1 || candidate.cases.length !== 1) process.exit(1);' \
     "$DIRECTORY_TEST/compile.sse" || fail 'the compile endpoint returned a bad candidate'
 
 kill "$SERVER_PID" 2>/dev/null || true

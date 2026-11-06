@@ -172,6 +172,8 @@ function progress_event(event) {
             return { type: "status", phase: "tool_call", tool: event.tool };
         case "tool_result":
             return { type: "status", phase: "tool_result", status: event.status };
+        case "reasoning":
+            return { type: "reasoning", text: event.text };
         default:
             return null;
     }
