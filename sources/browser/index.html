@@ -21,6 +21,12 @@
         pre { padding: 1rem; border-radius: 0.25rem; overflow: auto; background: color-mix(in srgb, Canvas 92%, CanvasText 8%); font-family: ui-monospace, monospace; font-size: 0.8125rem; }
         pre.tall { max-height: 26rem; }
         textarea { width: 100%; font-family: ui-monospace, monospace; font-size: 0.8125rem; padding: 0.75rem; border-radius: 0.25rem; border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); background: color-mix(in srgb, Canvas 95%, CanvasText 5%); color: inherit; }
+        #source { min-height: calc(100vh - 18rem); resize: vertical; }
+        .tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); margin: 0.5rem 0 0.75rem; }
+        .tab { font: inherit; padding: 0.4rem 0.8rem; border: 1px solid transparent; border-bottom: none; border-radius: 0.3rem 0.3rem 0 0; background: transparent; cursor: pointer; }
+        .tab.active { background: color-mix(in srgb, Canvas 86%, CanvasText 14%); font-weight: 600; border-color: color-mix(in srgb, Canvas 78%, CanvasText 22%); }
+        .tab-panel[hidden] { display: none; }
+        .history { max-height: calc(100vh - 14rem); overflow: auto; white-space: pre-wrap; }
         table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
         th, td { border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); padding: 0.5rem; text-align: left; vertical-align: top; }
         th { background: color-mix(in srgb, Canvas 92%, CanvasText 8%); }
@@ -74,17 +80,28 @@
             <section class="panel" data-panel="prompt">
                 <h2>1. The prompt</h2>
                 <p class="note">The prompt is the source. Edit it here to see what the mechanical reducer would drop; the compile itself is recorded, not run.</p>
-                <label for="prompt">Prompt file</label>
-                <select id="prompt"></select>
-                <label for="source">Prompt text</label>
-                <textarea id="source" rows="16" spellcheck="false"></textarea>
-                <div class="row">
-                    <button id="apply" type="button">Apply the edit</button>
-                    <button id="reset" type="button">Reset to the file</button>
-                    <button id="generate" type="button">Generate candidates</button>
+                <div class="tabs" role="tablist">
+                    <button type="button" class="tab active" data-tab="prompt" role="tab" aria-selected="true">Prompt</button>
+                    <button type="button" class="tab" data-tab="history" role="tab" aria-selected="false">History</button>
                 </div>
-                <p class="note" id="edit-note"></p>
-                <p class="note" id="generate-note"></p>
+                <div class="tab-panel" id="tab-prompt">
+                    <label for="prompt">Prompt file</label>
+                    <select id="prompt"></select>
+                    <label for="source">Prompt text</label>
+                    <textarea id="source" spellcheck="false"></textarea>
+                    <div class="row">
+                        <button id="apply" type="button">Apply the edit</button>
+                        <button id="reset" type="button">Reset to the file</button>
+                        <button id="generate" type="button">Generate candidates</button>
+                    </div>
+                    <p class="note" id="edit-note"></p>
+                    <p class="note" id="generate-note"></p>
+                </div>
+                <div class="tab-panel" id="tab-history" hidden>
+                    <p class="note">The progress of the last generation. Elapsed time advances even while the model is thinking.</p>
+                    <p class="note" id="history-status" aria-live="polite">No generation yet.</p>
+                    <pre id="history-log" class="history"></pre>
+                </div>
             </section>
 
             <section class="panel" data-panel="candidates" hidden>

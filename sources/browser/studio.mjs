@@ -29,6 +29,8 @@ const reduced_box = document.querySelector("#reduced");
 const diff_box = document.querySelector("#diff");
 const check_output = document.querySelector("#check-output");
 const approve = document.querySelector("#approve");
+const history_log = document.querySelector("#history-log");
+const history_status = document.querySelector("#history-status");
 
 let entry = catalog.entries.find((item) => item.compiled) ?? catalog.entries[0];
 let candidate = entry.candidates[0] ?? null;
@@ -362,15 +364,35 @@ function status_text(event) {
     }
 }
 
+function activate_tab(name) {
+    for (const button of document.querySelectorAll(".tab")) {
+        const active = button.dataset.tab === name;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", String(active));
+    }
+    document.querySelector("#tab-prompt").hidden = name !== "prompt";
+    document.querySelector("#tab-history").hidden = name !== "history";
+}
+
+function append_history(seconds, text) {
+    history_log.textContent += `[${seconds}s] ${text}\n`;
+    history_log.scrollTop = history_log.scrollHeight;
+}
+
 document.querySelector("#generate").addEventListener("click", async () => {
     const button = document.querySelector("#generate");
     const note = document.querySelector("#generate-note");
     button.disabled = true;
     let phase = "waiting for the Harness";
     const started = Date.now();
+    history_log.textContent = "";
+    activate_tab("history");
+    append_history(0, "generation started");
     const update = () => {
         const seconds = Math.round((Date.now() - started) / 1000);
-        note.textContent = `Compiling… ${seconds}s elapsed; ${phase}`;
+        const line = `Compiling… ${seconds}s elapsed; ${phase}`;
+        note.textContent = line;
+        history_status.textContent = line;
     };
     update();
     const timer = setInterval(update, 1000);
@@ -404,8 +426,10 @@ document.querySelector("#generate").addEventListener("click", async () => {
                     const event = JSON.parse(line.slice(6));
                     if (event.type === "phase") {
                         phase = event.message ?? event.phase;
+                        append_history(Math.round((Date.now() - started) / 1000), phase);
                     } else if (event.type === "status") {
                         phase = status_text(event);
+                        append_history(Math.round((Date.now() - started) / 1000), phase);
                     } else if (event.type === "done") {
                         candidates = event.candidates;
                     } else if (event.type === "error") {
@@ -423,10 +447,13 @@ document.querySelector("#generate").addEventListener("click", async () => {
         edited = working !== entry.markdown;
         last_check = null;
         note.textContent = `Generated ${candidates.length} candidate(s); choose one in the next panel.`;
+        append_history(Math.round((Date.now() - started) / 1000), `generated ${candidates.length} candidate(s)`);
         render();
         show("candidates");
     } catch (error) {
         note.textContent = `Generation failed: ${error.message}`;
+        history_status.textContent = `Generation failed: ${error.message}`;
+        append_history(Math.round((Date.now() - started) / 1000), `failed: ${error.message}`);
     } finally {
         clearInterval(timer);
         button.disabled = false;
@@ -455,6 +482,10 @@ document.querySelector("#run").addEventListener("click", () => {
 
 for (const button of document.querySelectorAll(".steps button")) {
     button.addEventListener("click", () => show(button.dataset.step));
+}
+
+for (const button of document.querySelectorAll(".tab")) {
+    button.addEventListener("click", () => activate_tab(button.dataset.tab));
 }
 
 populate_prompts();
