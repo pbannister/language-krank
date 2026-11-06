@@ -393,8 +393,8 @@ function reasoning_tail(text) {
     if (!cleaned) {
         return "thinking";
     }
-    const budget = 40;
-    const clipped = cleaned.length > budget ? `…${cleaned.slice(-(budget - 1))}` : cleaned;
+    const tail = 60;
+    const clipped = cleaned.length > tail ? `…${cleaned.slice(-tail)}` : cleaned;
     return `thinking: ${clipped}`;
 }
 
