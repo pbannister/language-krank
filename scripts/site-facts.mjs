@@ -4,21 +4,28 @@
 // This script extracts two layers:
 //
 //   facts    the file's own properties (path, extension, indentation, ...)
-//   entities the artifact facts a family extractor reads: task sections and
-//            operation lines, feature sections and requirements, test tier
+//   entities the artifact facts a family extractor reads: task, feature,
+//            episode, record, document, page, version, todo, test, and any
+//            `<!-- krank: {...} -->` marker.
 //
 // The first entity is always the `file` fact, so one selection carries both the
 // file properties and the artifact facts.
 //
+// Markers are the deterministic bridge for objects the prose cannot express
+// (session, goal, failure, boundary, credential, delegation): a prose line such
+// as `<!-- krank: {"type":"session", "id":"s1", "goal":"..."} -->` becomes a
+// fact verbatim. See documents/13-markers.md.
+//
 // Output shape: { "directories": [...], "files": [ { "path", "facts", "entities" } ] }.
-// Markdown is read only under prompts/; its indentation is structural elsewhere.
+// Markdown is read only under prompts/, records/, and documents/.
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, extname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const directories = ["sources", "scripts", "tests", "site.in", "prompts"];
+const directories = ["sources", "scripts", "tests", "site.in", "prompts", "records", "documents"];
+const root_files = ["TODO.md", "package.json"];
 const skip = new Set([".gitkeep"]);
 
 const TASK_SECTIONS = [
@@ -32,6 +39,15 @@ const TASK_SECTIONS = [
 ];
 const TASK_REQUIRED = ["TASK-DESCRIPTION", "TASK-OUTPUT", "TASK-FILES", "TASK-VERIFY"];
 const FEATURE_SECTIONS = ["Purpose", "Requirements", "Behavior", "Dependencies"];
+const EPISODE_SECTIONS = [
+    "EPISODE-GOAL",
+    "EPISODE-ACCEPTANCE",
+    "EPISODE-RISKS",
+    "EPISODE-TASKS",
+    "EPISODE-OUTPUT",
+    "EPISODE-FILES",
+    "EPISODE-BRANCH",
+];
 const TEST_TIERS = ["portable", "tool-gated", "live-state"];
 
 function walk(directory, files) {
@@ -92,7 +108,6 @@ function facts_of(full) {
     };
 }
 
-// sections_of returns the markdown `##` sections of a file, keyed by heading.
 function sections_of(text) {
     const sections = new Map();
     let current = null;
@@ -108,6 +123,22 @@ function sections_of(text) {
         }
     }
     return new Map([...sections].map(([name, lines]) => [name, lines.join("\n")]));
+}
+
+// marker_facts parses `<!-- krank: {...} -->` comments and returns their JSON
+// objects verbatim. It is the deterministic bridge for runtime facts the prose
+// cannot express, and for the rule-to-line mapping the reducer uses.
+function marker_facts(text) {
+    const facts = [];
+    for (const match of text.matchAll(/<!--\s*krank:\s*(\{[^<]*\})\s*-->/gs)) {
+        try {
+            facts.push(JSON.parse(match[1]));
+        } catch {
+            // a malformed marker is ignored here; the object-model test catches a
+            // missing type later.
+        }
+    }
+    return facts;
 }
 
 function task_facts(path, text) {
@@ -185,41 +216,131 @@ function feature_facts(path, text) {
     return facts;
 }
 
+function episode_facts(path, text) {
+    const id = path.replace(/^prompts\/episodes\//, "").replace(/\.md$/, "");
+    const sections = sections_of(text);
+    const branch = (sections.get("EPISODE-BRANCH") ?? "").trim().split("\n")[0];
+    const facts = [{ type: "episode", id, path, branch }];
+    for (const name of EPISODE_SECTIONS) {
+        facts.push({ type: "episode_section", episode: id, name, present: sections.has(name) });
+    }
+    return facts;
+}
+
+function record_facts(path, text) {
+    const id = path.replace(/^records\//, "").replace(/\.md$/, "");
+    if (id === "README") {
+        return [];
+    }
+    const title = /^#\s+Record:\s*(.+)$/im.exec(text)?.[1] ?? "";
+    const kind = /incident/i.test(title) ? "incident" : /handoff/i.test(title) ? "handoff" : "outcome";
+    const facts = [{ type: "record", id, path, kind }];
+    for (const match of text.matchAll(/^\s*[-*]\s*`([0-9a-f]{7,40})`/gim)) {
+        facts.push({ type: "record_commit", record: id, hash: match[1] });
+    }
+    return facts;
+}
+
+function document_facts(path, text) {
+    const generated = /do not edit by hand|Generated from/i.test(text);
+    return [{ type: "document", path, generated }];
+}
+
+function page_facts(text) {
+    const facts = [];
+    for (const line of text.split("\n")) {
+        const match = /^([^\s|]+)\|(.+)$/.exec(line.trim());
+        if (match) {
+            facts.push({ type: "nav", page: match[1], href: match[1], label: match[2] });
+        }
+    }
+    return facts;
+}
+
+function version_facts(text) {
+    try {
+        const package_json = JSON.parse(text);
+        return [{ type: "version", value: package_json.version ?? "", source: "package.json" }];
+    } catch {
+        return [];
+    }
+}
+
+function todo_facts(text) {
+    const facts = [];
+    for (const match of text.matchAll(/^\s*[-*]\s+\[( |x|X)\]\s*(.+)$/gm)) {
+        facts.push({ type: "todo_item", text: match[2].trim(), checked: match[1] !== " " });
+    }
+    return facts;
+}
+
 function test_facts(path, text) {
     const tier = /Tier:\s*([a-z][a-z-]*(?: [a-z][a-z-]*)?)/i.exec(text)?.[1];
     if (!tier) {
         return [];
     }
-    return [{ type: "test", path, tier: tier.toLowerCase(), hermetic: true, known_tier: TEST_TIERS.includes(tier.toLowerCase()) }];
+    return [{
+        type: "test",
+        path,
+        tier: tier.toLowerCase(),
+        hermetic: true,
+        known_tier: TEST_TIERS.includes(tier.toLowerCase()),
+    }];
 }
 
 function entities_of(path, text) {
+    const is_prose = path.endsWith(".md") || path === "site.in/pages.nav";
+    const entities = is_prose ? marker_facts(text) : [];
     if (path.startsWith("prompts/tasks/") && path.endsWith(".md")) {
-        return task_facts(path, text);
+        return [...task_facts(path, text), ...entities];
     }
     if (path.startsWith("prompts/features/") && path.endsWith(".md")) {
-        return feature_facts(path, text);
+        return [...feature_facts(path, text), ...entities];
+    }
+    if (path.startsWith("prompts/episodes/") && path.endsWith(".md")) {
+        return [...episode_facts(path, text), ...entities];
+    }
+    if (path.startsWith("records/") && path.endsWith(".md")) {
+        return [...record_facts(path, text), ...entities];
+    }
+    if (path.startsWith("documents/") && path.endsWith(".md")) {
+        return [...document_facts(path, text), ...entities];
+    }
+    if (path === "site.in/pages.nav") {
+        return [...page_facts(text), ...entities];
+    }
+    if (path === "TODO.md") {
+        return [...todo_facts(text), ...entities];
+    }
+    if (path === "package.json") {
+        return [...version_facts(text), ...entities];
     }
     if (path.startsWith("tests/") && path.endsWith(".sh")) {
-        return test_facts(path, text);
+        return [...test_facts(path, text), ...entities];
     }
-    return [];
+    return entities;
 }
 
 const files = [];
 for (const directory of directories) {
     walk(join(root, directory), files);
 }
+for (const rel of root_files) {
+    files.push(join(root, rel));
+}
+
+const keep_markdown = (full) => ["/prompts/", "/records/", "/documents/"].some((part) => full.includes(part)) || full.endsWith("TODO.md");
 
 const entries = files
-    .filter((full) => !full.endsWith(".md") || full.includes("/prompts/"))
+    .filter((full) => !full.endsWith(".md") || keep_markdown(full))
     .sort()
     .map((full) => {
         const facts = facts_of(full);
+        const text = readFileSync(full, "utf8");
         return {
             path: facts.path,
             facts,
-            entities: [{ type: "file", ...facts }, ...entities_of(facts.path, readFileSync(full, "utf8"))],
+            entities: [{ type: "file", ...facts }, ...entities_of(facts.path, text)],
         };
     });
 

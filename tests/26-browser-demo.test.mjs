@@ -18,6 +18,8 @@ import { diff_lines } from "../sources/browser/prompt-diff.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const read = (rel) => readFileSync(`${root}${rel}`, "utf8");
+const object_model = JSON.parse(read("dataflow.in/object-model.json"));
+const object_types = new Set(object_model.objects.map((object) => object.id));
 const build = (script) => JSON.parse(execFileSync(process.execPath, [`${root}scripts/${script}`], {
     cwd: root,
     encoding: "utf8",
@@ -202,4 +204,29 @@ test("the extracted facts drive the task and feature rules", () => {
         rules: candidates(catalog, "workflow").rules.rules,
     });
     assert.ok(unknown.emitted.some((item) => item.violation === "unknown-test-tier"));
+});
+
+test("the episode, document, page, version, and todo extractors", () => {
+    const facts = build("site-facts.mjs");
+    const episode = facts.files.find((file) => file.path === "prompts/episodes/01-episode-template.md");
+    assert.ok(episode.entities.some((item) => item.type === "episode" && item.branch !== ""));
+    assert.ok(episode.entities.some((item) => item.type === "episode_section" && item.name === "EPISODE-GOAL" && item.present));
+    assert.ok(facts.files.some((file) => file.path === "documents/10-rule-notation.md" && file.entities.some((item) => item.type === "document")));
+    const nav = facts.files.find((file) => file.path === "site.in/pages.nav");
+    assert.ok(nav.entities.some((item) => item.type === "nav" && item.label.length > 0));
+    const version = facts.files.find((file) => file.path === "package.json");
+    assert.ok(version.entities.some((item) => item.type === "version" && item.value === "0.3.0"));
+    const todo = facts.files.find((file) => file.path === "TODO.md");
+    assert.ok(todo.entities.some((item) => item.type === "todo_item" && item.checked));
+});
+
+test("every emitted type is registered in the object model", () => {
+    const facts = build("site-facts.mjs");
+    for (const file of facts.files) {
+        for (const item of file.entities) {
+            if (typeof item.type === "string") {
+                assert.ok(object_types.has(item.type), `unregistered type ${item.type} from ${file.path}`);
+            }
+        }
+    }
 });

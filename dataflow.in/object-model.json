@@ -757,6 +757,23 @@
                 "name"
             ],
             "source": "prompts/02-workflow.md 4.1"
+        },
+        {
+            "id": "episode_section",
+            "fields": [
+                "episode",
+                "name",
+                "present"
+            ],
+            "source": "prompts/episodes/01-episode-template.md"
+        },
+        {
+            "id": "record_commit",
+            "fields": [
+                "record",
+                "hash"
+            ],
+            "source": "records/README.md"
         }
     ],
     "operations": [

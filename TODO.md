@@ -2,6 +2,24 @@
 
 ## Open Questions
 
+## Suggestions
+
+The model proposes object-model additions here; the human promotes them to
+`dataflow.in/object-model.json` as a separate, explicit step, so several prose
+updates can batch before the formal model moves.
+
+- (none yet)
+
+## Compile Workflow
+
+The round trip between `prompts/` and `prompts.out/`, deferred until
+`prompts.out/` exists:
+
+* [ ] adopt the marker convention (`documents/13-markers.md`) and make the reducer use rule markers instead of substring matching.
+* [ ] add a `make prompts` target that generates `prompts.out/` (markers, reduced prose, rules) from `prompts/`, the approved object model, and the approved candidates.
+* [ ] add a coverage rule: every compiled `prompts/` line carries a rule marker in `prompts.out/`, and every marker maps to a rule that exists.
+* [ ] (deferred) extract the remaining runtime families — session, goal, failure, boundary, credential, delegation — from `## KRANK facts` markers, once `prompts.out/` carries them.
+
 ## Recently Completed
 
 - [x] create the project from `00-project-skeleton` and vendor the shared rules (2026-11-04).
