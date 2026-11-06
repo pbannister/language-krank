@@ -7,5 +7,6 @@
 - `05-harness-studio.md` — Harness Studio: the DeepSeek Harness client plugin that opens the local studio.
 - `06-fact-extractors.md` — Fact Extractors: file, task, feature, and test facts for the check workflow.
 - `07-prompts-output.md` — Prompts Output: the generated formal form `prompts.out/` with markers, reduced prose, and rules.
+- `08-interaction-ui.md` — Interaction UI: the interface that drives the cycle, one core and three surfaces.
 
 - The site-build and project-pages features are worked examples inherited from the skeleton, not requirements of the rules engine.

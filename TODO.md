@@ -20,6 +20,14 @@ The round trip between `prompts/` and `prompts.out/`, deferred until
 * [x] add a coverage rule: every compiled `prompts/` line carries a rule marker in `prompts.out/`, and every marker maps to a rule that exists (`tests/31-prompts-build`).
 * [ ] (deferred) extract the remaining runtime families — session, goal, failure, boundary, credential, delegation — from `## KRANK facts` markers, once `prompts.out/` carries them.
 
+## Interaction UI
+
+One core, three surfaces; the design is `documents/14-interaction-cycle.md`, the requirements `prompts/features/08-interaction-ui.md`.
+
+* [ ] freeze the shared core as a library and its HTTP/CLI contract (object model, catalog, extractors, `prompts-build`, `/compile`, `krank check`).
+* [ ] grow the Harness plugin from a launcher into a panel that embeds the web renderer and calls `/compile`.
+* [ ] (deferred) VSCode extension: a thin webview over the frozen contract and the same renderer.
+
 ## Recently Completed
 
 - [x] create the project from `00-project-skeleton` and vendor the shared rules (2026-11-04).
