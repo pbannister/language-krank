@@ -8,7 +8,7 @@
         :root { color-scheme: light dark; }
         html, body { height: 100%; box-sizing: border-box; }
         body { margin: 0 auto; max-width: 76rem; padding: 2rem 1rem; font-family: system-ui, sans-serif; line-height: 1.45; display: flex; flex-direction: column; }
-        h1 { margin: 0 0 0.25rem; }
+        h1 { margin: 0 0 0.5rem; font-size: 1.25rem; line-height: 1.2; }
         h2 { margin: 0 0 0.75rem; font-size: 1.15rem; border-bottom: 1px solid color-mix(in srgb, Canvas 80%, CanvasText 20%); padding-bottom: 0.25rem; }
         h3 { margin: 1.25rem 0 0.5rem; font-size: 1rem; }
         p { margin: 0 0 1rem; }
@@ -20,10 +20,10 @@
         .steps button:disabled { opacity: 0.4; cursor: default; }
         .panel[hidden] { display: none; }
         main { display: flex; flex-direction: column; min-height: 0; overflow: auto; }
-        .panel[data-panel="prompt"]:not([hidden]) { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
-        .tab-panel:not([hidden]) { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+        .panel:not([hidden]) { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+        .tab-panel:not([hidden]) { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow: auto; }
         pre { padding: 1rem; border-radius: 0.25rem; overflow: auto; background: color-mix(in srgb, Canvas 92%, CanvasText 8%); font-family: ui-monospace, monospace; font-size: 0.8125rem; }
-        pre.tall { max-height: 26rem; }
+        .fill { flex: 1 1 auto; min-height: 0; }
         textarea { width: 100%; font-family: ui-monospace, monospace; font-size: 0.8125rem; padding: 0.75rem; border-radius: 0.25rem; border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); background: color-mix(in srgb, Canvas 95%, CanvasText 5%); color: inherit; }
         #source { flex: 1 1 auto; min-height: 0; resize: vertical; }
         .tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); margin: 0.5rem 0 0.75rem; }
@@ -74,11 +74,8 @@
             <button type="button" data-step="prompt" class="active">1. Prompt</button>
             <button type="button" data-step="candidates">2. Candidates</button>
             <button type="button" data-step="rules">3. Rules</button>
-            <button type="button" data-step="prose">4. Prose</button>
-            <button type="button" data-step="compare">5. Comparison</button>
-            <button type="button" data-step="reduced">6. Reduced prompt</button>
-            <button type="button" data-step="check">7. Check</button>
-            <button type="button" data-step="approve">8. Approve</button>
+            <button type="button" data-step="check">4. Check</button>
+            <button type="button" data-step="approve">5. Approve</button>
         </nav>
 
         <main>
@@ -120,7 +117,7 @@
                     <button type="button" class="tab" data-tab="about" role="tab" aria-selected="false">About</button>
                 </div>
                 <div class="tab-panel" id="tab-candidates" data-tab="candidates">
-                    <p class="note">The model reads the prompt and turns it into rules. Each card is one reading: the rules it found and the prompt lines they came from. When a line is ambiguous, the model offers more than one reading and explains the difference. Pick the one that says what you meant. The choice only changes this page; nothing is written until you download it in step 8.</p>
+                    <p class="note">The model reads the prompt and turns it into rules. Each card is one reading: the rules it found and the prompt lines they came from. When a line is ambiguous, the model offers more than one reading and explains the difference. Pick the one that says what you meant. The choice only changes this page; nothing is written until you download it in step 5.</p>
                     <div id="candidates"></div>
                 </div>
                 <div class="tab-panel" id="tab-candidates-about" data-tab="about" hidden>
@@ -129,39 +126,44 @@
             </section>
 
             <section class="panel" data-panel="rules" hidden>
-                <h2>3. The compiled rules</h2>
-                <p class="note" id="rules-note"></p>
-                <pre id="rules" class="tall"></pre>
-                <p><a id="rules-download" download="rules.json">Download the rule set</a></p>
-            </section>
-
-            <section class="panel" data-panel="prose" hidden>
-                <h2>4. The rules rendered back to prose</h2>
-                <pre id="prose" class="tall"></pre>
-            </section>
-
-            <section class="panel" data-panel="compare" hidden>
-                <h2>5. The comparison</h2>
-                <p class="note" id="compare-note"></p>
-                <table>
-                    <thead>
-                        <tr><th>Original</th><th>Rendered</th><th>Verdict</th><th>What was kept and lost</th><th>Hint for the prompt</th></tr>
-                    </thead>
-                    <tbody id="comparison"></tbody>
-                </table>
-            </section>
-
-            <section class="panel" data-panel="reduced" hidden>
-                <h2>6. The reduced prompt</h2>
-                <p class="note">Lines a covered case still finds in the prompt are removed; a pointer replaces them. If an edit breaks a covered line, the line stays, and the comparison marks it.</p>
-                <p><a id="reduced-download" download="reduced-prompt.md">Download the reduced prompt</a></p>
-                <pre id="reduced" class="tall"></pre>
-                <h3>The difference</h3>
-                <div id="diff" class="diff"></div>
+                <div class="tabs" role="tablist">
+                    <button type="button" class="tab active" data-tab="rules" role="tab" aria-selected="true">Rules</button>
+                    <button type="button" class="tab" data-tab="prose" role="tab" aria-selected="false">Prose</button>
+                    <button type="button" class="tab" data-tab="comparison" role="tab" aria-selected="false">Comparison</button>
+                    <button type="button" class="tab" data-tab="reduced" role="tab" aria-selected="false">Reduced</button>
+                    <button type="button" class="tab" data-tab="about" role="tab" aria-selected="false">About</button>
+                </div>
+                <div class="tab-panel" id="tab-rules" data-tab="rules">
+                    <p class="note" id="rules-note"></p>
+                    <pre id="rules" class="fill"></pre>
+                    <p><a id="rules-download" download="rules.json">Download the rule set</a></p>
+                </div>
+                <div class="tab-panel" id="tab-prose" data-tab="prose" hidden>
+                    <pre id="prose" class="fill"></pre>
+                </div>
+                <div class="tab-panel" id="tab-comparison" data-tab="comparison" hidden>
+                    <p class="note" id="compare-note"></p>
+                    <table>
+                        <thead>
+                            <tr><th>Original</th><th>Rendered</th><th>Verdict</th><th>What was kept and lost</th><th>Hint for the prompt</th></tr>
+                        </thead>
+                        <tbody id="comparison"></tbody>
+                    </table>
+                </div>
+                <div class="tab-panel" id="tab-reduced" data-tab="reduced" hidden>
+                    <p class="note">Lines a covered case still finds in the prompt are removed; a pointer replaces them. If an edit breaks a covered line, the line stays, and the comparison marks it.</p>
+                    <p><a id="reduced-download" download="reduced-prompt.md">Download the reduced prompt</a></p>
+                    <pre id="reduced" class="fill"></pre>
+                    <h3>The difference</h3>
+                    <div id="diff" class="diff"></div>
+                </div>
+                <div class="tab-panel" id="tab-rules-about" data-tab="about" hidden>
+                    <p class="lead">This step proves the round trip. Rules is the compiled rule set; Prose renders those rules back into words; Comparison lines the original up against the rendering; Reduced shows the prompt with the covered lines removed. Together they show what the model kept, what it dropped, and what you would lose.</p>
+                </div>
             </section>
 
             <section class="panel" data-panel="check" hidden>
-                <h2>7. Check a file or directory</h2>
+                <h2>4. Check a file or directory</h2>
                 <p class="note">The selected candidate's rules run against facts extracted from the project's files at build time.</p>
                 <label for="scope">Scope</label>
                 <select id="scope"></select>
@@ -172,7 +174,7 @@
             </section>
 
             <section class="panel" data-panel="approve" hidden>
-                <h2>8. Approve</h2>
+                <h2>5. Approve</h2>
                 <p class="note">Approval records the choice in this page. Nothing is written to the repository; the downloads are the artifacts to review and commit.</p>
                 <dl class="summary" id="approve"></dl>
                 <div class="row">
