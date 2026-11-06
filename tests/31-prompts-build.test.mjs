@@ -65,3 +65,24 @@ test("the manifest reports no missing markers", () => {
         assert.equal(entry.markers_missing, 0, `${entry.source}: ${entry.markers_missing} marker(s) missing`);
     }
 });
+
+test("every manifest entry carries a source digest", () => {
+    for (const entry of manifest.entries) {
+        assert.match(entry.source_sha256, /^[0-9a-f]{64}$/, `${entry.source}: no source digest`);
+    }
+});
+
+test("single-file mode regenerates one entry and keeps the others", () => {
+    const target = "prompts/02-workflow.md";
+    execFileSync(process.execPath, [`${root}scripts/prompts-build.mjs`, out, "--source", target], { encoding: "utf8" });
+
+    const rebuilt = JSON.parse(readFileSync(`${out}/manifest.json`, "utf8"));
+    assert.equal(rebuilt.entries.length, manifest.entries.length, "single-file mode dropped an entry");
+    assert.match(
+        rebuilt.entries.find((entry) => entry.source === target).source_sha256,
+        /^[0-9a-f]{64}$/,
+    );
+
+    const other = catalog.entries.find((entry) => entry.compiled && entry.source !== target);
+    assert.ok(existsSync(`${out}/${slug_of(other.source)}/rules.json`), "a sibling tree was lost");
+});

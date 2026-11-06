@@ -269,7 +269,8 @@
                 "tasks",
                 "output",
                 "files",
-                "branch"
+                "branch",
+                "branch_shape"
             ],
             "source": "prompts/episodes/01-episode-template.md"
         },

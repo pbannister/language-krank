@@ -220,7 +220,7 @@ function episode_facts(path, text) {
     const id = path.replace(/^prompts\/episodes\//, "").replace(/\.md$/, "");
     const sections = sections_of(text);
     const branch = (sections.get("EPISODE-BRANCH") ?? "").trim().split("\n")[0];
-    const facts = [{ type: "episode", id, path, branch }];
+    const facts = [{ type: "episode", id, path, branch, branch_shape: /^llm\/episode-[0-9]+$/.test(branch) ? "ok" : "bad" }];
     for (const name of EPISODE_SECTIONS) {
         facts.push({ type: "episode_section", episode: id, name, present: sections.has(name) });
     }

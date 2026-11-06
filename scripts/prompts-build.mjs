@@ -1,26 +1,33 @@
 #!/usr/bin/env node
 // prompts-build.mjs — generate prompts.out/, the formal form of the prompt corpus.
 //
-// For every prompt with an approved candidate, it writes:
+// For every prompt with an approved candidate it writes:
 //
 //   <slug>/rules.json   the candidate's rule set
 //   <slug>/marked.md    the full prose, with a rule marker on every covered line
 //   <slug>/reduced.md   the prose with the covered lines removed and a pointer
-//   manifest.json       the sources, candidates, and marker coverage
+//   manifest.json       the sources, candidates, digests, and marker coverage
 //
 // The reducer uses the rule markers (documents/13-markers.md), not substring
-// matching: the marked form is the evidence, the reduced form is the load.
+// matching. A single-file mode (--source <path>) regenerates one entry and
+// preserves the others, so a watcher can recompile a changed prompt cheaply.
 //
-// Usage: node scripts/prompts-build.mjs [output-directory]
+// Usage: node scripts/prompts-build.mjs [output-directory] [--source <prompt-path>]
 // The default output is prompts.out/, which is generated and not versioned.
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const output = process.argv[2] ? resolve(process.argv[2]) : join(root, "prompts.out");
+
+const args = process.argv.slice(2);
+const source_index = args.indexOf("--source");
+const source_arg = source_index === -1 ? null : args[source_index + 1];
+const positional = args.filter((arg) => arg !== "--source" && arg !== source_arg);
+const output = positional[0] ? resolve(positional[0]) : join(root, "prompts.out");
 
 if (output === "/" || output === "" || output === root) {
     console.error("prompts-build: refusing to clear the repository root");
@@ -34,7 +41,10 @@ function slug_of(source) {
     return source.replace(/^prompts\//, "").replace(/\.md$/, "").replace(/[/_]/g, "-");
 }
 
-// mark appends a rule marker to the first line each case covers.
+function digest(text) {
+    return createHash("sha256").update(text).digest("hex");
+}
+
 function mark(source, cases) {
     const lines = source.split("\n");
     const markers = [];
@@ -61,12 +71,7 @@ function reduce(source, cases, candidate_id) {
     return `${kept.join("\n").trimEnd()}\n\n## Compiled rules\n\nThis file's covered rules are compiled into the krank rule set \`${candidate_id}\`:\n\n${ids}\n`;
 }
 
-rmSync(output, { recursive: true, force: true });
-mkdirSync(output, { recursive: true });
-writeFileSync(join(output, ".gitkeep"), "");
-
-const manifest = { generated_by: "scripts/prompts-build.mjs", entries: [] };
-for (const entry of catalog.entries.filter((item) => item.compiled)) {
+function build_entry(entry, output) {
     const candidate = entry.candidates.find((item) => item.id === entry.approved) ?? entry.candidates[0];
     const cases = candidate.cases.filter((item) => (item.source ?? entry.source) === entry.source);
     const directory = join(output, slug_of(entry.source));
@@ -79,15 +84,62 @@ for (const entry of catalog.entries.filter((item) => item.compiled)) {
     writeFileSync(join(directory, "marked.md"), `${marked.text}\n`);
     writeFileSync(join(directory, "reduced.md"), reduced);
 
-    manifest.entries.push({
+    return {
         source: entry.source,
         candidate: candidate.id,
         rules: candidate.rules.rules.length,
         cases: cases.length,
         markers_found: marked.markers.filter((item) => item.found).length,
         markers_missing: marked.markers.filter((item) => !item.found).length,
-    });
+        source_sha256: digest(entry.markdown),
+    };
 }
-writeFileSync(join(output, "manifest.json"), `${JSON.stringify(manifest, null, 4)}\n`);
+
+const compiled = catalog.entries.filter((item) => item.compiled);
+const manifest_file = join(output, "manifest.json");
+let manifest = { generated_by: "scripts/prompts-build.mjs", entries: [] };
+
+if (existsSync(manifest_file)) {
+    try {
+        manifest = JSON.parse(readFileSync(manifest_file, "utf8"));
+    } catch {
+        manifest = { generated_by: "scripts/prompts-build.mjs", entries: [] };
+    }
+}
+
+if (source_arg) {
+    const entry = catalog.entries.find((item) => item.source === source_arg);
+    if (!entry) {
+        console.error(`prompts-build: no such prompt: ${source_arg}`);
+        process.exit(1);
+    }
+    if (!entry.compiled) {
+        rmSync(join(output, slug_of(entry.source)), { recursive: true, force: true });
+        manifest.entries = manifest.entries.filter((item) => item.source !== entry.source);
+        writeFileSync(manifest_file, `${JSON.stringify(manifest, null, 4)}\n`);
+        process.stdout.write(`prompts-build: ${entry.source} has no candidate; removed its tree\n`);
+        process.exit(0);
+    }
+    const record = build_entry(entry, output);
+    const index = manifest.entries.findIndex((item) => item.source === entry.source);
+    if (index === -1) {
+        manifest.entries.push(record);
+    } else {
+        manifest.entries[index] = record;
+    }
+    manifest.entries.sort((left, right) => left.source.localeCompare(right.source));
+    writeFileSync(manifest_file, `${JSON.stringify(manifest, null, 4)}\n`);
+    process.stdout.write(`prompts-build: wrote ${entry.source}\n`);
+    process.exit(0);
+}
+
+rmSync(output, { recursive: true, force: true });
+mkdirSync(output, { recursive: true });
+writeFileSync(join(output, ".gitkeep"), "");
+
+for (const entry of compiled) {
+    manifest.entries.push(build_entry(entry, output));
+}
+writeFileSync(manifest_file, `${JSON.stringify(manifest, null, 4)}\n`);
 
 process.stdout.write(`prompts-build: wrote ${manifest.entries.length} prompt(s) into ${output}\n`);

@@ -1,0 +1,47 @@
+{
+    "id": "episode-format",
+    "title": "Episode format",
+    "explanation": "An episode is a reviewable unit with a goal and acceptance; its shape is fact-shaped. The required sections are GOAL and ACCEPTANCE; the branch must be llm/episode-<number>. The facts come from the episode extractor.",
+    "source": "prompts/how-to-write-episodes.md",
+    "rules": {
+        "facts": [],
+        "rules": [
+            {
+                "id": "episode-section-missing",
+                "when": [
+                    {"fact": {"type": "episode", "id": "$e"}},
+                    {"fact": {"type": "episode_section", "episode": "$e", "name": {"in": ["EPISODE-GOAL", "EPISODE-ACCEPTANCE"]}, "present": false}}
+                ],
+                "then": [
+                    {"emit": {"violation": "missing-section", "episode": "$e"}}
+                ]
+            },
+            {
+                "id": "episode-branch-shape",
+                "when": [
+                    {"fact": {"type": "episode", "id": "$e", "branch_shape": "bad"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "episode-branch-shape", "episode": "$e"}}
+                ]
+            }
+        ]
+    },
+    "cases": [
+        {
+            "rule": "episode-section-missing",
+            "original": "Every episode must contain these sections in order:",
+            "verdict": "faithful",
+            "note": "The rule requires the two mandatory sections; the optional ones are listed but not enforced.",
+            "suggestion": "Mark which sections are mandatory in one sentence."
+        },
+        {
+            "rule": "episode-branch-shape",
+            "source": "prompts/episodes/01-episode-template.md",
+            "original": "llm/episode-{number}",
+            "verdict": "faithful",
+            "note": "The branch must match llm/episode-<number>; a concrete number is the extractor's job, not the rule's.",
+            "suggestion": "State the branch pattern once, as a literal, in the template."
+        }
+    ]
+}

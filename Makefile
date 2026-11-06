@@ -21,6 +21,8 @@
 #		        corpus is compiled into rules)
 #		prompts: node scripts/prompts-build.mjs (generate prompts.out/ from
 #		        the approved candidates)
+#		object-model: node scripts/object-model-report.mjs (which object
+#		        types the rules and extractors use)
 #		clean:  rm -rf generated output (keeps .gitkeep placeholders)
 #		test:   npm test
 #		deploy: RETIRED - all publishing to labs.bannister.us goes through
@@ -86,6 +88,12 @@ coverage:
 prompts:
 	node scripts/prompts-build.mjs
 
+prompts-watch:
+	node scripts/prompts-watch.mjs prompts.out
+
+object-model:
+	node scripts/object-model-report.mjs
+
 clean:
 	rm -rf dataflow.out/* site.out/* logs/*
 
@@ -100,4 +108,4 @@ deploy:
 install:
 	@echo '==== No install yet defined'
 
-.PHONY: all build site state status maturity context check release publish publish-dry-run demo studio studio-build studio-serve coverage prompts clean test deploy install
+.PHONY: all build site state status maturity context check release publish publish-dry-run demo studio studio-build studio-serve coverage prompts prompts-watch object-model clean test deploy install
