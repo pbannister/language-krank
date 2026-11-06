@@ -36,6 +36,9 @@
         th { background: color-mix(in srgb, Canvas 92%, CanvasText 8%); }
         tr.missing td { opacity: 0.55; }
         label { display: block; margin: 0.75rem 0 0.25rem; font-weight: 600; }
+        .label-row { display: flex; align-items: baseline; gap: 0.75rem; }
+        .label-row label { margin: 0.75rem 0 0.25rem; }
+        .label-row .note { margin: 0; }
         select, button { font: inherit; padding: 0.35rem 0.6rem; max-width: 100%; }
         .row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin: 0.75rem 0; }
         .note { opacity: 0.75; font-size: 0.875rem; max-width: 52rem; }
@@ -96,9 +99,11 @@
                         <button id="reset" type="button">Reset to the file</button>
                         <button id="generate" type="button">Generate candidates</button>
                     </div>
-                    <label for="source">Prompt text</label>
+                    <div class="label-row">
+                        <label for="source">Prompt text</label>
+                        <span class="note" id="edit-note"></span>
+                    </div>
                     <textarea id="source" spellcheck="false"></textarea>
-                    <p class="note" id="edit-note"></p>
                     <p class="note" id="generate-note"></p>
                 </div>
                 <div class="tab-panel" id="tab-history" hidden>
