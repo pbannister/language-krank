@@ -386,28 +386,13 @@ function append_history(seconds, text) {
     render_history();
 }
 
-function update_history(seconds, text) {
-    if (history_entries.length === 0) {
-        history_entries.push({ seconds, text });
-    } else {
-        history_entries[history_entries.length - 1] = { seconds, text };
-    }
-    render_history();
-}
-
-function tick_history(seconds) {
-    if (history_entries.length > 0) {
-        history_entries[history_entries.length - 1].seconds = seconds;
-        render_history();
-    }
-}
-
 function reasoning_tail(text) {
     const cleaned = text.replace(/dsh: reasoning:\s*/g, "").replace(/\s+/g, " ").trim();
     if (!cleaned) {
-        return "the model is thinking";
+        return "thinking";
     }
-    const clipped = cleaned.length > 120 ? `…${cleaned.slice(-120)}` : cleaned;
+    const budget = 40;
+    const clipped = cleaned.length > budget ? `…${cleaned.slice(-(budget - 1))}` : cleaned;
     return `thinking: ${clipped}`;
 }
 
@@ -415,16 +400,18 @@ document.querySelector("#generate").addEventListener("click", async () => {
     const button = document.querySelector("#generate");
     const note = document.querySelector("#generate-note");
     button.disabled = true;
-    let phase = "waiting for the Harness";
+    let phase = "generation started";
     let reasoning = "";
-    let reasoning_logged = false;
+    let last_appended = null;
     const started = Date.now();
     history_entries = [];
     activate_tab("history");
-    append_history(0, "generation started");
     const update = () => {
         const seconds = Math.round((Date.now() - started) / 1000);
-        tick_history(seconds);
+        if (phase !== last_appended) {
+            last_appended = phase;
+            append_history(seconds, phase);
+        }
         note.textContent = `Compiling… ${seconds}s elapsed; ${phase}`;
     };
     update();
@@ -459,19 +446,11 @@ document.querySelector("#generate").addEventListener("click", async () => {
                     const event = JSON.parse(line.slice(6));
                     if (event.type === "phase") {
                         phase = event.message ?? event.phase;
-                        append_history(Math.round((Date.now() - started) / 1000), phase);
                     } else if (event.type === "status") {
                         phase = status_text(event);
-                        append_history(Math.round((Date.now() - started) / 1000), phase);
                     } else if (event.type === "reasoning") {
                         reasoning += event.text;
                         phase = reasoning_tail(reasoning);
-                        if (!reasoning_logged) {
-                            reasoning_logged = true;
-                            append_history(Math.round((Date.now() - started) / 1000), "the model is reasoning");
-                        } else {
-                            update_history(Math.round((Date.now() - started) / 1000), phase);
-                        }
                     } else if (event.type === "done") {
                         candidates = event.candidates;
                     } else if (event.type === "error") {
@@ -488,13 +467,17 @@ document.querySelector("#generate").addEventListener("click", async () => {
         working = textarea.value;
         edited = working !== entry.markdown;
         last_check = null;
+        phase = `generated ${candidates.length} candidate(s)`;
+        append_history(Math.round((Date.now() - started) / 1000), phase);
+        last_appended = phase;
         note.textContent = `Generated ${candidates.length} candidate(s); choose one in the next panel.`;
-        append_history(Math.round((Date.now() - started) / 1000), `generated ${candidates.length} candidate(s)`);
         render();
         show("candidates");
     } catch (error) {
+        phase = `failed: ${error.message}`;
+        append_history(Math.round((Date.now() - started) / 1000), phase);
+        last_appended = phase;
         note.textContent = `Generation failed: ${error.message}`;
-        append_history(Math.round((Date.now() - started) / 1000), `failed: ${error.message}`);
     } finally {
         clearInterval(timer);
         button.disabled = false;
