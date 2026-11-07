@@ -1,0 +1,61 @@
+{
+    "id": "version-format",
+    "title": "Version-information format",
+    "explanation": "Assumed extractor facts: a version with shape, dirty, changes_suffix, tagged, and tag_appended fields, produced by scripts/version-generate.sh.",
+    "source": "prompts/capabilities/artifacts/02-version-information.md",
+    "rules": {
+        "facts": [],
+        "rules": [
+            {
+                "id": "version-shape",
+                "when": [
+                    {"fact": {"type": "version", "shape": "bad"}}
+                ],
+                "then": [
+                    {"emit": {"violation": "version-shape"}}
+                ]
+            },
+            {
+                "id": "version-changes-suffix",
+                "when": [
+                    {"fact": {"type": "version", "dirty": true, "changes_suffix": false}}
+                ],
+                "then": [
+                    {"emit": {"violation": "version-changes-suffix"}}
+                ]
+            },
+            {
+                "id": "version-tag-condition",
+                "when": [
+                    {"fact": {"type": "version", "tagged": false, "tag_appended": true}}
+                ],
+                "then": [
+                    {"emit": {"violation": "version-tag-condition"}}
+                ]
+            }
+        ]
+    },
+    "cases": [
+        {
+            "rule": "version-shape",
+            "original": "Derive the version from git state: `date-branch-hash` or `date-branch-tag-hash`.",
+            "verdict": "faithful for the shape",
+            "note": "The rule flags a version whose shape is not one of the two named forms; the exact components are the generator's job.",
+            "suggestion": "Encode the two shapes in the extractor, not the rule."
+        },
+        {
+            "rule": "version-changes-suffix",
+            "original": "Suffix the hash with `-changes` when the working tree has uncommitted changes.",
+            "verdict": "faithful",
+            "note": "The rule ties the suffix to the dirty flag; it does not enforce the suffix's position.",
+            "suggestion": "None."
+        },
+        {
+            "rule": "version-tag-condition",
+            "original": "`tag` is appended only when all sources are committed and the current commit is tagged.",
+            "verdict": "faithful",
+            "note": "The rule forbids a tag component on an untagged commit; committed-but-untagged is the extractor's job.",
+            "suggestion": "None."
+        }
+    ]
+}

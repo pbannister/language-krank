@@ -1,0 +1,89 @@
+{
+    "id": "data-product-format",
+    "title": "Generated data-product format",
+    "explanation": "Assumed extractor facts: a stage with a shared number, a file with a producer, and a work_product with an independent check.",
+    "source": "prompts/capabilities/artifacts/03-generated-data-products.md",
+    "rules": {
+        "facts": [],
+        "rules": [
+            {
+                "id": "stage-number-shared",
+                "when": [
+                    {
+                        "fact": {
+                            "type": "stage",
+                            "shared": false
+                        }
+                    }
+                ],
+                "then": [
+                    {
+                        "emit": {
+                            "violation": "stage-number-shared"
+                        }
+                    }
+                ]
+            },
+            {
+                "id": "no-dead-placeholder",
+                "when": [
+                    {
+                        "fact": {
+                            "type": "file",
+                            "producer": "none",
+                            "target": true
+                        }
+                    }
+                ],
+                "then": [
+                    {
+                        "emit": {
+                            "violation": "no-dead-placeholder"
+                        }
+                    }
+                ]
+            },
+            {
+                "id": "independent-verification",
+                "when": [
+                    {
+                        "fact": {
+                            "type": "work_product",
+                            "independent_check": false
+                        }
+                    }
+                ],
+                "then": [
+                    {
+                        "emit": {
+                            "violation": "independent-verification"
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "cases": [
+        {
+            "rule": "stage-number-shared",
+            "original": "one number shared by its feature, script, test, and work",
+            "verdict": "faithful",
+            "note": "The rule flags a stage whose number is not shared; the exact names are the extractor's job.",
+            "suggestion": "None."
+        },
+        {
+            "rule": "no-dead-placeholder",
+            "original": "Never declare a placeholder variable or a rule for a file no program",
+            "verdict": "core preserved",
+            "note": "The rule flags a target no producer makes; the 'permanently stale' rationale is prose, not a rule.",
+            "suggestion": "None."
+        },
+        {
+            "rule": "independent-verification",
+            "original": "Verification is independent of construction",
+            "verdict": "faithful",
+            "note": "The rule flags a work product whose check reuses the builder; the probe method is left open.",
+            "suggestion": "None."
+        }
+    ]
+}

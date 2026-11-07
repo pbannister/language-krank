@@ -1,0 +1,61 @@
+{
+    "id": "generated-doc-format",
+    "title": "Generated-documentation format",
+    "explanation": "Assumed extractor facts: a document with generated, provenance, validated, and indexed booleans.",
+    "source": "prompts/capabilities/artifacts/01-generated-documentation.md",
+    "rules": {
+        "facts": [],
+        "rules": [
+            {
+                "id": "generated-doc-provenance",
+                "when": [
+                    {"fact": {"type": "document", "generated": true, "provenance": false}}
+                ],
+                "then": [
+                    {"emit": {"violation": "generated-doc-provenance"}}
+                ]
+            },
+            {
+                "id": "generated-doc-validated",
+                "when": [
+                    {"fact": {"type": "document", "generated": true, "validated": false}}
+                ],
+                "then": [
+                    {"emit": {"violation": "generated-doc-validated"}}
+                ]
+            },
+            {
+                "id": "generated-doc-indexed",
+                "when": [
+                    {"fact": {"type": "document", "generated": true, "indexed": false}}
+                ],
+                "then": [
+                    {"emit": {"violation": "generated-doc-indexed"}}
+                ]
+            }
+        ]
+    },
+    "cases": [
+        {
+            "rule": "generated-doc-provenance",
+            "original": "Every generated document carries a provenance header: `Generated from <model> by <script> — do not edit by hand.`",
+            "verdict": "faithful",
+            "note": "The rule flags a generated document without a provenance header; the header's exact text is the generator's job, not the rule's.",
+            "suggestion": "Keep the header's literal text in the generator, not in the rule."
+        },
+        {
+            "rule": "generated-doc-validated",
+            "original": "The generator provides a validation mode that checks the model and exits nonzero on errors.",
+            "verdict": "faithful",
+            "note": "The rule requires a validation mode; it does not check that the mode actually runs.",
+            "suggestion": "State that the validation mode runs under make test, as a separate rule."
+        },
+        {
+            "rule": "generated-doc-indexed",
+            "original": "The documents index (`documents/README.md`) marks generated documents as generated.",
+            "verdict": "faithful",
+            "note": "The rule flags a generated document missing from the index's generated list.",
+            "suggestion": "None."
+        }
+    ]
+}

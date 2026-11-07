@@ -1,0 +1,63 @@
+{
+    "id": "pin-format",
+    "title": "Pinned-dependency format",
+    "explanation": "Assumed extractor facts: a lock with pin (tag or branch) and asserted booleans.",
+    "source": "prompts/capabilities/artifacts/05-pinned-dependencies.md",
+    "rules": {
+        "facts": [],
+        "rules": [
+            {
+                "id": "pin-to-tag",
+                "when": [
+                    {
+                        "fact": {
+                            "type": "lock",
+                            "pin": "branch"
+                        }
+                    }
+                ],
+                "then": [
+                    {
+                        "emit": {
+                            "violation": "pin-to-tag"
+                        }
+                    }
+                ]
+            },
+            {
+                "id": "pin-asserted",
+                "when": [
+                    {
+                        "fact": {
+                            "type": "lock",
+                            "asserted": false
+                        }
+                    }
+                ],
+                "then": [
+                    {
+                        "emit": {
+                            "violation": "pin-asserted"
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "cases": [
+        {
+            "rule": "pin-to-tag",
+            "original": "Pin a vendored or forked dependency to a release tag, never a branch",
+            "verdict": "faithful",
+            "note": "The rule flags a branch pin; the rebase rationale is prose, not a rule.",
+            "suggestion": "None."
+        },
+        {
+            "rule": "pin-asserted",
+            "original": "A test asserts the pin in both places",
+            "verdict": "faithful",
+            "note": "The rule flags an unasserted pin; the two places are the extractor's job.",
+            "suggestion": "None."
+        }
+    ]
+}

@@ -1,0 +1,88 @@
+{
+    "id": "release-format",
+    "title": "Release and publishing format",
+    "explanation": "Assumed extractor facts: a release with version_changes, names_current_hash, deterministic, and re_runnable booleans.",
+    "source": "prompts/capabilities/artifacts/04-release-and-publishing.md",
+    "rules": {
+        "facts": [],
+        "rules": [
+            {
+                "id": "release-refuses-changes",
+                "when": [
+                    {
+                        "fact": {
+                            "type": "release",
+                            "version_changes": true
+                        }
+                    }
+                ],
+                "then": [
+                    {
+                        "emit": {
+                            "violation": "release-refuses-changes"
+                        }
+                    }
+                ]
+            },
+            {
+                "id": "release-names-hash",
+                "when": [
+                    {
+                        "fact": {
+                            "type": "release",
+                            "names_current_hash": false
+                        }
+                    }
+                ],
+                "then": [
+                    {
+                        "emit": {
+                            "violation": "release-names-hash"
+                        }
+                    }
+                ]
+            },
+            {
+                "id": "release-deterministic",
+                "when": [
+                    {
+                        "fact": {
+                            "type": "release",
+                            "deterministic": false
+                        }
+                    }
+                ],
+                "then": [
+                    {
+                        "emit": {
+                            "violation": "release-deterministic"
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "cases": [
+        {
+            "rule": "release-refuses-changes",
+            "original": "A release refuses a version that carries `-changes`",
+            "verdict": "faithful for one half",
+            "note": "This rule keeps only the -changes refusal; the hash check is a separate rule.",
+            "suggestion": "Split the sentence into two rules, one per check."
+        },
+        {
+            "rule": "release-names-hash",
+            "original": "a version that does not name the current short commit hash",
+            "verdict": "faithful for one half",
+            "note": "This rule keeps only the hash-name check; the -changes refusal is a separate rule.",
+            "suggestion": "None."
+        },
+        {
+            "rule": "release-deterministic",
+            "original": "Pack deterministically: sorted names, no owner, the commit's timestamp",
+            "verdict": "faithful",
+            "note": "The rule flags a non-deterministic pack; the four ingredients are the packager's job.",
+            "suggestion": "None."
+        }
+    ]
+}
