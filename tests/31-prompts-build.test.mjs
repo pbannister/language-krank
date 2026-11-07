@@ -41,6 +41,17 @@ test("prompts.out/ has one tree per compiled prompt", () => {
     }
 });
 
+test("every compiled prompt has rendered and comparison forms", () => {
+    for (const entry of catalog.entries.filter((item) => item.compiled)) {
+        const directory = `${out}/${slug_of(entry.source)}`;
+        const rendered = readFileSync(`${directory}/rendered.md`, "utf8");
+        assert.match(rendered, /Rule "/, `${entry.source}: rendered.md has no rules`);
+        const comparison = readFileSync(`${directory}/comparison.md`, "utf8");
+        assert.ok(comparison.includes("## Covered (captured by a rule)"), `${entry.source}: comparison has no covered section`);
+        assert.ok(comparison.includes("## Not captured (no rule)"), `${entry.source}: comparison has no uncovered section`);
+    }
+});
+
 test("every case is marked and removed", () => {
     for (const entry of catalog.entries.filter((item) => item.compiled)) {
         const cases = candidate_of(entry).cases.filter((item) => (item.source ?? entry.source) === entry.source);
