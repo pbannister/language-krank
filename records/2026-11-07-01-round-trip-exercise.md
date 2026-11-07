@@ -48,22 +48,27 @@ human. This record is the handoff for that exercise.
 
 ## Current state (verified 2026-11-07)
 
-- 8 prompt families are compiled; the rest of the corpus is not. The comparison
+- 13 prompt families are compiled; the rest of the corpus is not. The comparison
   makes the gap explicit — e.g. `prompts/01-contract.md` has 4 lines captured and
   150 not captured.
 - The comparison is deterministic (the renderer's output next to the original),
   and it now names the uncovered lines explicitly.
+- The five capability-artifact prompts (`01`–`05`) are now compiled; their
+  long bullets are line-wrapped in the shared files, so their cases quote a
+  single-line fragment rather than the whole sentence.
 - `sources/browser/index.html` carries an uncommitted reformatting (functionally
   identical, roughly 189 → 549 lines) done outside this session; decide whether
   to keep or revert it.
 
 ## Next tasks (in order)
 
-1. Compile the remaining prompt families (research, capabilities artifacts and
-   execution, the conventions remainder) so fewer lines read "not captured".
+1. Compile the remaining rule-dense families: `capabilities/execution/06`–`09`,
+   `features/01`–`08`, `episodes/01`–`02`, `how-to-write-research.md`,
+   `flavors/02-cpp-conventions.md`, and `10-project.md`.
 2. If the deterministic comparison is still unclear, add a model-written
    plain-language explanation of each mismatch.
 
 ## Commits (this session)
 
+- `a7bc41e` feat: compile the five capability-artifact families
 - `0305135` feat: render prose from rules and write a per-prompt comparison
