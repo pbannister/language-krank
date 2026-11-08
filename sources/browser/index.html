@@ -228,6 +228,10 @@
             margin: 0;
         }
 
+        .scan-result {
+            font-weight: 600;
+        }
+
         tr.use-accept td:first-child {
             border-left: 3px solid #2e7d32;
         }
@@ -529,11 +533,15 @@
                         aria-selected="false">About</button>
                 </div>
                 <div class="tab-panel" data-tab="object-status">
+                    <h3>File</h3>
+                    <dl class="file-history" id="object-file"></dl>
+                    <h3>Scan</h3>
                     <div class="row">
-                        <button id="propose" type="button">Propose objects</button>
+                        <button id="propose" type="button">Scan file</button>
                         <span class="note" id="propose-note"></span>
                     </div>
-                    <p class="note" id="objects-count"></p>
+                    <p class="scan-result" id="objects-count"></p>
+                    <h3>Review</h3>
                     <p class="note">A checked box accepts the term and an unchecked box ignores it; a
                         row stays unreviewed until you toggle it. The tables are split by kind. Nothing
                         is written to the repository; the download is the review artifact.</p>
@@ -542,8 +550,9 @@
                 </div>
                 <div class="tab-panel" data-tab="object-about" hidden>
                     <p class="lead">The model proposes every noun and verb with an include or exclude guess
-                        and a reason. A checked box accepts the term and an unchecked box ignores it; a
-                        row stays unreviewed until you toggle it.</p>
+                        and a reason. <strong>Scan file</strong> runs that proposal task on the selected
+                        prompt. A checked box accepts the term and an unchecked box ignores it; a row
+                        stays unreviewed until you toggle it.</p>
                     <p>Only confirmed registry entries feed the compile and the rules. Nothing is
                         written to the repository; the download is the review artifact, and promoting a
                         confirmation is a separate, explicit step.</p>

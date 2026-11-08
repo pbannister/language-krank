@@ -77,7 +77,7 @@ test("the studio page carries the step rail and its panels", () => {
     for (const tab of ["prompt", "history", "about", "object-status", "object-about", "candidates", "rules", "prose", "comparison", "reduced"]) {
         assert.ok(html.includes(`data-tab="${tab}"`), `no tab for ${tab}`);
     }
-    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "file-history", "history-log"]) {
+    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "object-file", "file-history", "history-log"]) {
         assert.ok(html.includes(`id="${id}"`), `the page has no #${id}`);
     }
 });
@@ -86,7 +86,8 @@ test("the studio loads the object model and offers a proposal review", () => {
     const source = read("sources/browser/studio.mjs");
     assert.match(source, /load_json\("\.\/object-model\.json"\)/, "the studio does not load the object model");
     assert.match(source, /\/propose/, "the studio has no propose call");
-    assert.match(source, /accept · .* ignore · .* unreviewed/, "the studio has no proposal counts");
+    assert.match(source, /Scan result: .* accept · .* ignore · .* unreviewed/, "the studio has no scan result");
+    assert.match(source, /render_object_file/, "the studio does not render the objects file status");
     assert.match(source, /Evidence \/ Rationale/, "the studio has no combined evidence column");
 });
 

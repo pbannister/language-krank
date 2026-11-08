@@ -35,6 +35,7 @@ const check_output = document.querySelector("#check-output");
 const approve = document.querySelector("#approve");
 const history_log = document.querySelector("#history-log");
 const file_history = document.querySelector("#file-history");
+const object_file = document.querySelector("#object-file");
 const prompt_panel = document.querySelector('.panel[data-panel="prompt"]');
 const objects_count = document.querySelector("#objects-count");
 const propose_note = document.querySelector("#propose-note");
@@ -49,6 +50,7 @@ let working = entry.markdown;
 let edited = false;
 let last_check = null;
 let proposals = proposal_rows(object_model);
+const scan_times = new Map();
 const urls = [];
 
 async function load_json(path) {
@@ -258,7 +260,7 @@ function render_proposals() {
     }
 
     const counts = proposal_counts();
-    objects_count.textContent = `${counts.accept} accept · ${counts.ignore} ignore · ${counts.unreviewed} unreviewed (of ${proposals.length})`;
+    objects_count.textContent = `Scan result: ${counts.accept} accept · ${counts.ignore} ignore · ${counts.unreviewed} unreviewed (of ${proposals.length})`;
 
     if (proposals_url !== null) {
         URL.revokeObjectURL(proposals_url);
@@ -442,27 +444,39 @@ function local_time(iso) {
     return Number.isNaN(date.valueOf()) ? "(unknown)" : date.toLocaleString();
 }
 
-function render_file_history() {
-    file_history.replaceChildren();
-    const rows = [
-        ["Prompt", entry.source],
-        ["Last edited", local_time(entry.edited_at)],
-        ["Last scanned", local_time(entry.scanned_at)],
-        ["Candidates", String(entry.candidates.length)],
-        ["Size", `${entry.markdown.length} characters`],
-    ];
+function render_facts(container, rows) {
+    container.replaceChildren();
     for (const [label, value] of rows) {
         const dt = document.createElement("dt");
         dt.textContent = label;
         const dd = document.createElement("dd");
         dd.textContent = value;
-        file_history.append(dt, dd);
+        container.append(dt, dd);
     }
+}
+
+function render_file_history() {
+    render_facts(file_history, [
+        ["Prompt", entry.source],
+        ["Last changed", local_time(entry.edited_at)],
+        ["Last scanned", local_time(entry.scanned_at)],
+        ["Candidates", String(entry.candidates.length)],
+        ["Size", `${entry.markdown.length} characters`],
+    ]);
+}
+
+function render_object_file() {
+    render_facts(object_file, [
+        ["Prompt", entry.source],
+        ["Last changed", local_time(entry.edited_at)],
+        ["Last scanned", local_time(scan_times.get(entry.source) ?? entry.scanned_at)],
+    ]);
 }
 
 function render() {
     urls_reset();
     render_file_history();
+    render_object_file();
     render_proposals();
     render_prompt();
     render_candidates();
@@ -684,10 +698,11 @@ async function post_sse(path, body, on_event) {
 
 document.querySelector("#propose").addEventListener("click", async () => {
     const button = document.querySelector("#propose");
+    const source_scan = entry.source;
     button.disabled = true;
-    propose_note.textContent = "Proposing…";
+    propose_note.textContent = "Scanning…";
     try {
-        const result = await post_sse("/propose", { source: entry.source, text: textarea.value }, (event) => {
+        const result = await post_sse("/propose", { source: source_scan, text: textarea.value }, (event) => {
             if (event.type === "phase") {
                 propose_note.textContent = event.message ?? event.phase;
             } else if (event.type === "status") {
@@ -702,9 +717,11 @@ document.querySelector("#propose").addEventListener("click", async () => {
             }
         }
         render_proposals();
-        propose_note.textContent = `${result.proposals.length} proposal(s) read; new terms are pending.`;
+        scan_times.set(source_scan, new Date().toISOString());
+        render_object_file();
+        propose_note.textContent = `${result.proposals.length} proposal(s) read from the scan; new terms are pending.`;
     } catch (error) {
-        propose_note.textContent = `Proposal failed: ${error.message}`;
+        propose_note.textContent = `Scan failed: ${error.message}`;
     } finally {
         button.disabled = false;
     }
