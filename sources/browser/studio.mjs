@@ -36,6 +36,9 @@ const approve = document.querySelector("#approve");
 const history_log = document.querySelector("#history-log");
 const file_history = document.querySelector("#file-history");
 const object_file = document.querySelector("#object-file");
+const file_overlay = document.querySelector("#file-overlay");
+const file_overlay_frame = document.querySelector("#file-overlay-frame");
+const file_overlay_title = document.querySelector("#file-overlay-title");
 const prompt_panel = document.querySelector('.panel[data-panel="prompt"]');
 const objects_count = document.querySelector("#objects-count");
 const propose_note = document.querySelector("#propose-note");
@@ -134,16 +137,66 @@ function default_use(row) {
 
 // file_url points the filename in an evidence line at the file viewer, carrying
 // the source's section and the term so the viewer can highlight the cited lines.
-function file_url(path, source, term) {
-    const params = new URLSearchParams({ path, term: term ?? "" });
+function section_of(source, path) {
     if (typeof source === "string" && source.startsWith(path)) {
-        const section = source.slice(path.length).trim();
-        if (section !== "") {
-            params.set("section", section);
-        }
+        return source.slice(path.length).trim();
+    }
+    return "";
+}
+
+function file_viewer_url(path, section, term, embed) {
+    const params = new URLSearchParams({ path });
+    if (term) {
+        params.set("term", term);
+    }
+    if (section) {
+        params.set("section", section);
+    }
+    if (embed) {
+        params.set("embed", "1");
     }
     return `./file.html?${params.toString()}`;
 }
+
+function open_file_viewer(path, section, term) {
+    file_overlay_frame.src = file_viewer_url(path, section, term, true);
+    file_overlay_title.textContent = path;
+    file_overlay.hidden = false;
+}
+
+function close_file_viewer() {
+    file_overlay.hidden = true;
+    file_overlay_frame.removeAttribute("src");
+    file_overlay_title.textContent = "";
+}
+
+function show_file_state(state) {
+    if (state && state.file) {
+        open_file_viewer(state.file.path, state.file.section, state.file.term);
+    } else {
+        close_file_viewer();
+    }
+}
+
+document.querySelector("#file-overlay-close").addEventListener("click", () => {
+    if (history.state && history.state.file) {
+        history.back();
+    } else {
+        close_file_viewer();
+    }
+});
+
+window.addEventListener("popstate", (event) => {
+    show_file_state(event.state);
+});
+
+window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !file_overlay.hidden) {
+        document.querySelector("#file-overlay-close").click();
+    }
+});
+
+show_file_state(history.state);
 
 function proposal_rows(model) {
     const rows = [];
@@ -241,12 +294,21 @@ function render_proposals() {
         evidence_line.className = "evidence-line";
         const match = /^([A-Za-z0-9_./-]+\.(?:md|sh|mjs|js|json|html|txt|ya?ml|toml|lock|py|c|h|cpp))\b/.exec(row.evidence ?? "");
         if (match) {
+            const path = match[1];
+            const section = section_of(row.source, path);
+            const term = row.term ?? "";
             const link = document.createElement("a");
-            link.href = file_url(match[1], row.source, row.term);
-            link.target = "_blank";
-            link.rel = "noopener";
-            link.textContent = match[1];
-            evidence_line.append(link, document.createTextNode((row.evidence ?? "").slice(match[1].length)));
+            link.href = file_viewer_url(path, section, term, false);
+            link.textContent = path;
+            link.addEventListener("click", (event) => {
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                    return;
+                }
+                event.preventDefault();
+                history.pushState({ file: { path, section, term } }, "", `#file=${encodeURIComponent(path)}`);
+                open_file_viewer(path, section, term);
+            });
+            evidence_line.append(link, document.createTextNode((row.evidence ?? "").slice(path.length)));
         } else {
             evidence_line.textContent = row.evidence;
         }

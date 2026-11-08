@@ -77,7 +77,7 @@ test("the studio page carries the step rail and its panels", () => {
     for (const tab of ["prompt", "history", "about", "object-status", "object-about", "candidates", "rules", "prose", "comparison", "reduced"]) {
         assert.ok(html.includes(`data-tab="${tab}"`), `no tab for ${tab}`);
     }
-    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "object-file", "file-history", "history-log"]) {
+    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "object-file", "file-history", "history-log", "file-overlay", "file-overlay-frame", "file-overlay-close"]) {
         assert.ok(html.includes(`id="${id}"`), `the page has no #${id}`);
     }
 });
@@ -97,6 +97,13 @@ test("the studio links the evidence filename to a highlighting file viewer", () 
     assert.match(viewer, /id="lines"/, "the viewer has no line list");
     assert.match(viewer, /\.line\.highlight/, "the viewer has no highlight style");
     assert.match(viewer, /\/file\?path=/, "the viewer does not fetch a repository file");
+    assert.match(viewer, /embed/, "the viewer has no embed mode");
+});
+
+test("the evidence viewer pushes history so back returns to the studio", () => {
+    const source = read("sources/browser/studio.mjs");
+    assert.match(source, /history\.pushState/, "the evidence link does not push history");
+    assert.match(source, /addEventListener\("popstate"/, "the studio does not restore on back");
 });
 
 test("the catalog reports when each prompt file was edited and scanned", () => {

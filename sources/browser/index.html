@@ -405,6 +405,40 @@
             padding: 0.1em 0.3em;
         }
 
+        .file-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            background: Canvas;
+        }
+
+        .file-overlay[hidden] {
+            display: none;
+        }
+
+        .file-overlay-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+        }
+
+        .file-overlay-bar span {
+            font-family: ui-monospace, monospace;
+            font-size: 0.9rem;
+        }
+
+        .file-overlay iframe {
+            flex: 1 1 auto;
+            width: 100%;
+            border: 0;
+            background: Canvas;
+        }
+
         @media (max-width: 54rem) {
             .studio {
                 grid-template-columns: 1fr;
@@ -649,6 +683,14 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <div class="file-overlay" id="file-overlay" hidden>
+        <div class="file-overlay-bar">
+            <span id="file-overlay-title"></span>
+            <button id="file-overlay-close" type="button">Close</button>
+        </div>
+        <iframe id="file-overlay-frame" title="file"></iframe>
     </div>
 
     <script type="module" src="./studio.mjs"></script>

@@ -47,6 +47,18 @@
             margin-top: 1rem;
         }
 
+        body.embed {
+            padding: 0;
+        }
+
+        body.embed header {
+            display: none;
+        }
+
+        body.embed main {
+            margin-top: 0;
+        }
+
         .line {
             display: grid;
             grid-template-columns: 4rem minmax(0, 1fr);
@@ -85,6 +97,10 @@
         const path = params.get("path") ?? "";
         const section = params.get("section") ?? "";
         const term = params.get("term") ?? "";
+        const embed = params.get("embed") === "1";
+        if (embed) {
+            document.body.classList.add("embed");
+        }
         const title = document.querySelector("#title");
         const note = document.querySelector("#note");
         const lines_box = document.querySelector("#lines");
