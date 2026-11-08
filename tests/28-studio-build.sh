@@ -30,6 +30,7 @@ for file_expected in \
     "$DIRECTORY_TREE/browser/demo.mjs" \
     "$DIRECTORY_TREE/browser/sample.json" \
     "$DIRECTORY_TREE/browser/object-model.json" \
+    "$DIRECTORY_TREE/browser/file.html" \
     "$DIRECTORY_TREE/krank.mjs" \
     "$DIRECTORY_TREE/ruleset-run.mjs" \
     "$DIRECTORY_TREE/ruleset-render.mjs"; do
@@ -121,6 +122,13 @@ grep -qi 'content-type: text/javascript' "$DIRECTORY_TEST/headers" \
     || fail 'studio.mjs is not served as text/javascript'
 curl -sf "http://127.0.0.1:$PORT/browser/catalog.json" > /dev/null \
     || fail 'catalog.json is not served'
+
+curl -sf "http://127.0.0.1:$PORT/file?path=prompts/01-contract.md" > "$DIRECTORY_TEST/source.txt" \
+    || fail 'the file endpoint did not serve a shared file'
+grep -qF 'LLM Interaction Contract' "$DIRECTORY_TEST/source.txt" \
+    || fail 'the file endpoint served the wrong file'
+status=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/file?path=../etc/passwd")
+[ "$status" -ge 400 ] || fail 'the file endpoint escaped the repository'
 
 curl -sf -X POST -H 'content-type: application/json' \
     -d '{"source":"prompts/x.md","text":"A line."}' \

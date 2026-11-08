@@ -90,6 +90,14 @@ test("the studio loads the object model and offers a proposal review", () => {
     assert.match(source, /Evidence \/ Rationale/, "the studio has no combined evidence column");
 });
 
+test("the studio links the evidence filename to a highlighting file viewer", () => {
+    assert.match(read("sources/browser/studio.mjs"), /\.\/file\.html\?/, "the studio does not link to the file viewer");
+    const viewer = read("sources/browser/file.html");
+    assert.match(viewer, /id="lines"/, "the viewer has no line list");
+    assert.match(viewer, /\.line\.highlight/, "the viewer has no highlight style");
+    assert.match(viewer, /\/file\?path=/, "the viewer does not fetch a repository file");
+});
+
 test("the catalog reports when each prompt file was edited and scanned", () => {
     const catalog = build("site-catalog.mjs");
     assert.ok(catalog.entries.length > 0);

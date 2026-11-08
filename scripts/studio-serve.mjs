@@ -25,16 +25,18 @@
 import { spawn } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
 import { createServer } from "node:http";
-import { extname, resolve } from "node:path";
+import { extname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ruleset_run } from "../sources/krank.mjs";
 
 const port = Number(process.argv[2] ?? 8090);
 const root = resolve(process.argv[3] ?? fileURLToPath(new URL("../dataflow.out/studio", import.meta.url)));
+const repository_root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const compiler = process.env.STUDIO_COMPILER_SCRIPT ?? fileURLToPath(new URL("./compile-with-harness.mjs", import.meta.url));
 const page_studio = "/browser/index.html";
 const page_playground = "/browser/playground.html";
 const model_path = fileURLToPath(new URL("../dataflow.in/object-model.json", import.meta.url));
+const denied_files = [".git/", "node_modules/", "dataflow.out/", "site.out/", "logs/", "tests.out/"];
 
 const TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -355,6 +357,35 @@ const server = createServer((request, response) => {
     if (request.method !== "GET") {
         response.writeHead(405);
         response.end("method not allowed\n");
+        return;
+    }
+    if (pathname === "/file") {
+        const requested = url.searchParams.get("path") ?? "";
+        if (requested === "" || requested.startsWith("/")) {
+            response.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+            response.end("a repository-relative path is required\n");
+            return;
+        }
+        const full = resolve(repository_root, requested);
+        const path_relative = relative(repository_root, full);
+        if (path_relative === "" || path_relative.startsWith("..") || path_relative.startsWith("/")) {
+            response.writeHead(403, { "content-type": "text/plain; charset=utf-8" });
+            response.end("forbidden\n");
+            return;
+        }
+        if (denied_files.some((prefix) => path_relative === prefix.slice(0, -1) || path_relative.startsWith(prefix))) {
+            response.writeHead(403, { "content-type": "text/plain; charset=utf-8" });
+            response.end("forbidden\n");
+            return;
+        }
+        try {
+            const data = readFileSync(full);
+            response.writeHead(200, { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" });
+            response.end(data);
+        } catch {
+            response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+            response.end("not found\n");
+        }
         return;
     }
     if (pathname === "/") {

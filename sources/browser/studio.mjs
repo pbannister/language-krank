@@ -130,6 +130,19 @@ function default_use(row) {
     return include ? "accept" : "ignore";
 }
 
+// file_url points the filename in an evidence line at the file viewer, carrying
+// the source's section and the term so the viewer can highlight the cited lines.
+function file_url(path, source, term) {
+    const params = new URLSearchParams({ path, term: term ?? "" });
+    if (typeof source === "string" && source.startsWith(path)) {
+        const section = source.slice(path.length).trim();
+        if (section !== "") {
+            params.set("section", section);
+        }
+    }
+    return `./file.html?${params.toString()}`;
+}
+
 function proposal_rows(model) {
     const rows = [];
     for (const object of model.objects) {
@@ -224,7 +237,17 @@ function render_proposals() {
         evidence.className = "evidence";
         const evidence_line = document.createElement("div");
         evidence_line.className = "evidence-line";
-        evidence_line.textContent = row.evidence;
+        const match = /^([A-Za-z0-9_./-]+\.(?:md|sh|mjs|js|json|html|txt|ya?ml|toml|lock|py|c|h|cpp))\b/.exec(row.evidence ?? "");
+        if (match) {
+            const link = document.createElement("a");
+            link.href = file_url(match[1], row.source, row.term);
+            link.target = "_blank";
+            link.rel = "noopener";
+            link.textContent = match[1];
+            evidence_line.append(link, document.createTextNode((row.evidence ?? "").slice(match[1].length)));
+        } else {
+            evidence_line.textContent = row.evidence;
+        }
         const rationale_line = document.createElement("div");
         rationale_line.className = "rationale-line";
         rationale_line.textContent = row.rationale;

@@ -34,7 +34,7 @@ mkdir -p "$DIRECTORY_BROWSER"
 sed '/HOMELAB-NAV/d' "$REPOSITORY_ROOT/sources/browser/index.html" > "$DIRECTORY_BROWSER/index.html"
 sed '/HOMELAB-NAV/d' "$REPOSITORY_ROOT/sources/browser/playground.html" > "$DIRECTORY_BROWSER/playground.html"
 
-for file_asset in studio.mjs prompt-diff.mjs demo.mjs sample.json; do
+for file_asset in studio.mjs prompt-diff.mjs demo.mjs sample.json file.html; do
     cp "$REPOSITORY_ROOT/sources/browser/$file_asset" "$DIRECTORY_BROWSER/"
 done
 
