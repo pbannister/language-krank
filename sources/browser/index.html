@@ -18,7 +18,7 @@
 
         body {
             margin: 0 auto;
-            max-width: 76rem;
+            max-width: none;
             padding: 2rem 1rem;
             font-family: system-ui, sans-serif;
             line-height: 1.45;
@@ -153,6 +153,7 @@
 
         .tabs {
             display: flex;
+            flex-wrap: wrap;
             gap: 0.25rem;
             border-bottom: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
             margin: 0.5rem 0 0.75rem;
@@ -160,7 +161,7 @@
 
         .tab {
             font: inherit;
-            padding: 0.4rem 0.8rem;
+            padding: 0.4rem 0.55rem;
             border: 1px solid transparent;
             border-bottom: none;
             border-radius: 0.3rem 0.3rem 0 0;
