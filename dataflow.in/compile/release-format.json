@@ -1,7 +1,7 @@
 {
     "id": "release-format",
     "title": "Release and publishing format",
-    "explanation": "Assumed extractor facts: a release with version_changes, names_current_hash, deterministic, and re_runnable booleans.",
+    "explanation": "This reading assumes the extractor reports whether a release changes the version, names the current hash, is deterministic, and can be re-run.",
     "source": "prompts/capabilities/artifacts/04-release-and-publishing.md",
     "rules": {
         "facts": [],

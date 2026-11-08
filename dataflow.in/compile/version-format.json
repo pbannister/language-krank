@@ -1,7 +1,7 @@
 {
     "id": "version-format",
     "title": "Version-information format",
-    "explanation": "Assumed extractor facts: a version with shape, dirty, changes_suffix, tagged, and tag_appended fields, produced by scripts/version-generate.sh.",
+    "explanation": "This reading assumes the extractor reports a version's shape, dirty flag, changes suffix, tag, and tag-appended flag from scripts/version-generate.sh.",
     "source": "prompts/capabilities/artifacts/02-version-information.md",
     "rules": {
         "facts": [],

@@ -1,7 +1,7 @@
 {
     "id": "data-product-format",
     "title": "Generated data-product format",
-    "explanation": "Assumed extractor facts: a stage with a shared number, a file with a producer, and a work_product with an independent check.",
+    "explanation": "This reading assumes the extractor supplies a stage's shared number, a file's producer, and an independent check on a work product.",
     "source": "prompts/capabilities/artifacts/03-generated-data-products.md",
     "rules": {
         "facts": [],

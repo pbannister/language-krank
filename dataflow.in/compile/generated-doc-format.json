@@ -1,7 +1,7 @@
 {
     "id": "generated-doc-format",
     "title": "Generated-documentation format",
-    "explanation": "Assumed extractor facts: a document with generated, provenance, validated, and indexed booleans.",
+    "explanation": "This reading assumes the extractor reports whether a document is generated, carries a provenance line, is validated, and is indexed.",
     "source": "prompts/capabilities/artifacts/01-generated-documentation.md",
     "rules": {
         "facts": [],

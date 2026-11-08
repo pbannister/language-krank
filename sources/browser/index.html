@@ -353,10 +353,72 @@
             margin: 0.35rem 0;
         }
 
-        .badges span {
-            background: color-mix(in srgb, Canvas 88%, CanvasText 12%);
-            border-radius: 0.25rem;
+        .badges .badge {
+            font: inherit;
+            font-size: 0.8rem;
             padding: 0.1rem 0.5rem;
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            border-radius: 0.25rem;
+            background: color-mix(in srgb, Canvas 88%, CanvasText 12%);
+            cursor: pointer;
+        }
+
+        .badges .badge[aria-expanded="true"] {
+            background: color-mix(in srgb, Canvas 74%, CanvasText 26%);
+        }
+
+        .candidate-label {
+            margin: 0 0 0.2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            opacity: 0.7;
+        }
+
+        .candidate-why {
+            margin: 0 0 0.35rem;
+        }
+
+        .candidate-cover {
+            margin: 0 0 0.35rem;
+        }
+
+        .candidate-detail {
+            margin: 0.5rem 0;
+            padding: 0.5rem 0.75rem;
+            border-left: 2px solid color-mix(in srgb, Canvas 70%, CanvasText 30%);
+            font-size: 0.85rem;
+        }
+
+        .rule-list,
+        .case-list {
+            margin: 0;
+            padding-left: 1.1rem;
+        }
+
+        .rule-list li,
+        .case-list li {
+            margin: 0 0 0.5rem;
+        }
+
+        .rule-list code {
+            margin-right: 0.4rem;
+        }
+
+        .case-original {
+            font-style: italic;
+        }
+
+        .case-meta {
+            margin: 0.15rem 0;
+            font-size: 0.78rem;
+            opacity: 0.7;
+        }
+
+        .case-hint {
+            font-style: italic;
+            opacity: 0.8;
         }
 
         .diff {
@@ -602,10 +664,12 @@
                     <div id="candidates"></div>
                 </div>
                 <div class="tab-panel" id="tab-candidates-about" data-tab="about" hidden>
-                    <p class="lead">The model reads the prompt and turns it into rules. Each card is one reading: the
-                        rules it found and the prompt lines they came from. When a line is ambiguous, the model offers
-                        more than one reading and explains the difference. Pick the one that says what you meant. The
-                        choice only changes this page; nothing is written until you download it in step 6.</p>
+                    <p class="lead">The model reads the prompt and turns it into rules. Each card is one reading:
+                        its rules and the prompt lines they came from. The <strong>rules</strong> and
+                        <strong>cases</strong> buttons expand the rule set and the case list. When a line is
+                        ambiguous, the model offers more than one reading and explains the difference. Pick the
+                        one that says what you meant. The choice only changes this page; nothing is written
+                        until you download it in step 6.</p>
                 </div>
             </section>
 

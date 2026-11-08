@@ -100,6 +100,14 @@ test("the studio links the evidence filename to a highlighting file viewer", () 
     assert.match(viewer, /embed/, "the viewer has no embed mode");
 });
 
+test("the candidate cards expand their rules and cases", () => {
+    const source = read("sources/browser/studio.mjs");
+    assert.match(source, /badge_toggle/, "the candidates have no expandable badges");
+    assert.match(source, /aria-expanded/, "the badges are not disclosure controls");
+    assert.match(source, /candidate-detail/, "the candidate details have no container");
+    assert.match(read("sources/browser/index.html"), /\.candidate-detail/, "the details have no style");
+});
+
 test("the evidence viewer pushes history so back returns to the studio", () => {
     const source = read("sources/browser/studio.mjs");
     assert.match(source, /history\.pushState/, "the evidence link does not push history");

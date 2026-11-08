@@ -1,7 +1,7 @@
 {
     "id": "pin-format",
     "title": "Pinned-dependency format",
-    "explanation": "Assumed extractor facts: a lock with pin (tag or branch) and asserted booleans.",
+    "explanation": "This reading assumes the extractor supplies a lock's pin (a tag or a branch) and the booleans the prompt asserts.",
     "source": "prompts/capabilities/artifacts/05-pinned-dependencies.md",
     "rules": {
         "facts": [],

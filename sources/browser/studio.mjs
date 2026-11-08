@@ -375,6 +375,75 @@ function render_prompt() {
         : "The working text is the file's text.";
 }
 
+function badge_toggle(count, noun, detail) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "badge";
+    button.setAttribute("aria-expanded", "false");
+    button.textContent = `▸ ${count} ${noun}`;
+    button.addEventListener("click", () => {
+        const open = detail.hidden;
+        detail.hidden = !open;
+        button.setAttribute("aria-expanded", String(open));
+        button.textContent = `${open ? "▾" : "▸"} ${count} ${noun}`;
+    });
+    return button;
+}
+
+function rules_detail(item) {
+    const detail = document.createElement("div");
+    detail.className = "candidate-detail";
+    detail.hidden = true;
+    const rendered = rendered_by_rule(ruleset_render(item.rules));
+    const list = document.createElement("ul");
+    list.className = "rule-list";
+    for (const rule of item.rules.rules) {
+        const line = rendered.get(rule.id) ?? "(not rendered)";
+        const prefix = `Rule "${rule.id}": `;
+        const li = document.createElement("li");
+        const code = document.createElement("code");
+        code.textContent = rule.id;
+        const prose = document.createElement("span");
+        prose.className = "rule-prose";
+        prose.textContent = line.startsWith(prefix) ? line.slice(prefix.length) : line;
+        li.append(code, prose);
+        list.append(li);
+    }
+    detail.append(list);
+    return detail;
+}
+
+function cases_detail(item) {
+    const detail = document.createElement("div");
+    detail.className = "candidate-detail";
+    detail.hidden = true;
+    const list = document.createElement("ul");
+    list.className = "case-list";
+    for (const case_item of item.cases) {
+        const li = document.createElement("li");
+        const original = document.createElement("div");
+        original.className = "case-original";
+        original.textContent = case_item.original;
+        const meta = document.createElement("div");
+        meta.className = "case-meta";
+        const source = case_item.source ?? entry.source;
+        meta.textContent = `${case_item.rule} · ${case_item.verdict}${source === entry.source ? "" : ` · ${source}`}`;
+        const note = document.createElement("div");
+        note.className = "case-note";
+        note.textContent = case_item.note ?? "";
+        li.append(original, meta, note);
+        if (case_item.suggestion) {
+            const hint = document.createElement("div");
+            hint.className = "case-hint";
+            hint.textContent = case_item.suggestion;
+            li.append(hint);
+        }
+        list.append(li);
+    }
+    detail.append(list);
+    return detail;
+}
+
 function render_candidates() {
     candidates_box.replaceChildren();
     if (entry.candidates.length === 0) {
@@ -391,16 +460,30 @@ function render_candidates() {
         const title = document.createElement("h3");
         title.textContent = `${item.title} (${item.id})`;
 
+        const explanation_label = document.createElement("p");
+        explanation_label.className = "candidate-label";
+        explanation_label.textContent = "Why this reading";
+
         const explanation = document.createElement("p");
+        explanation.className = "candidate-why";
         explanation.textContent = item.explanation;
+
+        const sources = [...new Set(item.cases.map((case_item) => case_item.source ?? entry.source))];
+        const cover = document.createElement("p");
+        cover.className = "note candidate-cover";
+        cover.textContent = item.cases.length === 0
+            ? "Covers no prompt lines."
+            : `Covers ${item.cases.length} line(s) from ${sources.join(", ")}.`;
+
+        const rule_detail = rules_detail(item);
+        const case_detail = cases_detail(item);
 
         const badges = document.createElement("div");
         badges.className = "badges";
-        for (const text of [`${item.rules.rules.length} rules`, `${item.cases.length} cases`]) {
-            const badge = document.createElement("span");
-            badge.textContent = text;
-            badges.append(badge);
-        }
+        badges.append(
+            badge_toggle(item.rules.rules.length, "rules", rule_detail),
+            badge_toggle(item.cases.length, "cases", case_detail),
+        );
 
         const choose = document.createElement("button");
         choose.type = "button";
@@ -414,7 +497,7 @@ function render_candidates() {
             render();
         });
 
-        article.append(title, explanation, badges, choose);
+        article.append(title, explanation_label, explanation, cover, badges, choose, rule_detail, case_detail);
         candidates_box.append(article);
     }
 }
