@@ -2,6 +2,8 @@
 
 ## Open Questions
 
+- Formal equivalents for casual terms: a casual term such as `project` may need a unique multi-word formal name (perhaps `project_define`), but the form is undecided; no scheme is adopted yet.
+
 ## Suggestions
 
 The object-model cycle is `documents/17-object-model-cycle.md`: the model proposes

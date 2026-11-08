@@ -208,16 +208,71 @@
             opacity: 0.55;
         }
 
-        tr.proposal-proposed td {
-            background: color-mix(in srgb, Canvas 86%, #f9a825 14%);
+        .file-history {
+            display: grid;
+            grid-template-columns: max-content minmax(0, 1fr);
+            gap: 0.35rem 1rem;
+            font-size: 0.9rem;
+            margin: 0 0 1rem;
         }
 
-        tr.proposal-rejected td {
-            opacity: 0.55;
+        .file-history dt {
+            font-weight: 600;
         }
 
-        td.decide {
+        .file-history dd {
+            margin: 0;
+        }
+
+        tr.use-accept td:first-child {
+            border-left: 3px solid #2e7d32;
+        }
+
+        tr.use-ignore td:first-child {
+            border-left: 3px solid #9e9e9e;
+        }
+
+        tr.unreviewed {
+            background: color-mix(in srgb, Canvas 96%, CanvasText 4%);
+        }
+
+        .review-hint {
+            margin-left: 0.4rem;
+            padding: 0 0.3rem;
+            font-size: 0.75rem;
+            font-weight: 400;
+            border: 1px dashed currentColor;
+            border-radius: 0.25rem;
+            opacity: 0.75;
+        }
+
+        td.use {
             white-space: nowrap;
+        }
+
+        td.use button {
+            padding: 0.2rem 0.5rem;
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            background: transparent;
+            cursor: pointer;
+        }
+
+        td.use button.active.use-accept {
+            background: #2e7d32;
+            border-color: #2e7d32;
+            color: white;
+        }
+
+        td.use button.active.use-ignore {
+            background: #9e9e9e;
+            border-color: #9e9e9e;
+            color: white;
+        }
+
+        td.evidence .rationale-line {
+            margin-top: 0.25rem;
+            font-style: italic;
+            opacity: 0.8;
         }
 
         label {
@@ -403,6 +458,10 @@
                     <p class="note" id="generate-note"></p>
                 </div>
                 <div class="tab-panel" id="tab-history" data-tab="history" hidden>
+                    <h3>File</h3>
+                    <dl class="file-history" id="file-history"></dl>
+                    <p class="note">Scanned when the studio was built; run <code>make studio-build</code> to rescan.</p>
+                    <h3>Session</h3>
                     <pre id="history-log" class="history"></pre>
                 </div>
                 <div class="tab-panel" id="tab-about" data-tab="about" hidden>
@@ -468,31 +527,32 @@
 
             <section class="panel" data-panel="objects" hidden>
                 <h2>2. Objects</h2>
-                <p class="note">The model proposes every noun and verb with an include or exclude guess and a
-                    reason. Agree confirms the guess; Reject overrides it. Only confirmed objects feed the
-                    compile and the rules. Nothing is written to the repository; the download is the review
-                    artifact.</p>
-                <div class="row">
-                    <button id="propose" type="button">Propose objects</button>
-                    <span class="note" id="propose-note"></span>
+                <div class="tabs" role="tablist" id="object-tabs">
+                    <button type="button" class="tab active" data-tab="object-status" role="tab"
+                        aria-selected="true">Status</button>
+                    <button type="button" class="tab" data-tab="object-about" role="tab"
+                        aria-selected="false">About</button>
                 </div>
-                <p class="note" id="objects-count"></p>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Term</th>
-                            <th>Kind</th>
-                            <th>Guess</th>
-                            <th>Status</th>
-                            <th>Evidence</th>
-                            <th>Rationale</th>
-                            <th>Decide</th>
-                        </tr>
-                    </thead>
-                    <tbody id="proposals"></tbody>
-                </table>
-                <p><a id="proposals-download" download="object-model-review.json">Download the reviewed
-                        proposals</a></p>
+                <div class="tab-panel" data-tab="object-status">
+                    <div class="row">
+                        <button id="propose" type="button">Propose objects</button>
+                        <span class="note" id="propose-note"></span>
+                    </div>
+                    <p class="note" id="objects-count"></p>
+                    <p class="note">Each row is accepted or ignored; a row stays unreviewed until you
+                        choose. The tables are split by kind. Nothing is written to the repository; the
+                        download is the review artifact.</p>
+                    <p><a id="proposals-download" download="object-model-review.json">Download the reviewed
+                            proposals</a></p>
+                </div>
+                <div class="tab-panel" data-tab="object-about" hidden>
+                    <p class="lead">The model proposes every noun and verb with an include or exclude guess
+                        and a reason. You accept or ignore each one; a row stays unreviewed until you
+                        choose.</p>
+                    <p>Accept keeps the term and Ignore drops it. Only confirmed registry entries feed the
+                        compile and the rules. Nothing is written to the repository; the download is the
+                        review artifact, and promoting a confirmation is a separate, explicit step.</p>
+                </div>
             </section>
 
             <section class="panel" data-panel="candidates" hidden>

@@ -1,13 +1,16 @@
 // studio.mjs — the prompt studio.
 //
-// A step rail drives one panel per step: the prompt (editable), the candidates,
-// the compiled rules, the rendered prose, the comparison, the reduced prompt
-// with its diff, the check, and the approval summary. The catalog (catalog.json)
-// and the file facts (files.json) are built by scripts/site-demo.sh; the compile
-// is recorded, and this page does not call a model.
+// A step rail drives one panel per step: the prompt (editable, with its file
+// history), the object-model review, the candidates, the compiled rules, the
+// rendered prose, the comparison, the reduced prompt with its diff, the check,
+// and the approval summary. The catalog (catalog.json), the file facts
+// (files.json), and the object model (object-model.json) are built by
+// scripts/studio-build.sh. Compile and propose call the server on demand, and
+// state is local to the page.
 //
-// State is local to the page: choosing a candidate or editing the prompt changes
-// what is shown and what the downloads contain, and writes nothing.
+// State is local to the page: choosing a candidate, editing the prompt, or
+// narrowing the object model changes what is shown and what the downloads
+// contain, and writes nothing.
 
 import { ruleset_render, ruleset_run } from "../krank.mjs";
 import { diff_lines } from "./prompt-diff.mjs";
@@ -31,10 +34,14 @@ const diff_box = document.querySelector("#diff");
 const check_output = document.querySelector("#check-output");
 const approve = document.querySelector("#approve");
 const history_log = document.querySelector("#history-log");
+const file_history = document.querySelector("#file-history");
 const prompt_panel = document.querySelector('.panel[data-panel="prompt"]');
-const proposals_box = document.querySelector("#proposals");
 const objects_count = document.querySelector("#objects-count");
 const propose_note = document.querySelector("#propose-note");
+const object_panel = document.querySelector('.panel[data-panel="objects"]');
+const object_tabs = document.querySelector("#object-tabs");
+const object_about_tab = object_tabs.querySelector('[data-tab="object-about"]');
+const object_about_panel = object_panel.querySelector('.tab-panel[data-tab="object-about"]');
 
 let entry = catalog.entries.find((item) => item.compiled) ?? catalog.entries[0];
 let candidate = entry.candidates[0] ?? null;
@@ -63,6 +70,64 @@ function download_url(data, type) {
     const url = URL.createObjectURL(new Blob([data], { type }));
     urls.push(url);
     return url;
+}
+
+const KIND_LABELS = { object: "Objects", operation: "Operations", relation: "Relations" };
+const kind_tabs = new Set();
+
+function kind_tab_id(kind) {
+    return `object-kind-${kind.replace(/[^a-z0-9-]/gi, "-").toLowerCase()}`;
+}
+
+function kind_label(kind) {
+    if (KIND_LABELS[kind]) {
+        return KIND_LABELS[kind];
+    }
+    const text = kind.replace(/[-_]/g, " ");
+    return `${text.charAt(0).toUpperCase()}${text.slice(1)}s`;
+}
+
+function ensure_kind_tab(kind) {
+    if (kind_tabs.has(kind)) {
+        return;
+    }
+    kind_tabs.add(kind);
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = "tab";
+    tab.dataset.tab = kind_tab_id(kind);
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-selected", "false");
+    tab.textContent = kind_label(kind);
+    tab.addEventListener("click", () => activate_tab(tab.dataset.tab, object_panel));
+    object_tabs.insertBefore(tab, object_about_tab);
+
+    const panel = document.createElement("div");
+    panel.className = "tab-panel";
+    panel.dataset.tab = kind_tab_id(kind);
+    panel.hidden = true;
+    const table = document.createElement("table");
+    const head = document.createElement("thead");
+    const head_row = document.createElement("tr");
+    for (const heading of ["Term", "Use", "Evidence / Rationale"]) {
+        const th = document.createElement("th");
+        th.textContent = heading;
+        head_row.append(th);
+    }
+    head.append(head_row);
+    const body = document.createElement("tbody");
+    body.dataset.kind = kind;
+    table.append(head, body);
+    panel.append(table);
+    object_panel.insertBefore(panel, object_about_panel);
+}
+
+function default_use(row) {
+    const include = row.guess === "include";
+    if (row.status === "rejected") {
+        return include ? "ignore" : "accept";
+    }
+    return include ? "accept" : "ignore";
 }
 
 function proposal_rows(model) {
@@ -104,58 +169,76 @@ function proposal_rows(model) {
     for (const proposal of model.proposals ?? []) {
         rows.push({ ...proposal });
     }
-    return rows;
+    return rows.map((row) => ({ ...row, use: default_use(row), reviewed: false }));
 }
 
 function proposal_counts() {
-    const counts = { confirmed: 0, proposed: 0, rejected: 0 };
+    const counts = { accept: 0, ignore: 0, unreviewed: 0 };
     for (const row of proposals) {
-        counts[row.status] += 1;
+        counts[row.use] += 1;
+        if (!row.reviewed) {
+            counts.unreviewed += 1;
+        }
     }
     return counts;
-}
-
-function status_label(status) {
-    return status === "proposed" ? "pending" : status;
 }
 
 let proposals_url = null;
 
 function render_proposals() {
-    proposals_box.replaceChildren();
-    const counts = proposal_counts();
-    objects_count.textContent = `${counts.confirmed} confirmed · ${counts.proposed} pending · ${counts.rejected} rejected`;
+    for (const row of proposals) {
+        ensure_kind_tab(row.kind);
+    }
+    const bodies = new Map();
+    for (const body of object_panel.querySelectorAll("tbody[data-kind]")) {
+        body.replaceChildren();
+        bodies.set(body.dataset.kind, body);
+    }
     for (const row of proposals) {
         const tr = document.createElement("tr");
-        tr.className = `proposal-${row.status}`;
-        tr.append(
-            cell(row.term),
-            cell(row.kind),
-            cell(row.guess),
-            cell(status_label(row.status)),
-            cell(row.evidence),
-            cell(row.rationale),
-        );
-        const decide = document.createElement("td");
-        decide.className = "decide";
-        const agree = document.createElement("button");
-        agree.type = "button";
-        agree.textContent = "Agree";
-        agree.addEventListener("click", () => {
-            row.status = "confirmed";
-            render_proposals();
-        });
-        const reject = document.createElement("button");
-        reject.type = "button";
-        reject.textContent = "Reject";
-        reject.addEventListener("click", () => {
-            row.status = "rejected";
-            render_proposals();
-        });
-        decide.append(agree, reject);
-        tr.append(decide);
-        proposals_box.append(tr);
+        tr.className = `use-${row.use}${row.reviewed ? "" : " unreviewed"}`;
+
+        const term = cell(row.term);
+        if (!row.reviewed) {
+            const hint = document.createElement("span");
+            hint.className = "review-hint";
+            hint.textContent = "unreviewed";
+            term.append(hint);
+        }
+
+        const use = document.createElement("td");
+        use.className = "use";
+        for (const value of ["accept", "ignore"]) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = `use-${value}${row.use === value ? " active" : ""}`;
+            button.textContent = value === "accept" ? "Accept" : "Ignore";
+            button.setAttribute("aria-pressed", String(row.use === value));
+            button.addEventListener("click", () => {
+                row.use = value;
+                row.reviewed = true;
+                render_proposals();
+            });
+            use.append(button);
+        }
+
+        const evidence = document.createElement("td");
+        evidence.className = "evidence";
+        const evidence_line = document.createElement("div");
+        evidence_line.className = "evidence-line";
+        evidence_line.textContent = row.evidence;
+        const rationale_line = document.createElement("div");
+        rationale_line.className = "rationale-line";
+        rationale_line.textContent = row.rationale;
+        evidence.append(evidence_line, rationale_line);
+
+        tr.append(term, use, evidence);
+        bodies.get(row.kind).append(tr);
     }
+
+    const counts = proposal_counts();
+    objects_count.textContent = `${counts.accept} accept · ${counts.ignore} ignore · ${counts.unreviewed} unreviewed (of ${proposals.length})`;
+
     if (proposals_url !== null) {
         URL.revokeObjectURL(proposals_url);
     }
@@ -330,8 +413,32 @@ function render_approve() {
     reduced_link.download = `${candidate.id}-reduced.md`;
 }
 
+function local_time(iso) {
+    const date = new Date(iso);
+    return Number.isNaN(date.valueOf()) ? "(unknown)" : date.toLocaleString();
+}
+
+function render_file_history() {
+    file_history.replaceChildren();
+    const rows = [
+        ["Prompt", entry.source],
+        ["Last edited", local_time(entry.edited_at)],
+        ["Last scanned", local_time(entry.scanned_at)],
+        ["Candidates", String(entry.candidates.length)],
+        ["Size", `${entry.markdown.length} characters`],
+    ];
+    for (const [label, value] of rows) {
+        const dt = document.createElement("dt");
+        dt.textContent = label;
+        const dd = document.createElement("dd");
+        dd.textContent = value;
+        file_history.append(dt, dd);
+    }
+}
+
 function render() {
     urls_reset();
+    render_file_history();
     render_proposals();
     render_prompt();
     render_candidates();

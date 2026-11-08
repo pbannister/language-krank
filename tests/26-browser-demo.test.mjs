@@ -74,10 +74,10 @@ test("the studio page carries the step rail and its panels", () => {
         assert.ok(html.includes(`data-step="${step}"`), `the rail has no ${step}`);
         assert.ok(html.includes(`data-panel="${step}"`), `no panel for ${step}`);
     }
-    for (const tab of ["prompt", "history", "about", "candidates", "rules", "prose", "comparison", "reduced"]) {
+    for (const tab of ["prompt", "history", "about", "object-status", "object-about", "candidates", "rules", "prose", "comparison", "reduced"]) {
         assert.ok(html.includes(`data-tab="${tab}"`), `no tab for ${tab}`);
     }
-    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "proposals", "objects-count", "propose"]) {
+    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "file-history", "history-log"]) {
         assert.ok(html.includes(`id="${id}"`), `the page has no #${id}`);
     }
 });
@@ -86,7 +86,17 @@ test("the studio loads the object model and offers a proposal review", () => {
     const source = read("sources/browser/studio.mjs");
     assert.match(source, /load_json\("\.\/object-model\.json"\)/, "the studio does not load the object model");
     assert.match(source, /\/propose/, "the studio has no propose call");
-    assert.match(source, /confirmed · .* pending · .* rejected/, "the studio has no proposal counts");
+    assert.match(source, /accept · .* ignore · .* unreviewed/, "the studio has no proposal counts");
+    assert.match(source, /Evidence \/ Rationale/, "the studio has no combined evidence column");
+});
+
+test("the catalog reports when each prompt file was edited and scanned", () => {
+    const catalog = build("site-catalog.mjs");
+    assert.ok(catalog.entries.length > 0);
+    for (const entry of catalog.entries) {
+        assert.match(entry.edited_at, /^\d{4}-\d{2}-\d{2}T/, `${entry.source}: no edited_at`);
+        assert.match(entry.scanned_at, /^\d{4}-\d{2}-\d{2}T/, `${entry.source}: no scanned_at`);
+    }
 });
 
 test("the catalog lists every prompt file and offers a candidate choice", () => {

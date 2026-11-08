@@ -12,7 +12,7 @@
 // The compile is recorded, not run here: the candidates were authored from the
 // prose in sessions, and the UI says so.
 
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -89,6 +89,7 @@ for (const name of readdirSync(directory_compile)) {
 
 const files = [];
 walk(directory_prompts, files);
+const scanned_at = new Date().toISOString();
 
 const entries = files.sort().map((full) => {
     const source = relative(root, full);
@@ -100,6 +101,8 @@ const entries = files.sort().map((full) => {
         markdown,
         candidates,
         approved: approved.get(source),
+        edited_at: statSync(full).mtime.toISOString(),
+        scanned_at,
     };
 });
 
