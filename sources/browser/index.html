@@ -246,27 +246,15 @@
             opacity: 0.7;
         }
 
-        td.use {
-            white-space: nowrap;
+        .term-line {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
         }
 
-        td.use button {
-            padding: 0.2rem 0.5rem;
-            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
-            background: transparent;
-            cursor: pointer;
-        }
-
-        td.use button.active.use-accept {
-            background: #2e7d32;
-            border-color: #2e7d32;
-            color: white;
-        }
-
-        td.use button.active.use-ignore {
-            background: #9e9e9e;
-            border-color: #9e9e9e;
-            color: white;
+        .term-line input[type="checkbox"] {
+            margin: 0;
+            accent-color: #2e7d32;
         }
 
         td.evidence .rationale-line {
@@ -546,19 +534,19 @@
                         <span class="note" id="propose-note"></span>
                     </div>
                     <p class="note" id="objects-count"></p>
-                    <p class="note">Each row is accepted or ignored; a row stays unreviewed until you
-                        choose. The tables are split by kind. Nothing is written to the repository; the
-                        download is the review artifact.</p>
+                    <p class="note">A checked box accepts the term and an unchecked box ignores it; a
+                        row stays unreviewed until you toggle it. The tables are split by kind. Nothing
+                        is written to the repository; the download is the review artifact.</p>
                     <p><a id="proposals-download" download="object-model-review.json">Download the reviewed
                             proposals</a></p>
                 </div>
                 <div class="tab-panel" data-tab="object-about" hidden>
                     <p class="lead">The model proposes every noun and verb with an include or exclude guess
-                        and a reason. You accept or ignore each one; a row stays unreviewed until you
-                        choose.</p>
-                    <p>Accept keeps the term and Ignore drops it. Only confirmed registry entries feed the
-                        compile and the rules. Nothing is written to the repository; the download is the
-                        review artifact, and promoting a confirmation is a separate, explicit step.</p>
+                        and a reason. A checked box accepts the term and an unchecked box ignores it; a
+                        row stays unreviewed until you toggle it.</p>
+                    <p>Only confirmed registry entries feed the compile and the rules. Nothing is
+                        written to the repository; the download is the review artifact, and promoting a
+                        confirmation is a separate, explicit step.</p>
                 </div>
             </section>
 

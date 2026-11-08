@@ -109,7 +109,7 @@ function ensure_kind_tab(kind) {
     const table = document.createElement("table");
     const head = document.createElement("thead");
     const head_row = document.createElement("tr");
-    for (const heading of ["Term", "Use", "Evidence / Rationale"]) {
+    for (const heading of ["Term", "Evidence / Rationale"]) {
         const th = document.createElement("th");
         th.textContent = heading;
         head_row.append(th);
@@ -198,28 +198,26 @@ function render_proposals() {
         const tr = document.createElement("tr");
         tr.className = `use-${row.use}${row.reviewed ? "" : " unreviewed"}`;
 
-        const term = cell(row.term);
-
-        const use = document.createElement("td");
-        use.className = "use";
-        for (const value of ["accept", "ignore"]) {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = `use-${value}${row.use === value ? " active" : ""}`;
-            button.textContent = value === "accept" ? "Accept" : "Ignore";
-            button.setAttribute("aria-pressed", String(row.use === value));
-            button.addEventListener("click", () => {
-                row.use = value;
-                row.reviewed = true;
-                render_proposals();
-            });
-            use.append(button);
-        }
+        const term = document.createElement("td");
+        const term_line = document.createElement("div");
+        term_line.className = "term-line";
+        const box = document.createElement("input");
+        box.type = "checkbox";
+        box.checked = row.use === "accept";
+        box.indeterminate = !row.reviewed;
+        box.setAttribute("aria-label", `accept ${row.term}`);
+        box.addEventListener("change", () => {
+            row.use = box.checked ? "accept" : "ignore";
+            row.reviewed = true;
+            render_proposals();
+        });
+        term_line.append(box, document.createTextNode(row.term));
+        term.append(term_line);
         if (!row.reviewed) {
             const hint = document.createElement("div");
             hint.className = "review-hint";
             hint.textContent = "unreviewed";
-            use.append(hint);
+            term.append(hint);
         }
 
         const evidence = document.createElement("td");
@@ -232,7 +230,7 @@ function render_proposals() {
         rationale_line.textContent = row.rationale;
         evidence.append(evidence_line, rationale_line);
 
-        tr.append(term, use, evidence);
+        tr.append(term, evidence);
         bodies.get(row.kind).append(tr);
     }
 
