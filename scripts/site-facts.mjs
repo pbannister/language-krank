@@ -92,7 +92,7 @@ function facts_of(full) {
     const lines = text.split("\n");
     return {
         path,
-        directory: path.split("/")[0],
+        directory: path.includes("/") ? path.split("/")[0] : ".",
         name,
         extension: extname(name),
         lines: lines.length,

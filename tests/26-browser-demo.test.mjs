@@ -77,7 +77,7 @@ test("the studio page carries the step rail and its panels", () => {
     for (const tab of ["prompt", "history", "about", "object-status", "object-about", "candidates", "rules", "prose", "comparison", "reduced"]) {
         assert.ok(html.includes(`data-tab="${tab}"`), `no tab for ${tab}`);
     }
-    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "object-file", "file-history", "history-log", "prompt-download", "file-overlay", "file-overlay-body", "file-overlay-note", "file-overlay-close"]) {
+    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "object-file", "file-history", "history-log", "prompt-download", "file-overlay", "file-overlay-body", "file-overlay-note", "file-overlay-close", "candidates-note", "rules-badges", "rule-summary", "uncovered", "check-summary", "approve-warning"]) {
         assert.ok(html.includes(`id="${id}"`), `the page has no #${id}`);
     }
 });

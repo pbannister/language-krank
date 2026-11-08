@@ -25,15 +25,21 @@ const select_scope = document.querySelector("#scope");
 const textarea = document.querySelector("#source");
 const edit_note = document.querySelector("#edit-note");
 const candidates_box = document.querySelector("#candidates");
+const candidates_note = document.querySelector("#candidates-note");
 const rules_box = document.querySelector("#rules");
 const rules_note = document.querySelector("#rules-note");
+const rules_badges = document.querySelector("#rules-badges");
+const rule_summary = document.querySelector("#rule-summary");
 const prose_box = document.querySelector("#prose");
 const compare_note = document.querySelector("#compare-note");
 const comparison = document.querySelector("#comparison");
+const uncovered = document.querySelector("#uncovered");
 const reduced_box = document.querySelector("#reduced");
 const diff_box = document.querySelector("#diff");
 const check_output = document.querySelector("#check-output");
+const check_summary = document.querySelector("#check-summary");
 const approve = document.querySelector("#approve");
+const approve_warning = document.querySelector("#approve-warning");
 const history_log = document.querySelector("#history-log");
 const file_history = document.querySelector("#file-history");
 const object_file = document.querySelector("#object-file");
@@ -418,10 +424,7 @@ function badge_toggle(count, noun, detail) {
     return button;
 }
 
-function rules_detail(item) {
-    const detail = document.createElement("div");
-    detail.className = "candidate-detail";
-    detail.hidden = true;
+function rule_list(item) {
     const rendered = rendered_by_rule(ruleset_render(item.rules));
     const list = document.createElement("ul");
     list.className = "rule-list";
@@ -437,7 +440,14 @@ function rules_detail(item) {
         li.append(code, prose);
         list.append(li);
     }
-    detail.append(list);
+    return list;
+}
+
+function rules_detail(item) {
+    const detail = document.createElement("div");
+    detail.className = "candidate-detail";
+    detail.hidden = true;
+    detail.append(rule_list(item));
     return detail;
 }
 
@@ -475,18 +485,26 @@ function cases_detail(item) {
 function render_candidates() {
     candidates_box.replaceChildren();
     if (entry.candidates.length === 0) {
+        candidates_note.textContent = "No candidate rule set for this prompt yet.";
         const note = document.createElement("p");
         note.className = "note";
         note.textContent = "This prompt has no candidate rule set yet.";
         candidates_box.append(note);
         return;
     }
+    candidates_note.textContent = `${entry.candidates.length} reading(s); ${candidate ? `${candidate.id} selected` : "none selected"}.`;
     for (const item of entry.candidates) {
         const article = document.createElement("article");
         article.className = `candidate${item.id === candidate.id ? " selected" : ""}`;
 
         const title = document.createElement("h3");
         title.textContent = `${item.title} (${item.id})`;
+        if (item.id === candidate.id) {
+            const badge = document.createElement("span");
+            badge.className = "badge selected-badge";
+            badge.textContent = "selected";
+            title.append(" ", badge);
+        }
 
         const explanation_label = document.createElement("p");
         explanation_label.className = "candidate-label";
@@ -531,7 +549,15 @@ function render_candidates() {
 }
 
 function render_rules() {
-    rules_note.textContent = `Candidate ${candidate.id}: ${candidate.rules.rules.length} rules${edited ? "; the working prompt has been edited" : ""}.`;
+    rules_note.textContent = `Candidate ${candidate.id}: ${candidate.rules.rules.length} rules, ${candidate.cases.length} cases${edited ? "; the working prompt has an applied edit" : ""}.`;
+    rules_badges.replaceChildren();
+    for (const text of [`${candidate.rules.rules.length} rules`, `${candidate.cases.length} cases`]) {
+        const badge = document.createElement("span");
+        badge.className = "badge";
+        badge.textContent = text;
+        rules_badges.append(badge);
+    }
+    rule_summary.replaceChildren(rule_list(candidate));
     const text = JSON.stringify(candidate.rules, null, 2);
     rules_box.textContent = text;
     const link = document.querySelector("#rules-download");
@@ -547,9 +573,13 @@ function render_compare() {
     const rendered = rendered_by_rule(ruleset_render(candidate.rules));
     const origins = covered_origins(entry, candidate);
     const present = origins.filter((origin) => working.includes(origin)).length;
+    const covered = candidate.cases.map((item) => item.original);
+    const uncovered_lines = working
+        .split("\n")
+        .filter((line) => line.trim() !== "" && !covered.some((original) => line.includes(original)));
     compare_note.textContent = origins.length === 0
         ? "This candidate has no case drawn from this file."
-        : `${present} of ${origins.length} covered lines are present in the prompt text; a missing line is dimmed.`;
+        : `${present} of ${origins.length} covered lines are present in the prompt text; ${uncovered_lines.length} non-empty line(s) are not covered by a case. A missing covered line is dimmed.`;
     comparison.replaceChildren();
     for (const item of candidate.cases) {
         const row = document.createElement("tr");
@@ -564,6 +594,18 @@ function render_compare() {
             cell(item.suggestion ?? "", "hint"),
         );
         comparison.append(row);
+    }
+    uncovered.replaceChildren();
+    if (uncovered_lines.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "None: every non-empty line is covered by a case.";
+        uncovered.append(li);
+    } else {
+        for (const line of uncovered_lines) {
+            const li = document.createElement("li");
+            li.textContent = line;
+            uncovered.append(li);
+        }
     }
 }
 
@@ -585,6 +627,45 @@ function render_reduced() {
     link.download = `${candidate.id}-reduced.md`;
 }
 
+function render_check_result() {
+    check_summary.replaceChildren();
+    if (!last_check) {
+        const note = document.createElement("p");
+        note.className = "note";
+        note.textContent = "Not run yet. Pick a scope and run the rules.";
+        check_summary.append(note);
+        return;
+    }
+    const headline = document.createElement("p");
+    headline.className = "scan-result";
+    headline.textContent = `${last_check.firings} rule firing(s); ${last_check.emitted.length} emission(s).`;
+    check_summary.append(headline);
+    if (last_check.emitted.length === 0) {
+        const ok = document.createElement("p");
+        ok.className = "note";
+        ok.textContent = "No violation was emitted for this scope.";
+        check_summary.append(ok);
+        return;
+    }
+    const table = document.createElement("table");
+    const head = document.createElement("thead");
+    const head_row = document.createElement("tr");
+    for (const label of ["#", "Emitted"]) {
+        const th = document.createElement("th");
+        th.textContent = label;
+        head_row.append(th);
+    }
+    head.append(head_row);
+    const body = document.createElement("tbody");
+    last_check.emitted.forEach((item, index) => {
+        const row = document.createElement("tr");
+        row.append(cell(String(index + 1)), cell(JSON.stringify(item)));
+        body.append(row);
+    });
+    table.append(head, body);
+    check_summary.append(table);
+}
+
 function render_approve() {
     approve.replaceChildren();
     const rows = [
@@ -593,7 +674,7 @@ function render_approve() {
         ["Rules", String(candidate.rules.rules.length)],
         ["Cases", String(candidate.cases.length)],
         ["Prompt edited", edited ? "yes" : "no"],
-        ["Check", last_check ? `${last_check.firings} firing(s), ${last_check.emitted.length} emission(s)` : "not run"],
+        ["Check", last_check ? `run: ${last_check.firings} firing(s), ${last_check.emitted.length} emission(s)` : "not run (step 5)"],
     ];
     for (const [label, value] of rows) {
         const dt = document.createElement("dt");
@@ -610,6 +691,9 @@ function render_approve() {
     const reduced_link = document.querySelector("#approve-reduced");
     reduced_link.href = download_url(reduced_box.textContent, "text/markdown");
     reduced_link.download = `${candidate.id}-reduced.md`;
+
+    approve_warning.hidden = Boolean(last_check);
+    approve_warning.textContent = last_check ? "" : "The check has not been run; run step 5 before approving.";
 }
 
 function local_time(iso) {
@@ -663,12 +747,18 @@ function render() {
         reduced_box.textContent = working;
         diff_box.textContent = "No candidate rule set for this prompt yet.";
         check_output.textContent = "";
+        check_summary.replaceChildren();
+        const no_check = document.createElement("p");
+        no_check.className = "note";
+        no_check.textContent = "No candidate rule set to check.";
+        check_summary.append(no_check);
         approve.replaceChildren();
         const dt = document.createElement("dt");
         dt.textContent = "Note";
         const dd = document.createElement("dd");
         dd.textContent = "No candidate rule set for this prompt yet.";
         approve.append(dt, dd);
+        approve_warning.hidden = true;
         for (const id of ["#rules-download", "#reduced-download", "#approve-rules", "#approve-reduced"]) {
             document.querySelector(id).removeAttribute("href");
         }
@@ -682,6 +772,7 @@ function render() {
     render_prose();
     render_compare();
     render_reduced();
+    render_check_result();
     render_approve();
 }
 
@@ -695,6 +786,10 @@ function populate_prompts() {
     select_prompt.value = entry.source;
 }
 
+function scope_directory_label(directory) {
+    return directory === "." ? "the repository root" : `${directory}/`;
+}
+
 function populate_scopes() {
     const by_directory = new Map();
     for (const file of bundle.files) {
@@ -704,10 +799,10 @@ function populate_scopes() {
     }
     for (const [directory, files] of [...by_directory].sort()) {
         const group = document.createElement("optgroup");
-        group.label = directory;
+        group.label = scope_directory_label(directory);
         const all = document.createElement("option");
         all.value = `dir:${directory}`;
-        all.textContent = `all files in ${directory}/ (${files.length})`;
+        all.textContent = `all files in ${scope_directory_label(directory)} (${files.length})`;
         group.append(all);
         for (const file of files) {
             const option = document.createElement("option");
@@ -976,6 +1071,7 @@ document.querySelector("#run").addEventListener("click", () => {
         last_check = null;
         check_output.textContent = `error: ${error.message}`;
     }
+    render_check_result();
     render_approve();
 });
 

@@ -359,13 +359,84 @@
         }
 
         .badges .badge {
-            font: inherit;
             font-size: 0.8rem;
             padding: 0.1rem 0.5rem;
             border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
             border-radius: 0.25rem;
             background: color-mix(in srgb, Canvas 88%, CanvasText 12%);
+        }
+
+        .badges button.badge {
+            font: inherit;
+            font-size: 0.8rem;
             cursor: pointer;
+        }
+
+        .badges span.badge {
+            cursor: default;
+        }
+
+        .selected-badge {
+            background: #2e7d32;
+            color: white;
+        }
+
+        .step-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            margin: 0 0 0.75rem;
+        }
+
+        .step-head h2 {
+            margin: 0 0 0.35rem;
+        }
+
+        .step-head .note {
+            margin: 0;
+        }
+
+        .rule-summary {
+            margin: 0 0 1rem;
+        }
+
+        .raw {
+            margin: 0.75rem 0;
+        }
+
+        .raw summary {
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .raw pre {
+            margin-top: 0.5rem;
+        }
+
+        .check-summary {
+            margin: 0.75rem 0;
+        }
+
+        #scope {
+            max-width: 32rem;
+        }
+
+        .approve-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 1rem;
+        }
+
+        .approve-card {
+            padding: 0.75rem 1rem;
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            border-radius: 0.35rem;
+        }
+
+        .approve-card h3 {
+            margin-top: 0;
         }
 
         .badges .badge[aria-expanded="true"] {
@@ -533,6 +604,10 @@
                 grid-template-columns: 1fr;
             }
 
+            .approve-grid {
+                grid-template-columns: 1fr;
+            }
+
             .steps {
                 position: static;
                 flex-direction: row;
@@ -688,6 +763,7 @@
                     <button type="button" class="tab" data-tab="about" role="tab" aria-selected="false">About</button>
                 </div>
                 <div class="tab-panel" id="tab-candidates" data-tab="candidates">
+                    <p class="note" id="candidates-note"></p>
                     <div id="candidates"></div>
                 </div>
                 <div class="tab-panel" id="tab-candidates-about" data-tab="about" hidden>
@@ -712,15 +788,36 @@
                     <button type="button" class="tab" data-tab="about" role="tab" aria-selected="false">About</button>
                 </div>
                 <div class="tab-panel" id="tab-rules" data-tab="rules">
-                    <p class="note" id="rules-note"></p>
-                    <pre id="rules" class="fill"></pre>
+                    <div class="step-head">
+                        <div>
+                            <h2>4. Rules</h2>
+                            <p class="note" id="rules-note"></p>
+                        </div>
+                        <div class="badges" id="rules-badges"></div>
+                    </div>
+                    <div id="rule-summary" class="rule-summary"></div>
+                    <details class="raw">
+                        <summary>Raw rule set (JSON)</summary>
+                        <pre id="rules" class="fill"></pre>
+                    </details>
                     <p><a id="rules-download" download="rules.json">Download the rule set</a></p>
                 </div>
                 <div class="tab-panel" id="tab-prose" data-tab="prose" hidden>
+                    <div class="step-head">
+                        <div>
+                            <h2>Prose from the rules</h2>
+                            <p class="note">The rule set rendered back into words, so the round trip can be read.</p>
+                        </div>
+                    </div>
                     <pre id="prose" class="fill"></pre>
                 </div>
                 <div class="tab-panel" id="tab-comparison" data-tab="comparison" hidden>
-                    <p class="note" id="compare-note"></p>
+                    <div class="step-head">
+                        <div>
+                            <h2>Comparison</h2>
+                            <p class="note" id="compare-note"></p>
+                        </div>
+                    </div>
                     <table>
                         <thead>
                             <tr>
@@ -733,14 +830,26 @@
                         </thead>
                         <tbody id="comparison"></tbody>
                     </table>
+                    <details class="raw">
+                        <summary>Lines no rule captured</summary>
+                        <ul id="uncovered"></ul>
+                    </details>
                 </div>
                 <div class="tab-panel" id="tab-reduced" data-tab="reduced" hidden>
-                    <p class="note">Lines a covered case still finds in the prompt are removed; a pointer replaces them.
-                        If an edit breaks a covered line, the line stays, and the comparison marks it.</p>
-                    <p><a id="reduced-download" download="reduced-prompt.md">Download the reduced prompt</a></p>
-                    <pre id="reduced" class="fill"></pre>
+                    <div class="step-head">
+                        <div>
+                            <h2>Reduced prompt</h2>
+                            <p class="note">Covered lines are removed and replaced by a pointer. An edit that breaks
+                                a covered line keeps the line, and the comparison marks it.</p>
+                        </div>
+                        <p><a id="reduced-download" download="reduced-prompt.md">Download the reduced prompt</a></p>
+                    </div>
                     <h3>The difference</h3>
                     <div id="diff" class="diff"></div>
+                    <details class="raw">
+                        <summary>Full reduced prompt</summary>
+                        <pre id="reduced" class="fill"></pre>
+                    </details>
                 </div>
                 <div class="tab-panel" id="tab-rules-about" data-tab="about" hidden>
                     <p class="lead">This step proves the round trip. Rules is the compiled rule set; Prose renders those
@@ -751,25 +860,46 @@
             </section>
 
             <section class="panel" data-panel="check" hidden>
-                <h2>5. Check a file or directory</h2>
-                <p class="note">The selected candidate's rules run against facts extracted from the project's files at
-                    build time.</p>
-                <label for="scope">Scope</label>
-                <select id="scope"></select>
+                <div class="step-head">
+                    <div>
+                        <h2>5. Check</h2>
+                        <p class="note">The selected candidate's rules run against facts extracted from the project's
+                            files at build time.</p>
+                    </div>
+                </div>
                 <div class="row">
+                    <label for="scope">Scope</label>
+                    <select id="scope"></select>
                     <button id="run" type="button">Run the rules</button>
                 </div>
-                <pre id="check-output" aria-live="polite"></pre>
+                <div id="check-summary" class="check-summary"></div>
+                <details class="raw">
+                    <summary>Raw result (JSON)</summary>
+                    <pre id="check-output" aria-live="polite"></pre>
+                </details>
             </section>
 
             <section class="panel" data-panel="approve" hidden>
-                <h2>6. Approve</h2>
-                <p class="note">Approval records the choice in this page. Nothing is written to the repository; the
-                    downloads are the artifacts to review and commit.</p>
-                <dl class="summary" id="approve"></dl>
-                <div class="row">
-                    <a id="approve-rules" download="approved-rules.json">Download the approved rule set</a>
-                    <a id="approve-reduced" download="approved-reduced.md">Download the reduced prompt</a>
+                <div class="step-head">
+                    <div>
+                        <h2>6. Approve</h2>
+                        <p class="note">This page records the choice and writes nothing. The downloads are the
+                            artifacts to review and commit.</p>
+                    </div>
+                </div>
+                <div class="approve-grid">
+                    <div class="approve-card">
+                        <h3>Choice</h3>
+                        <dl class="summary" id="approve"></dl>
+                        <p class="note edit-dirty" id="approve-warning" hidden></p>
+                    </div>
+                    <div class="approve-card">
+                        <h3>Artifacts</h3>
+                        <p><a id="approve-rules" download="approved-rules.json">Download the rule set (JSON)</a></p>
+                        <p><a id="approve-reduced" download="approved-reduced.md">Download the reduced prompt
+                                (Markdown)</a></p>
+                        <p class="note">Commit these files, or paste them into the repository.</p>
+                    </div>
                 </div>
             </section>
         </main>
