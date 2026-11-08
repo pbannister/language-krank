@@ -251,7 +251,10 @@ function cell(text, class_name) {
     if (class_name) {
         element.className = class_name;
     }
-    element.textContent = text;
+    const content = document.createElement("div");
+    content.className = "cell-text";
+    content.textContent = text;
+    element.append(content);
     return element;
 }
 

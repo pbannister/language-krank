@@ -8,6 +8,10 @@
     <style>
         :root {
             color-scheme: light dark;
+            /* Bringhurst: 45-75 characters per line, 66 ideal for one column.
+               Cap every multi-line text column at that measure so a wide
+               window does not produce hard-to-scan lines. */
+            --measure: 66ch;
         }
 
         html,
@@ -53,7 +57,7 @@
         }
 
         .lead {
-            max-width: 52rem;
+            max-width: var(--measure);
         }
 
         .studio {
@@ -269,6 +273,14 @@
             margin-top: 0.25rem;
             font-style: italic;
             opacity: 0.8;
+        }
+
+        .cell-text,
+        .evidence-line,
+        .rationale-line,
+        .panel p,
+        .panel li {
+            max-width: var(--measure);
         }
 
         label {
