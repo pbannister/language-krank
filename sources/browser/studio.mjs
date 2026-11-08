@@ -370,12 +370,37 @@ function reduce(text, origins, candidate_id) {
     return `${kept.join("\n").trimEnd()}\n\n## Compiled rules\n\nThis file's covered rules are compiled into the krank rule set \`${candidate_id}\`; see the compiled rules on this page.\n`;
 }
 
+let prompt_url = null;
+
+function update_edit_note() {
+    const text = textarea.value;
+    const unsaved = text !== working;
+    const changed = text !== entry.markdown;
+    edit_note.classList.toggle("edit-dirty", changed);
+    if (!changed) {
+        edit_note.textContent = "This is the file's text; nothing is unsaved.";
+    } else if (unsaved) {
+        edit_note.textContent = "Unsaved edit — the file is unchanged. Apply the edit to use it on this page, or download the text to keep a copy.";
+    } else {
+        edit_note.textContent = "Applied draft — the file is unchanged. The compile still uses the file's cases; the comparison marks a covered line the edit broke. Download the text to keep a copy.";
+    }
+}
+
+function update_prompt_download() {
+    if (prompt_url !== null) {
+        URL.revokeObjectURL(prompt_url);
+    }
+    prompt_url = URL.createObjectURL(new Blob([textarea.value], { type: "text/markdown" }));
+    const link = document.querySelector("#prompt-download");
+    link.href = prompt_url;
+    link.download = entry.source.split("/").pop() ?? "prompt.md";
+}
+
 function render_prompt() {
     select_prompt.value = entry.source;
     textarea.value = working;
-    edit_note.textContent = edited
-        ? "The working text differs from the file. The compile still comes from the file's cases; the comparison marks a covered line the edit broke."
-        : "The working text is the file's text.";
+    update_edit_note();
+    update_prompt_download();
 }
 
 function badge_toggle(count, noun, detail) {
@@ -720,6 +745,11 @@ select_prompt.addEventListener("change", () => {
     edited = false;
     last_check = null;
     render();
+});
+
+textarea.addEventListener("input", () => {
+    update_edit_note();
+    update_prompt_download();
 });
 
 document.querySelector("#apply").addEventListener("click", () => {

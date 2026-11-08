@@ -316,6 +316,11 @@
             max-width: 52rem;
         }
 
+        .note.edit-dirty {
+            font-weight: 600;
+            opacity: 1;
+        }
+
         .verdict {
             font-weight: 600;
             white-space: nowrap;
@@ -561,12 +566,12 @@
                     <button type="button" class="tab" data-tab="about" role="tab" aria-selected="false">About</button>
                 </div>
                 <div class="tab-panel" id="tab-prompt" data-tab="prompt">
-                    <label for="prompt">Prompt file</label>
-                    <select id="prompt"></select>
+                    <select id="prompt" aria-label="Prompt file"></select>
                     <div class="row">
                         <button id="apply" type="button">Apply the edit</button>
                         <button id="reset" type="button">Reset to the file</button>
                         <button id="generate" type="button">Generate candidates</button>
+                        <a id="prompt-download" download="prompt.md">Download the prompt text</a>
                     </div>
                     <div class="label-row">
                         <label for="source">Prompt text</label>

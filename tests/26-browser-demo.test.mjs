@@ -77,7 +77,7 @@ test("the studio page carries the step rail and its panels", () => {
     for (const tab of ["prompt", "history", "about", "object-status", "object-about", "candidates", "rules", "prose", "comparison", "reduced"]) {
         assert.ok(html.includes(`data-tab="${tab}"`), `no tab for ${tab}`);
     }
-    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "object-file", "file-history", "history-log", "file-overlay", "file-overlay-body", "file-overlay-note", "file-overlay-close"]) {
+    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "object-file", "file-history", "history-log", "prompt-download", "file-overlay", "file-overlay-body", "file-overlay-note", "file-overlay-close"]) {
         assert.ok(html.includes(`id="${id}"`), `the page has no #${id}`);
     }
 });
@@ -99,6 +99,15 @@ test("the studio links the evidence filename to a highlighting file viewer", () 
     const view = read("sources/browser/file-view.mjs");
     assert.match(view, /\/file\?path=/, "the renderer does not fetch a repository file");
     assert.match(view, /file-line highlight|highlight/, "the renderer has no highlight");
+});
+
+test("the prompt edit is marked as unsaved and downloadable", () => {
+    const source = read("sources/browser/studio.mjs");
+    assert.match(source, /the file is unchanged/, "the edit note does not say the file is unchanged");
+    assert.match(source, /update_edit_note/, "the edit note does not update on input");
+    const html = read("sources/browser/index.html");
+    assert.match(html, /id="prompt-download"/, "the prompt text has no download");
+    assert.ok(!html.includes('<label for="prompt">Prompt file</label>'), "the prompt file label remains");
 });
 
 test("the candidate cards expand their rules and cases", () => {
