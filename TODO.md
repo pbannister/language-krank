@@ -4,11 +4,16 @@
 
 ## Suggestions
 
-The model proposes object-model additions here; the human promotes them to
-`dataflow.in/object-model.json` as a separate, explicit step, so several prose
-updates can batch before the formal model moves.
+The object-model cycle is `documents/17-object-model-cycle.md`: the model proposes
+every noun/verb with an overt include/exclude guess and a reason, and the human
+agrees or overrides. The human promotes confirmations into
+`dataflow.in/object-model.json` as a separate, explicit step.
 
-- (none yet)
+- [ ] add provenance to the object model (evidence, rationale, status, source).
+- [ ] write the "propose the object model" extraction task.
+- [ ] add a studio step between Prompt and Candidates: propose, agree/reject, count.
+- [ ] gate it: provenance is required, and rule extraction uses only confirmed objects.
+- [ ] re-propose the existing 79 objects with evidence, so none is un-reviewed.
 
 ## Compile Workflow
 
