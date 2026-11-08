@@ -1,70 +1,356 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>krank — prompt studio</title>
     <style>
-        :root { color-scheme: light dark; }
-        html, body { height: 100%; box-sizing: border-box; }
-        body { margin: 0 auto; max-width: 76rem; padding: 2rem 1rem; font-family: system-ui, sans-serif; line-height: 1.45; display: flex; flex-direction: column; }
-        h1 { position: fixed; top: 0.75rem; right: 1.25rem; margin: 0; font-size: 1.25rem; line-height: 1.2; z-index: 1; }
-        h2 { margin: 0 0 0.75rem; font-size: 1.15rem; border-bottom: 1px solid color-mix(in srgb, Canvas 80%, CanvasText 20%); padding-bottom: 0.25rem; }
-        h3 { margin: 1.25rem 0 0.5rem; font-size: 1rem; }
-        p { margin: 0 0 1rem; }
-        .lead { max-width: 52rem; }
-        .studio { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 1.5rem; align-items: stretch; }
-        .steps { position: sticky; top: 1rem; align-self: start; display: flex; flex-direction: column; gap: 0.25rem; }
-        .steps button { text-align: left; font: inherit; padding: 0.4rem 0.6rem; border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); border-radius: 0.25rem; background: transparent; cursor: pointer; }
-        .steps button.active { background: color-mix(in srgb, Canvas 82%, CanvasText 18%); font-weight: 600; }
-        .steps button:disabled { opacity: 0.4; cursor: default; }
-        .panel[hidden] { display: none; }
-        main { display: flex; flex-direction: column; min-height: 0; overflow: auto; }
-        .panel:not([hidden]) { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
-        .tab-panel:not([hidden]) { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow: auto; }
-        pre { padding: 1rem; border-radius: 0.25rem; overflow: auto; background: color-mix(in srgb, Canvas 92%, CanvasText 8%); font-family: ui-monospace, monospace; font-size: 0.8125rem; }
-        .fill { flex: 1 1 auto; min-height: 0; }
-        textarea { width: 100%; font-family: ui-monospace, monospace; font-size: 0.8125rem; padding: 0.75rem; border-radius: 0.25rem; border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); background: color-mix(in srgb, Canvas 95%, CanvasText 5%); color: inherit; }
-        #source { flex: 1 1 auto; min-height: 0; resize: vertical; }
-        .tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); margin: 0.5rem 0 0.75rem; }
-        .tab { font: inherit; padding: 0.4rem 0.8rem; border: 1px solid transparent; border-bottom: none; border-radius: 0.3rem 0.3rem 0 0; background: transparent; cursor: pointer; }
-        .tab.active { background: color-mix(in srgb, Canvas 86%, CanvasText 14%); font-weight: 600; border-color: color-mix(in srgb, Canvas 78%, CanvasText 22%); }
-        .tab-panel[hidden] { display: none; }
-        .history { flex: 1 1 auto; min-height: 0; overflow: auto; white-space: pre-wrap; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-        th, td { border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); padding: 0.5rem; text-align: left; vertical-align: top; }
-        th { background: color-mix(in srgb, Canvas 92%, CanvasText 8%); }
-        tr.missing td { opacity: 0.55; }
-        label { display: block; margin: 0.75rem 0 0.25rem; font-weight: 600; }
-        .label-row { display: flex; align-items: baseline; gap: 0.75rem; }
-        .label-row label { margin: 0.75rem 0 0.25rem; }
-        .label-row .note { margin: 0; }
-        select, button { font: inherit; padding: 0.35rem 0.6rem; max-width: 100%; }
-        .row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin: 0.75rem 0; }
-        .note { opacity: 0.75; font-size: 0.875rem; max-width: 52rem; }
-        .verdict { font-weight: 600; white-space: nowrap; }
-        .hint { font-style: italic; }
-        .candidate { border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); border-radius: 0.35rem; padding: 0.75rem 1rem; margin: 0 0 0.75rem; }
-        .candidate.selected { border-color: color-mix(in srgb, Canvas 40%, #2e7d32 60%); box-shadow: 0 0 0 2px color-mix(in srgb, Canvas 70%, #2e7d32 30%); }
-        .candidate h3 { margin: 0 0 0.35rem; }
-        .candidate p { margin: 0 0 0.5rem; }
-        .badges { display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.8rem; margin: 0.35rem 0; }
-        .badges span { background: color-mix(in srgb, Canvas 88%, CanvasText 12%); border-radius: 0.25rem; padding: 0.1rem 0.5rem; }
-        .diff { font-family: ui-monospace, monospace; font-size: 0.8125rem; border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%); border-radius: 0.25rem; max-height: 26rem; overflow: auto; }
-        .diff-line { white-space: pre-wrap; padding: 0 0.75rem; }
-        .diff-add { background: color-mix(in srgb, Canvas 78%, #2e7d32 22%); }
-        .diff-remove { background: color-mix(in srgb, Canvas 78%, #c62828 22%); }
-        .diff-same { opacity: 0.55; }
-        .summary { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.35rem 1rem; font-size: 0.9rem; }
-        .summary dt { font-weight: 600; }
-        .summary dd { margin: 0; }
-        code { background: color-mix(in srgb, Canvas 92%, CanvasText 8%); padding: 0.1em 0.3em; }
+        :root {
+            color-scheme: light dark;
+        }
+
+        html,
+        body {
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0 auto;
+            max-width: 76rem;
+            padding: 2rem 1rem;
+            font-family: system-ui, sans-serif;
+            line-height: 1.45;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            position: fixed;
+            top: 0.75rem;
+            right: 1.25rem;
+            margin: 0;
+            font-size: 1.25rem;
+            line-height: 1.2;
+            z-index: 1;
+        }
+
+        h2 {
+            margin: 0 0 0.75rem;
+            font-size: 1.15rem;
+            border-bottom: 1px solid color-mix(in srgb, Canvas 80%, CanvasText 20%);
+            padding-bottom: 0.25rem;
+        }
+
+        h3 {
+            margin: 1.25rem 0 0.5rem;
+            font-size: 1rem;
+        }
+
+        p {
+            margin: 0 0 1rem;
+        }
+
+        .lead {
+            max-width: 52rem;
+        }
+
+        .studio {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: 13rem minmax(0, 1fr);
+            gap: 1.5rem;
+            align-items: stretch;
+        }
+
+        .steps {
+            position: sticky;
+            top: 1rem;
+            align-self: start;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .steps button {
+            text-align: left;
+            font: inherit;
+            padding: 0.4rem 0.6rem;
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            border-radius: 0.25rem;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .steps button.active {
+            background: color-mix(in srgb, Canvas 82%, CanvasText 18%);
+            font-weight: 600;
+        }
+
+        .steps button:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+        .panel[hidden] {
+            display: none;
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: auto;
+        }
+
+        .panel:not([hidden]) {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        .tab-panel:not([hidden]) {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+        }
+
+        pre {
+            padding: 1rem;
+            border-radius: 0.25rem;
+            overflow: auto;
+            background: color-mix(in srgb, Canvas 92%, CanvasText 8%);
+            font-family: ui-monospace, monospace;
+            font-size: 0.8125rem;
+        }
+
+        .fill {
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        textarea {
+            width: 100%;
+            font-family: ui-monospace, monospace;
+            font-size: 0.8125rem;
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            background: color-mix(in srgb, Canvas 95%, CanvasText 5%);
+            color: inherit;
+        }
+
+        #source {
+            flex: 1 1 auto;
+            min-height: 0;
+            resize: vertical;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.25rem;
+            border-bottom: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            margin: 0.5rem 0 0.75rem;
+        }
+
+        .tab {
+            font: inherit;
+            padding: 0.4rem 0.8rem;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 0.3rem 0.3rem 0 0;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .tab.active {
+            background: color-mix(in srgb, Canvas 86%, CanvasText 14%);
+            font-weight: 600;
+            border-color: color-mix(in srgb, Canvas 78%, CanvasText 22%);
+        }
+
+        .tab-panel[hidden] {
+            display: none;
+        }
+
+        .history {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+            white-space: pre-wrap;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        th,
+        td {
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            padding: 0.5rem;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: color-mix(in srgb, Canvas 92%, CanvasText 8%);
+        }
+
+        tr.missing td {
+            opacity: 0.55;
+        }
+
+        label {
+            display: block;
+            margin: 0.75rem 0 0.25rem;
+            font-weight: 600;
+        }
+
+        .label-row {
+            display: flex;
+            align-items: baseline;
+            gap: 0.75rem;
+        }
+
+        .label-row label {
+            margin: 0.75rem 0 0.25rem;
+        }
+
+        .label-row .note {
+            margin: 0;
+        }
+
+        select,
+        button {
+            font: inherit;
+            padding: 0.35rem 0.6rem;
+            max-width: 100%;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            margin: 0.75rem 0;
+        }
+
+        .note {
+            opacity: 0.75;
+            font-size: 0.875rem;
+            max-width: 52rem;
+        }
+
+        .verdict {
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .hint {
+            font-style: italic;
+        }
+
+        .candidate {
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            border-radius: 0.35rem;
+            padding: 0.75rem 1rem;
+            margin: 0 0 0.75rem;
+        }
+
+        .candidate.selected {
+            border-color: color-mix(in srgb, Canvas 40%, #2e7d32 60%);
+            box-shadow: 0 0 0 2px color-mix(in srgb, Canvas 70%, #2e7d32 30%);
+        }
+
+        .candidate h3 {
+            margin: 0 0 0.35rem;
+        }
+
+        .candidate p {
+            margin: 0 0 0.5rem;
+        }
+
+        .badges {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            font-size: 0.8rem;
+            margin: 0.35rem 0;
+        }
+
+        .badges span {
+            background: color-mix(in srgb, Canvas 88%, CanvasText 12%);
+            border-radius: 0.25rem;
+            padding: 0.1rem 0.5rem;
+        }
+
+        .diff {
+            font-family: ui-monospace, monospace;
+            font-size: 0.8125rem;
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            border-radius: 0.25rem;
+            max-height: 26rem;
+            overflow: auto;
+        }
+
+        .diff-line {
+            white-space: pre-wrap;
+            padding: 0 0.75rem;
+        }
+
+        .diff-add {
+            background: color-mix(in srgb, Canvas 78%, #2e7d32 22%);
+        }
+
+        .diff-remove {
+            background: color-mix(in srgb, Canvas 78%, #c62828 22%);
+        }
+
+        .diff-same {
+            opacity: 0.55;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: max-content minmax(0, 1fr);
+            gap: 0.35rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .summary dt {
+            font-weight: 600;
+        }
+
+        .summary dd {
+            margin: 0;
+        }
+
+        code {
+            background: color-mix(in srgb, Canvas 92%, CanvasText 8%);
+            padding: 0.1em 0.3em;
+        }
+
         @media (max-width: 54rem) {
-            .studio { grid-template-columns: 1fr; }
-            .steps { position: static; flex-direction: row; flex-wrap: wrap; }
+            .studio {
+                grid-template-columns: 1fr;
+            }
+
+            .steps {
+                position: static;
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
         }
     </style>
 </head>
+
 <body>
     <!-- HOMELAB-NAV -->
     <h1>krank — prompt studio</h1>
@@ -81,8 +367,10 @@
         <main>
             <section class="panel" data-panel="prompt">
                 <div class="tabs" role="tablist">
-                    <button type="button" class="tab active" data-tab="prompt" role="tab" aria-selected="true">Prompt</button>
-                    <button type="button" class="tab" data-tab="history" role="tab" aria-selected="false">History</button>
+                    <button type="button" class="tab active" data-tab="prompt" role="tab"
+                        aria-selected="true">Prompt</button>
+                    <button type="button" class="tab" data-tab="history" role="tab"
+                        aria-selected="false">History</button>
                     <button type="button" class="tab" data-tab="about" role="tab" aria-selected="false">About</button>
                 </div>
                 <div class="tab-panel" id="tab-prompt" data-tab="prompt">
@@ -104,32 +392,92 @@
                     <pre id="history-log" class="history"></pre>
                 </div>
                 <div class="tab-panel" id="tab-about" data-tab="about" hidden>
-                    <p class="lead">A human writes intent in prose. A model compiles it into a rule set; the engine renders the rules back into prose, and a reader compares. The compile is recorded: this page loads the candidates, it does not call a model.</p>
-                    <p class="lead">The aim is to shrink what the model must hold: the model emits facts, runs <code>krank check</code>, and reads the decision instead of the rules. This page walks the steps of that exchange; the choice you make here is local to the page.</p>
-                    <h3>1. The prompt</h3>
-                    <p class="note">The prompt is the source. Edit it here to see what the mechanical reducer would drop; the compile itself is recorded, not run.</p>
+                    <p class="lead">
+                        We start with a human-written prompt file.
+                    </p>
+                    <p>
+                        The prompt file contains the original intent of the developer, written in prose.
+                    </p>
+                    <p>
+                        Current models (LLMs) are both impressive and imperfect in their ability to understand natural
+                        language.
+                    </p>
+                    <p>
+                        In present, models understand human intent often enough to be useful.
+                        Occasionally the model goes astray, sometimes badly.
+                        To limit damage, we use sandboxes and design for "blast radius".
+                        We cannot count on the model to <i>always</i> understand intent.
+                    </p>
+                    <p>
+                        In the end we need to derive formal rules to more accurately check intent.
+                    </p>
+                    <p>
+                        We want to best use strength of both model and human mind.
+                    </p>
+                    <p>
+                        Models well read and understand natural language.
+                        Models can generate formal rules from that understanding.
+                        This gets us part of the way.
+                        Human review can verify that the model accurately captured intent.
+                        But humans are not efficient at reading formal rules.
+                    </p>
+                    <p>
+                        How can we make human review efficient?
+                    </p>
+                    <p>
+                        We use the model to render formal rules back into prose.
+                        Further, we use the model to compare the original and generated prose.
+                        If they match, then we can be confident that the model captured original intent.
+                    </p>
+                    <p>
+                        Human review is only needed when the original and generated prose do not match.
+                        Guided by the model's comparison, with both original and generated prose, we can revise the
+                        original so as to better express our intent.
+                    </p>
+                    <p>
+                        In this way, we approach best use of strength for both the model and the human mind.
+                    </p>
+                    <p>
+                        At present the weak points are the prose generated from rules, and the prose comparison.
+                        <br>We hope to improve these weak points over time.
+                    </p>
+                    <p>
+                        The end aim is to augment prose with formal rules.
+                        The model can then generate reduced prose, which is better handled by an LLM.
+                        The formal rules then provide a more exact and unvaried check of original intent.
+                    </p>
+                    <p>
+                        This page walks the steps of that exchange.
+                    </p>
                 </div>
             </section>
 
             <section class="panel" data-panel="candidates" hidden>
                 <div class="tabs" role="tablist">
-                    <button type="button" class="tab active" data-tab="candidates" role="tab" aria-selected="true">Candidates</button>
+                    <button type="button" class="tab active" data-tab="candidates" role="tab"
+                        aria-selected="true">Candidates</button>
                     <button type="button" class="tab" data-tab="about" role="tab" aria-selected="false">About</button>
                 </div>
                 <div class="tab-panel" id="tab-candidates" data-tab="candidates">
                     <div id="candidates"></div>
                 </div>
                 <div class="tab-panel" id="tab-candidates-about" data-tab="about" hidden>
-                    <p class="lead">The model reads the prompt and turns it into rules. Each card is one reading: the rules it found and the prompt lines they came from. When a line is ambiguous, the model offers more than one reading and explains the difference. Pick the one that says what you meant. The choice only changes this page; nothing is written until you download it in step 5.</p>
+                    <p class="lead">The model reads the prompt and turns it into rules. Each card is one reading: the
+                        rules it found and the prompt lines they came from. When a line is ambiguous, the model offers
+                        more than one reading and explains the difference. Pick the one that says what you meant. The
+                        choice only changes this page; nothing is written until you download it in step 5.</p>
                 </div>
             </section>
 
             <section class="panel" data-panel="rules" hidden>
                 <div class="tabs" role="tablist">
-                    <button type="button" class="tab active" data-tab="rules" role="tab" aria-selected="true">Rules</button>
+                    <button type="button" class="tab active" data-tab="rules" role="tab"
+                        aria-selected="true">Rules</button>
                     <button type="button" class="tab" data-tab="prose" role="tab" aria-selected="false">Prose</button>
-                    <button type="button" class="tab" data-tab="comparison" role="tab" aria-selected="false">Comparison</button>
-                    <button type="button" class="tab" data-tab="reduced" role="tab" aria-selected="false">Reduced</button>
+                    <button type="button" class="tab" data-tab="comparison" role="tab"
+                        aria-selected="false">Comparison</button>
+                    <button type="button" class="tab" data-tab="reduced" role="tab"
+                        aria-selected="false">Reduced</button>
                     <button type="button" class="tab" data-tab="about" role="tab" aria-selected="false">About</button>
                 </div>
                 <div class="tab-panel" id="tab-rules" data-tab="rules">
@@ -144,26 +492,37 @@
                     <p class="note" id="compare-note"></p>
                     <table>
                         <thead>
-                            <tr><th>Original</th><th>Rendered</th><th>Verdict</th><th>What was kept and lost</th><th>Hint for the prompt</th></tr>
+                            <tr>
+                                <th>Original</th>
+                                <th>Rendered</th>
+                                <th>Verdict</th>
+                                <th>What was kept and lost</th>
+                                <th>Hint for the prompt</th>
+                            </tr>
                         </thead>
                         <tbody id="comparison"></tbody>
                     </table>
                 </div>
                 <div class="tab-panel" id="tab-reduced" data-tab="reduced" hidden>
-                    <p class="note">Lines a covered case still finds in the prompt are removed; a pointer replaces them. If an edit breaks a covered line, the line stays, and the comparison marks it.</p>
+                    <p class="note">Lines a covered case still finds in the prompt are removed; a pointer replaces them.
+                        If an edit breaks a covered line, the line stays, and the comparison marks it.</p>
                     <p><a id="reduced-download" download="reduced-prompt.md">Download the reduced prompt</a></p>
                     <pre id="reduced" class="fill"></pre>
                     <h3>The difference</h3>
                     <div id="diff" class="diff"></div>
                 </div>
                 <div class="tab-panel" id="tab-rules-about" data-tab="about" hidden>
-                    <p class="lead">This step proves the round trip. Rules is the compiled rule set; Prose renders those rules back into words; Comparison lines the original up against the rendering; Reduced shows the prompt with the covered lines removed. Together they show what the model kept, what it dropped, and what you would lose.</p>
+                    <p class="lead">This step proves the round trip. Rules is the compiled rule set; Prose renders those
+                        rules back into words; Comparison lines the original up against the rendering; Reduced shows the
+                        prompt with the covered lines removed. Together they show what the model kept, what it dropped,
+                        and what you would lose.</p>
                 </div>
             </section>
 
             <section class="panel" data-panel="check" hidden>
                 <h2>4. Check a file or directory</h2>
-                <p class="note">The selected candidate's rules run against facts extracted from the project's files at build time.</p>
+                <p class="note">The selected candidate's rules run against facts extracted from the project's files at
+                    build time.</p>
                 <label for="scope">Scope</label>
                 <select id="scope"></select>
                 <div class="row">
@@ -174,7 +533,8 @@
 
             <section class="panel" data-panel="approve" hidden>
                 <h2>5. Approve</h2>
-                <p class="note">Approval records the choice in this page. Nothing is written to the repository; the downloads are the artifacts to review and commit.</p>
+                <p class="note">Approval records the choice in this page. Nothing is written to the repository; the
+                    downloads are the artifacts to review and commit.</p>
                 <dl class="summary" id="approve"></dl>
                 <div class="row">
                     <a id="approve-rules" download="approved-rules.json">Download the approved rule set</a>
@@ -186,4 +546,5 @@
 
     <script type="module" src="./studio.mjs"></script>
 </body>
+
 </html>
