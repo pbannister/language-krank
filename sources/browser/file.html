@@ -47,19 +47,7 @@
             margin-top: 1rem;
         }
 
-        body.embed {
-            padding: 0;
-        }
-
-        body.embed header {
-            display: none;
-        }
-
-        body.embed main {
-            margin-top: 0;
-        }
-
-        .line {
+        .file-line {
             display: grid;
             grid-template-columns: 4rem minmax(0, 1fr);
             gap: 0.75rem;
@@ -67,18 +55,18 @@
             font-size: 0.8125rem;
         }
 
-        .line .number {
+        .file-line .number {
             text-align: right;
             opacity: 0.45;
             user-select: none;
         }
 
-        .line .text {
+        .file-line .text {
             white-space: pre-wrap;
             overflow-wrap: anywhere;
         }
 
-        .line.highlight {
+        .file-line.highlight {
             background: color-mix(in srgb, Canvas 70%, #f9a825 30%);
         }
     </style>
@@ -92,113 +80,19 @@
     </header>
     <main id="lines"></main>
 
-    <script>
+    <script type="module">
+        import { render_file } from "./file-view.mjs";
+
         const params = new URLSearchParams(location.search);
         const path = params.get("path") ?? "";
-        const section = params.get("section") ?? "";
-        const term = params.get("term") ?? "";
-        const embed = params.get("embed") === "1";
-        if (embed) {
-            document.body.classList.add("embed");
-        }
-        const title = document.querySelector("#title");
         const note = document.querySelector("#note");
-        const lines_box = document.querySelector("#lines");
+        document.querySelector("#title").textContent = path;
 
-        title.textContent = path;
-
-        function escape_regex(text) {
-            return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        }
-
-        function section_match(heading_text) {
-            if (/^[0-9]+(\.[0-9]+)*$/.test(section)) {
-                return new RegExp(`^${escape_regex(section)}(?:\\.|\\s|$)`).test(heading_text);
-            }
-            return heading_text.toLowerCase().includes(section.toLowerCase());
-        }
-
-        async function load() {
-            if (path === "") {
-                note.textContent = "No file requested.";
-                return;
-            }
-            const response = await fetch(`/file?path=${encodeURIComponent(path)}`);
-            if (!response.ok) {
-                note.textContent = `Could not read ${path}: HTTP ${response.status}`;
-                return;
-            }
-            const text = await response.text();
-            const lines = text.split("\n");
-
-            let start = -1;
-            let end = -1;
-            let level = 0;
-            if (section !== "") {
-                for (let index = 0; index < lines.length; index++) {
-                    const heading = /^(#{1,6})\s+(.*)$/.exec(lines[index]);
-                    if (heading && section_match(heading[2])) {
-                        start = index;
-                        level = heading[1].length;
-                        break;
-                    }
-                }
-                if (start !== -1) {
-                    end = lines.length;
-                    for (let index = start + 1; index < lines.length; index++) {
-                        const heading = /^(#{1,6})\s/.exec(lines[index]);
-                        if (heading && heading[1].length <= level) {
-                            end = index;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            const highlight = new Set();
-            if (start !== -1) {
-                for (let index = start; index < end; index++) {
-                    highlight.add(index);
-                }
-            } else if (term !== "") {
-                for (let index = 0; index < lines.length; index++) {
-                    if (lines[index].toLowerCase().includes(term.toLowerCase())) {
-                        highlight.add(index);
-                    }
-                }
-            }
-
-            const description = start !== -1
-                ? `section ${section}`
-                : term !== ""
-                    ? `${highlight.size} line(s) containing "${term}"`
-                    : "no section requested";
-            note.textContent = `${lines.length} line(s); ${highlight.size} highlighted from ${description}.`;
-
-            const fragment = document.createDocumentFragment();
-            let first = -1;
-            for (let index = 0; index < lines.length; index++) {
-                const row = document.createElement("div");
-                row.className = "line" + (highlight.has(index) ? " highlight" : "");
-                if (highlight.has(index) && first === -1) {
-                    first = index;
-                }
-                const number = document.createElement("span");
-                number.className = "number";
-                number.textContent = String(index + 1);
-                const body = document.createElement("span");
-                body.className = "text";
-                body.textContent = lines[index] === "" ? " " : lines[index];
-                row.append(number, body);
-                fragment.append(row);
-            }
-            lines_box.append(fragment);
-            if (first !== -1) {
-                lines_box.children[first].scrollIntoView({ block: "center" });
-            }
-        }
-
-        load().catch((error) => {
+        render_file(document.querySelector("#lines"), {
+            path,
+            section: params.get("section") ?? "",
+            term: params.get("term") ?? "",
+        }, note).catch((error) => {
             note.textContent = error.message;
         });
     </script>

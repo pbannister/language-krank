@@ -31,6 +31,7 @@ for file_expected in \
     "$DIRECTORY_TREE/browser/sample.json" \
     "$DIRECTORY_TREE/browser/object-model.json" \
     "$DIRECTORY_TREE/browser/file.html" \
+    "$DIRECTORY_TREE/browser/file-view.mjs" \
     "$DIRECTORY_TREE/krank.mjs" \
     "$DIRECTORY_TREE/ruleset-run.mjs" \
     "$DIRECTORY_TREE/ruleset-render.mjs"; do

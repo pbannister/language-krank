@@ -14,6 +14,7 @@
 
 import { ruleset_render, ruleset_run } from "../krank.mjs";
 import { diff_lines } from "./prompt-diff.mjs";
+import { render_file } from "./file-view.mjs";
 
 const catalog = await load_json("./catalog.json");
 const bundle = await load_json("./files.json");
@@ -37,7 +38,8 @@ const history_log = document.querySelector("#history-log");
 const file_history = document.querySelector("#file-history");
 const object_file = document.querySelector("#object-file");
 const file_overlay = document.querySelector("#file-overlay");
-const file_overlay_frame = document.querySelector("#file-overlay-frame");
+const file_overlay_body = document.querySelector("#file-overlay-body");
+const file_overlay_note = document.querySelector("#file-overlay-note");
 const file_overlay_title = document.querySelector("#file-overlay-title");
 const prompt_panel = document.querySelector('.panel[data-panel="prompt"]');
 const objects_count = document.querySelector("#objects-count");
@@ -144,7 +146,7 @@ function section_of(source, path) {
     return "";
 }
 
-function file_viewer_url(path, section, term, embed) {
+function file_viewer_url(path, section, term) {
     const params = new URLSearchParams({ path });
     if (term) {
         params.set("term", term);
@@ -152,21 +154,22 @@ function file_viewer_url(path, section, term, embed) {
     if (section) {
         params.set("section", section);
     }
-    if (embed) {
-        params.set("embed", "1");
-    }
     return `./file.html?${params.toString()}`;
 }
 
 function open_file_viewer(path, section, term) {
-    file_overlay_frame.src = file_viewer_url(path, section, term, true);
     file_overlay_title.textContent = path;
+    file_overlay_note.textContent = "";
     file_overlay.hidden = false;
+    render_file(file_overlay_body, { path, section, term }, file_overlay_note).catch((error) => {
+        file_overlay_note.textContent = error.message;
+    });
 }
 
 function close_file_viewer() {
     file_overlay.hidden = true;
-    file_overlay_frame.removeAttribute("src");
+    file_overlay_body.replaceChildren();
+    file_overlay_note.textContent = "";
     file_overlay_title.textContent = "";
 }
 
@@ -298,7 +301,7 @@ function render_proposals() {
             const section = section_of(row.source, path);
             const term = row.term ?? "";
             const link = document.createElement("a");
-            link.href = file_viewer_url(path, section, term, false);
+            link.href = file_viewer_url(path, section, term);
             link.textContent = path;
             link.addEventListener("click", (event) => {
                 if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {

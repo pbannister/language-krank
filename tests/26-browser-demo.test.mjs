@@ -77,7 +77,7 @@ test("the studio page carries the step rail and its panels", () => {
     for (const tab of ["prompt", "history", "about", "object-status", "object-about", "candidates", "rules", "prose", "comparison", "reduced"]) {
         assert.ok(html.includes(`data-tab="${tab}"`), `no tab for ${tab}`);
     }
-    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "object-file", "file-history", "history-log", "file-overlay", "file-overlay-frame", "file-overlay-close"]) {
+    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "object-file", "file-history", "history-log", "file-overlay", "file-overlay-body", "file-overlay-note", "file-overlay-close"]) {
         assert.ok(html.includes(`id="${id}"`), `the page has no #${id}`);
     }
 });
@@ -95,9 +95,10 @@ test("the studio links the evidence filename to a highlighting file viewer", () 
     assert.match(read("sources/browser/studio.mjs"), /\.\/file\.html\?/, "the studio does not link to the file viewer");
     const viewer = read("sources/browser/file.html");
     assert.match(viewer, /id="lines"/, "the viewer has no line list");
-    assert.match(viewer, /\.line\.highlight/, "the viewer has no highlight style");
-    assert.match(viewer, /\/file\?path=/, "the viewer does not fetch a repository file");
-    assert.match(viewer, /embed/, "the viewer has no embed mode");
+    assert.match(viewer, /render_file/, "the viewer does not use the shared renderer");
+    const view = read("sources/browser/file-view.mjs");
+    assert.match(view, /\/file\?path=/, "the renderer does not fetch a repository file");
+    assert.match(view, /file-line highlight|highlight/, "the renderer has no highlight");
 });
 
 test("the candidate cards expand their rules and cases", () => {
