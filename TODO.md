@@ -7,13 +7,8 @@
 The object-model cycle is `documents/17-object-model-cycle.md`: the model proposes
 every noun/verb with an overt include/exclude guess and a reason, and the human
 agrees or overrides. The human promotes confirmations into
-`dataflow.in/object-model.json` as a separate, explicit step.
-
-- [ ] add provenance to the object model (evidence, rationale, status, source).
-- [ ] write the "propose the object model" extraction task.
-- [ ] add a studio step between Prompt and Candidates: propose, agree/reject, count.
-- [ ] gate it: provenance is required, and rule extraction uses only confirmed objects.
-- [ ] re-propose the existing 79 objects with evidence, so none is un-reviewed.
+`dataflow.in/object-model.json` as a separate, explicit step. The first pass is
+complete; the remaining object-model work is in `## Object Model`.
 
 ## Compile Workflow
 
@@ -81,3 +76,8 @@ One core, three surfaces; the design is `documents/14-interaction-cycle.md`, the
 - [x] measure the compile gap: `make coverage` reports bullets and compiled lines per prompt file (2026-11-05).
 - [x] compile the task, feature, universal, workflow, and contract-output families: 26 rules across 7 prompt files; coverage 9 -> 33 lines (0.9% -> 3.2%) (2026-11-05).
 - [x] use the count condition for "a single `VERIFICATION:` line", so the limit is enforced rather than noted as lost (2026-11-05).
+- [x] add provenance to the object model (evidence, rationale, status, source), and keep every excluded guess with its reason (2026-11-07).
+- [x] write the "propose the object model" extraction task in `prompts/tasks/03-propose-object-model.md` (2026-11-07).
+- [x] add a studio step between Prompt and Candidates: propose, agree/reject, and a confirmed/pending/rejected count (2026-11-07).
+- [x] gate it: provenance is required, and rule extraction uses only confirmed objects (2026-11-07).
+- [x] re-propose the existing 79 objects with evidence, so none is un-reviewed (2026-11-07).

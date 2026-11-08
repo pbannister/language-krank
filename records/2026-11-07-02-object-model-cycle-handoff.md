@@ -39,3 +39,14 @@ always, and that is exactly where human judgment belongs. The plan is
 - `ee9cdd4` record: update the round-trip handoff to 13 compiled families
 - `a7bc41e` feat: compile the five capability-artifact families
 - `0305135` feat: render prose from rules and write a per-prompt comparison
+
+## Correction (2026-11-07)
+
+The five next tasks above are implemented.
+Earlier facts in this record are stale on one point: `dataflow.in/object-model.json` now carries provenance.
+
+1. Every object, operation, and relation carries `evidence`, `rationale`, `status: "confirmed"`, and `source`; the `proposals` array keeps the excluded terms with their reasons.
+2. The extraction task is `prompts/tasks/03-propose-object-model.md`.
+3. The studio step is "2. Objects" in `sources/browser/index.html` and `sources/browser/studio.mjs`; `POST /propose` runs the proposal task.
+4. `tests/30-object-model.test.mjs` requires provenance and a confirmed status, and `scripts/studio-serve.mjs` refuses a candidate whose fact type is not a confirmed object.
+5. All 79 objects were re-proposed with evidence and a rationale.

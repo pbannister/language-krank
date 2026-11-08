@@ -70,16 +70,23 @@ test("each page loads its module", () => {
 
 test("the studio page carries the step rail and its panels", () => {
     const html = read("sources/browser/index.html");
-    for (const step of ["prompt", "candidates", "rules", "check", "approve"]) {
+    for (const step of ["prompt", "objects", "candidates", "rules", "check", "approve"]) {
         assert.ok(html.includes(`data-step="${step}"`), `the rail has no ${step}`);
         assert.ok(html.includes(`data-panel="${step}"`), `no panel for ${step}`);
     }
     for (const tab of ["prompt", "history", "about", "candidates", "rules", "prose", "comparison", "reduced"]) {
         assert.ok(html.includes(`data-tab="${tab}"`), `no tab for ${tab}`);
     }
-    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve"]) {
+    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "proposals", "objects-count", "propose"]) {
         assert.ok(html.includes(`id="${id}"`), `the page has no #${id}`);
     }
+});
+
+test("the studio loads the object model and offers a proposal review", () => {
+    const source = read("sources/browser/studio.mjs");
+    assert.match(source, /load_json\("\.\/object-model\.json"\)/, "the studio does not load the object model");
+    assert.match(source, /\/propose/, "the studio has no propose call");
+    assert.match(source, /confirmed · .* pending · .* rejected/, "the studio has no proposal counts");
 });
 
 test("the catalog lists every prompt file and offers a candidate choice", () => {

@@ -7,7 +7,10 @@
                 "rules_version",
                 "structure"
             ],
-            "source": "prompts/01-contract.md 7"
+            "source": "prompts/01-contract.md 7",
+            "evidence": "prompts/01-contract.md 7 names the project concept.",
+            "rationale": "project holds the fields (id, rules_version, structure). It is the subject of 3 operation(s), the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "rule_file",
@@ -17,7 +20,10 @@
                 "applies",
                 "kind"
             ],
-            "source": "prompts/01-contract.md 2"
+            "source": "prompts/01-contract.md 2",
+            "evidence": "prompts/01-contract.md 2 names the rule_file concept.",
+            "rationale": "rule_file holds the fields (path, precedence, applies, kind). It is the to end of 3 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "rule",
@@ -28,7 +34,10 @@
                 "text",
                 "section"
             ],
-            "source": "prompts/01-contract.md 1"
+            "source": "prompts/01-contract.md 1",
+            "evidence": "prompts/01-contract.md 1 names the rule concept.",
+            "rationale": "rule holds the fields (id, file, strength, text, section). It is the object of 1 operation(s), the to end of 3 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "override",
@@ -37,7 +46,10 @@
                 "task",
                 "instruction"
             ],
-            "source": "prompts/01-contract.md 10"
+            "source": "prompts/01-contract.md 10",
+            "evidence": "prompts/01-contract.md 10 names the override concept.",
+            "rationale": "override holds the fields (rule, task, instruction). It is the from end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "task",
@@ -55,7 +67,10 @@
                 "applies_features",
                 "conforming"
             ],
-            "source": "prompts/how-to-write-tasks.md 1"
+            "source": "prompts/how-to-write-tasks.md 1",
+            "evidence": "prompts/how-to-write-tasks.md 1 names the task concept.",
+            "rationale": "task holds the fields (id, state, description, output, context, files, verify, features, acceptance, has_output_line, applies_features, conforming). It is the subject of 1 operation(s), the object of 1 operation(s), the from end of 5 relation(s), the to end of 6 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "task_section",
@@ -64,7 +79,10 @@
                 "name",
                 "present"
             ],
-            "source": "prompts/how-to-write-tasks.md 2"
+            "source": "prompts/how-to-write-tasks.md 2",
+            "evidence": "prompts/how-to-write-tasks.md 2 names the task_section concept.",
+            "rationale": "task_section holds the fields (task, name, present). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "task_op_line",
@@ -74,7 +92,10 @@
                 "path",
                 "relative"
             ],
-            "source": "prompts/how-to-write-tasks.md 3"
+            "source": "prompts/how-to-write-tasks.md 3",
+            "evidence": "prompts/how-to-write-tasks.md 3 names the task_op_line concept.",
+            "rationale": "task_op_line holds the fields (task, verb, path, relative). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "task_file_row",
@@ -83,7 +104,10 @@
                 "verb",
                 "path"
             ],
-            "source": "prompts/how-to-write-tasks.md 6"
+            "source": "prompts/how-to-write-tasks.md 6",
+            "evidence": "prompts/how-to-write-tasks.md 6 names the task_file_row concept.",
+            "rationale": "task_file_row holds the fields (task, verb, path). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "task_verify",
@@ -91,7 +115,10 @@
                 "task",
                 "expected"
             ],
-            "source": "prompts/how-to-write-tasks.md 6.1"
+            "source": "prompts/how-to-write-tasks.md 6.1",
+            "evidence": "prompts/how-to-write-tasks.md 6.1 names the task_verify concept.",
+            "rationale": "task_verify holds the fields (task, expected). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "task_feature",
@@ -99,7 +126,10 @@
                 "task",
                 "feature"
             ],
-            "source": "prompts/how-to-write-tasks.md 6.3"
+            "source": "prompts/how-to-write-tasks.md 6.3",
+            "evidence": "prompts/how-to-write-tasks.md 6.3 names the task_feature concept.",
+            "rationale": "task_feature holds the fields (task, feature). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "task_acceptance",
@@ -107,7 +137,10 @@
                 "task",
                 "requirement"
             ],
-            "source": "prompts/how-to-write-tasks.md 6.2"
+            "source": "prompts/how-to-write-tasks.md 6.2",
+            "evidence": "prompts/how-to-write-tasks.md 6.2 names the task_acceptance concept.",
+            "rationale": "task_acceptance holds the fields (task, requirement). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "task_scope",
@@ -115,7 +148,10 @@
                 "task",
                 "path"
             ],
-            "source": "prompts/common/01-universal-rules.md Scope Rules"
+            "source": "prompts/common/01-universal-rules.md Scope Rules",
+            "evidence": "prompts/common/01-universal-rules.md Scope Rules names the task_scope concept.",
+            "rationale": "task_scope holds the fields (task, path). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "operation",
@@ -126,7 +162,10 @@
                 "authorized",
                 "exists"
             ],
-            "source": "prompts/how-to-write-tasks.md 3"
+            "source": "prompts/how-to-write-tasks.md 3",
+            "evidence": "prompts/how-to-write-tasks.md 3 names the operation concept.",
+            "rationale": "operation holds the fields (task, verb, path, authorized, exists). It is the object of 2 operation(s), the from end of 2 relation(s), the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "file",
@@ -144,7 +183,10 @@
                 "absolute_home_path",
                 "placed"
             ],
-            "source": "prompts/features/04-browser-demo.md"
+            "source": "prompts/features/04-browser-demo.md",
+            "evidence": "prompts/features/04-browser-demo.md names the file concept.",
+            "rationale": "file holds the fields (path, directory, extension, lines, bytes, has_tab, has_shebang, indent_unit, generated, edited_by_hand, absolute_home_path, placed). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "change",
@@ -153,7 +195,10 @@
                 "verb",
                 "path"
             ],
-            "source": "prompts/01-contract.md 3"
+            "source": "prompts/01-contract.md 3",
+            "evidence": "prompts/01-contract.md 3 names the change concept.",
+            "rationale": "change holds the fields (task, verb, path). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "statement",
@@ -161,14 +206,20 @@
                 "task",
                 "verb"
             ],
-            "source": "prompts/01-contract.md 3"
+            "source": "prompts/01-contract.md 3",
+            "evidence": "prompts/01-contract.md 3 names the statement concept.",
+            "rationale": "statement holds the fields (task, verb). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "workflow",
             "fields": [
                 "requires"
             ],
-            "source": "prompts/02-workflow.md"
+            "source": "prompts/02-workflow.md",
+            "evidence": "prompts/02-workflow.md names the workflow concept.",
+            "rationale": "workflow holds the fields (requires). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "guard",
@@ -176,7 +227,10 @@
                 "kind",
                 "path"
             ],
-            "source": "prompts/01-contract.md 7"
+            "source": "prompts/01-contract.md 7",
+            "evidence": "prompts/01-contract.md 7 names the guard concept.",
+            "rationale": "guard holds the fields (kind, path). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "checklist",
@@ -184,7 +238,10 @@
                 "task",
                 "status"
             ],
-            "source": "prompts/02-workflow.md 5"
+            "source": "prompts/02-workflow.md 5",
+            "evidence": "prompts/02-workflow.md 5 names the checklist concept.",
+            "rationale": "checklist holds the fields (task, status). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "path",
@@ -196,7 +253,10 @@
                 "generated",
                 "declared"
             ],
-            "source": "prompts/01-contract.md 7"
+            "source": "prompts/01-contract.md 7",
+            "evidence": "prompts/01-contract.md 7 names the path concept.",
+            "rationale": "path holds the fields (path, kind, directory, protected, generated, declared). It is the object of 6 operation(s), the from end of 1 relation(s), the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "directory",
@@ -205,7 +265,10 @@
                 "purpose",
                 "required"
             ],
-            "source": "prompts/01-contract.md 7"
+            "source": "prompts/01-contract.md 7",
+            "evidence": "prompts/01-contract.md 7 names the directory concept.",
+            "rationale": "directory holds the fields (path, purpose, required). It is the from end of 1 relation(s), the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "host",
@@ -214,7 +277,10 @@
                 "resource",
                 "kind"
             ],
-            "source": "prompts/how-to-write-tasks.md 8"
+            "source": "prompts/how-to-write-tasks.md 8",
+            "evidence": "prompts/how-to-write-tasks.md 8 names the host concept.",
+            "rationale": "host holds the fields (id, resource, kind). It is the object of 1 operation(s), the to end of 2 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "feature",
@@ -227,7 +293,10 @@
                 "dependencies",
                 "mentions_todo"
             ],
-            "source": "prompts/how-to-write-features.md 3"
+            "source": "prompts/how-to-write-features.md 3",
+            "evidence": "prompts/how-to-write-features.md 3 names the feature concept.",
+            "rationale": "feature holds the fields (id, path, purpose, requirements, behavior, dependencies, mentions_todo). It is the from end of 2 relation(s), the to end of 3 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "feature_section",
@@ -236,7 +305,10 @@
                 "name",
                 "present"
             ],
-            "source": "prompts/how-to-write-features.md 3"
+            "source": "prompts/how-to-write-features.md 3",
+            "evidence": "prompts/how-to-write-features.md 3 names the feature_section concept.",
+            "rationale": "feature_section holds the fields (feature, name, present). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "feature_dependency",
@@ -244,7 +316,10 @@
                 "feature",
                 "dependency"
             ],
-            "source": "prompts/how-to-write-features.md 5"
+            "source": "prompts/how-to-write-features.md 5",
+            "evidence": "prompts/how-to-write-features.md 5 names the feature_dependency concept.",
+            "rationale": "feature_dependency holds the fields (feature, dependency). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "requirement",
@@ -257,7 +332,10 @@
                 "id_shape",
                 "separate_bullet"
             ],
-            "source": "prompts/how-to-write-features.md 4"
+            "source": "prompts/how-to-write-features.md 4",
+            "evidence": "prompts/how-to-write-features.md 4 names the requirement concept.",
+            "rationale": "requirement holds the fields (id, feature, text, strength, accepted, id_shape, separate_bullet). It is the from end of 1 relation(s), the to end of 3 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "episode",
@@ -272,7 +350,10 @@
                 "branch",
                 "branch_shape"
             ],
-            "source": "prompts/episodes/01-episode-template.md"
+            "source": "prompts/episodes/01-episode-template.md",
+            "evidence": "prompts/episodes/01-episode-template.md names the episode concept.",
+            "rationale": "episode holds the fields (id, goal, acceptance, risks, tasks, output, files, branch, branch_shape). It is the from end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "phase",
@@ -282,7 +363,10 @@
                 "order",
                 "goal"
             ],
-            "source": "prompts/episodes/02-episode-plan.md"
+            "source": "prompts/episodes/02-episode-plan.md",
+            "evidence": "prompts/episodes/02-episode-plan.md names the phase concept.",
+            "rationale": "phase holds the fields (id, episode, order, goal). It is the from end of 1 relation(s), the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "plan",
@@ -291,7 +375,10 @@
                 "task",
                 "blocks"
             ],
-            "source": "prompts/02-workflow.md 3"
+            "source": "prompts/02-workflow.md 3",
+            "evidence": "prompts/02-workflow.md 3 names the plan concept.",
+            "rationale": "plan holds the fields (id, task, blocks). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "output",
@@ -303,7 +390,10 @@
                 "commentary",
                 "verification_line"
             ],
-            "source": "prompts/how-to-write-tasks.md 4"
+            "source": "prompts/how-to-write-tasks.md 4",
+            "evidence": "prompts/how-to-write-tasks.md 4 names the output concept.",
+            "rationale": "output holds the fields (id, task, format, files, commentary, verification_line). It is the object of 2 operation(s), the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "acceptance",
@@ -312,7 +402,10 @@
                 "requirements",
                 "decision"
             ],
-            "source": "prompts/how-to-write-tasks.md 6.2"
+            "source": "prompts/how-to-write-tasks.md 6.2",
+            "evidence": "prompts/how-to-write-tasks.md 6.2 names the acceptance concept.",
+            "rationale": "acceptance holds the fields (task, requirements, decision). It is the object of 1 operation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "verification",
@@ -322,7 +415,10 @@
                 "expected",
                 "result"
             ],
-            "source": "prompts/how-to-write-tasks.md 6.1"
+            "source": "prompts/how-to-write-tasks.md 6.1",
+            "evidence": "prompts/how-to-write-tasks.md 6.1 names the verification concept.",
+            "rationale": "verification holds the fields (task, command, expected, result). It is the object of 1 operation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "command",
@@ -331,7 +427,10 @@
                 "authorized",
                 "scope"
             ],
-            "source": "prompts/01-contract.md 3"
+            "source": "prompts/01-contract.md 3",
+            "evidence": "prompts/01-contract.md 3 names the command concept.",
+            "rationale": "command holds the fields (text, authorized, scope). It is the object of 1 operation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "record",
@@ -343,7 +442,10 @@
                 "commits",
                 "status"
             ],
-            "source": "records/README.md"
+            "source": "records/README.md",
+            "evidence": "records/README.md names the record concept.",
+            "rationale": "record holds the fields (id, kind, path, session, commits, status). It is the object of 1 operation(s), the from end of 1 relation(s), the to end of 2 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "commit",
@@ -354,7 +456,10 @@
                 "files",
                 "timestamp"
             ],
-            "source": "prompts/02-workflow.md 7"
+            "source": "prompts/02-workflow.md 7",
+            "evidence": "prompts/02-workflow.md 7 names the commit concept.",
+            "rationale": "commit holds the fields (hash, branch, message, files, timestamp). It is the object of 1 operation(s), the from end of 1 relation(s), the to end of 5 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "branch",
@@ -363,7 +468,10 @@
                 "head",
                 "protected"
             ],
-            "source": "prompts/03-conventions.md 6"
+            "source": "prompts/03-conventions.md 6",
+            "evidence": "prompts/03-conventions.md 6 names the branch concept.",
+            "rationale": "branch holds the fields (name, head, protected). It is the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "tag",
@@ -372,7 +480,10 @@
                 "commit",
                 "version"
             ],
-            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md",
+            "evidence": "prompts/capabilities/artifacts/04-release-and-publishing.md names the tag concept.",
+            "rationale": "tag holds the fields (name, commit, version). It is the object of 1 operation(s), the from end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "version",
@@ -384,7 +495,10 @@
                 "hash",
                 "changes"
             ],
-            "source": "prompts/capabilities/artifacts/02-version-information.md"
+            "source": "prompts/capabilities/artifacts/02-version-information.md",
+            "evidence": "prompts/capabilities/artifacts/02-version-information.md names the version concept.",
+            "rationale": "version holds the fields (value, date, branch, tag, hash, changes). It is the object of 1 operation(s), the from end of 1 relation(s), the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "release",
@@ -396,7 +510,10 @@
                 "notes",
                 "title"
             ],
-            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md",
+            "evidence": "prompts/capabilities/artifacts/04-release-and-publishing.md names the release concept.",
+            "rationale": "release holds the fields (tag, commit, version, assets, notes, title). It is the object of 2 operation(s), the from end of 2 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "changelog",
@@ -404,7 +521,10 @@
                 "version",
                 "entries"
             ],
-            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md",
+            "evidence": "prompts/capabilities/artifacts/04-release-and-publishing.md names the changelog concept.",
+            "rationale": "changelog holds the fields (version, entries). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "lock",
@@ -412,7 +532,10 @@
                 "version",
                 "digests"
             ],
-            "source": "prompts/01-contract.md 7"
+            "source": "prompts/01-contract.md 7",
+            "evidence": "prompts/01-contract.md 7 names the lock concept.",
+            "rationale": "lock holds the fields (version, digests). It is the object of 2 operation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "test",
@@ -425,7 +548,10 @@
                 "hermetic",
                 "known_tier"
             ],
-            "source": "tests/README.md"
+            "source": "tests/README.md",
+            "evidence": "tests/README.md names the test concept.",
+            "rationale": "test holds the fields (id, path, band, tier, covers, hermetic, known_tier). It is the object of 1 operation(s), the from end of 2 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "log",
@@ -435,7 +561,10 @@
                 "prefix",
                 "session"
             ],
-            "source": "prompts/03-conventions.md 6"
+            "source": "prompts/03-conventions.md 6",
+            "evidence": "prompts/03-conventions.md 6 names the log concept.",
+            "rationale": "log holds the fields (path, generated, prefix, session). It is the from end of 1 relation(s), the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "document",
@@ -445,7 +574,10 @@
                 "source",
                 "indexed"
             ],
-            "source": "prompts/capabilities/artifacts/01-generated-documentation.md"
+            "source": "prompts/capabilities/artifacts/01-generated-documentation.md",
+            "evidence": "prompts/capabilities/artifacts/01-generated-documentation.md names the document concept.",
+            "rationale": "document holds the fields (path, generated, source, indexed). It is the object of 3 operation(s), the from end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "page",
@@ -455,7 +587,10 @@
                 "nav",
                 "dashboard"
             ],
-            "source": "prompts/features/02-project-pages.md"
+            "source": "prompts/features/02-project-pages.md",
+            "evidence": "prompts/features/02-project-pages.md names the page concept.",
+            "rationale": "page holds the fields (path, generated, nav, dashboard). It is the from end of 2 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "page_set",
@@ -463,7 +598,10 @@
                 "project",
                 "pages"
             ],
-            "source": "prompts/features/02-project-pages.md"
+            "source": "prompts/features/02-project-pages.md",
+            "evidence": "prompts/features/02-project-pages.md names the page_set concept.",
+            "rationale": "page_set holds the fields (project, pages). It is the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "nav",
@@ -472,7 +610,10 @@
                 "href",
                 "label"
             ],
-            "source": "prompts/features/02-project-pages.md"
+            "source": "prompts/features/02-project-pages.md",
+            "evidence": "prompts/features/02-project-pages.md names the nav concept.",
+            "rationale": "nav holds the fields (page, href, label). It is the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "dashboard",
@@ -480,7 +621,10 @@
                 "page",
                 "state"
             ],
-            "source": "prompts/features/02-project-pages.md"
+            "source": "prompts/features/02-project-pages.md",
+            "evidence": "prompts/features/02-project-pages.md names the dashboard concept.",
+            "rationale": "dashboard holds the fields (page, state). It is the from end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "site_state",
@@ -489,7 +633,10 @@
                 "value",
                 "fetched"
             ],
-            "source": "prompts/features/02-project-pages.md"
+            "source": "prompts/features/02-project-pages.md",
+            "evidence": "prompts/features/02-project-pages.md names the site_state concept.",
+            "rationale": "site_state holds the fields (key, value, fetched). It is the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "todo_item",
@@ -498,7 +645,10 @@
                 "checked",
                 "phase"
             ],
-            "source": "prompts/02-workflow.md 2"
+            "source": "prompts/02-workflow.md 2",
+            "evidence": "prompts/02-workflow.md 2 names the todo_item concept.",
+            "rationale": "todo_item holds the fields (text, checked, phase). It is the from end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "agent",
@@ -508,7 +658,10 @@
                 "authority",
                 "boundary"
             ],
-            "source": "prompts/capabilities/execution/08-delegation-authority.md"
+            "source": "prompts/capabilities/execution/08-delegation-authority.md",
+            "evidence": "prompts/capabilities/execution/08-delegation-authority.md names the agent concept.",
+            "rationale": "agent holds the fields (id, role, authority, boundary). It is the subject of 24 operation(s), the to end of 2 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "human",
@@ -516,7 +669,10 @@
                 "role",
                 "authority"
             ],
-            "source": "prompts/01-contract.md 10"
+            "source": "prompts/01-contract.md 10",
+            "evidence": "prompts/01-contract.md 10 names the human concept.",
+            "rationale": "human holds the fields (role, authority). It is the subject of 3 operation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "script",
@@ -524,7 +680,10 @@
                 "path",
                 "role"
             ],
-            "source": "prompts/capabilities/artifacts/01-generated-documentation.md"
+            "source": "prompts/capabilities/artifacts/01-generated-documentation.md",
+            "evidence": "prompts/capabilities/artifacts/01-generated-documentation.md names the script concept.",
+            "rationale": "script holds the fields (path, role). It is the subject of 4 operation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "sandbox",
@@ -533,7 +692,10 @@
                 "reach",
                 "disposable"
             ],
-            "source": "prompts/capabilities/execution/06-execution-boundary.md 1"
+            "source": "prompts/capabilities/execution/06-execution-boundary.md 1",
+            "evidence": "prompts/capabilities/execution/06-execution-boundary.md 1 names the sandbox concept.",
+            "rationale": "sandbox holds the fields (id, reach, disposable). It is the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "boundary",
@@ -544,7 +706,10 @@
                 "hosts",
                 "credentials"
             ],
-            "source": "prompts/capabilities/execution/06-execution-boundary.md 3"
+            "source": "prompts/capabilities/execution/06-execution-boundary.md 3",
+            "evidence": "prompts/capabilities/execution/06-execution-boundary.md 3 names the boundary concept.",
+            "rationale": "boundary holds the fields (sandbox, paths, commands, hosts, credentials). It is the from end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "credential",
@@ -555,7 +720,10 @@
                 "reachable",
                 "scope"
             ],
-            "source": "prompts/capabilities/execution/06-execution-boundary.md 2"
+            "source": "prompts/capabilities/execution/06-execution-boundary.md 2",
+            "evidence": "prompts/capabilities/execution/06-execution-boundary.md 2 names the credential concept.",
+            "rationale": "credential holds the fields (id, location, pattern, reachable, scope). It is the from end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "session",
@@ -565,7 +733,10 @@
                 "log",
                 "events"
             ],
-            "source": "prompts/capabilities/execution/07-session-log.md"
+            "source": "prompts/capabilities/execution/07-session-log.md",
+            "evidence": "prompts/capabilities/execution/07-session-log.md names the session concept.",
+            "rationale": "session holds the fields (id, goal, log, events). It is the object of 2 operation(s), the from end of 1 relation(s), the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "goal",
@@ -576,7 +747,10 @@
                 "state",
                 "rounds"
             ],
-            "source": "prompts/capabilities/execution/07-session-log.md 3"
+            "source": "prompts/capabilities/execution/07-session-log.md 3",
+            "evidence": "prompts/capabilities/execution/07-session-log.md 3 names the goal concept.",
+            "rationale": "goal holds the fields (id, session, objective, state, rounds). It is the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "delegation",
@@ -587,7 +761,10 @@
                 "budget",
                 "task"
             ],
-            "source": "prompts/capabilities/execution/08-delegation-authority.md 2"
+            "source": "prompts/capabilities/execution/08-delegation-authority.md 2",
+            "evidence": "prompts/capabilities/execution/08-delegation-authority.md 2 names the delegation concept.",
+            "rationale": "delegation holds the fields (parent, child, depth, budget, task). It is the object of 1 operation(s), the from end of 3 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "failure",
@@ -598,14 +775,20 @@
                 "tool_call",
                 "input"
             ],
-            "source": "prompts/capabilities/execution/09-failure-attribution.md 1"
+            "source": "prompts/capabilities/execution/09-failure-attribution.md 1",
+            "evidence": "prompts/capabilities/execution/09-failure-attribution.md 1 names the failure concept.",
+            "rationale": "failure holds the fields (session, layer, evidence, tool_call, input). It is the from end of 1 relation(s), the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "layer",
             "fields": [
                 "name"
             ],
-            "source": "prompts/capabilities/execution/09-failure-attribution.md 1"
+            "source": "prompts/capabilities/execution/09-failure-attribution.md 1",
+            "evidence": "prompts/capabilities/execution/09-failure-attribution.md 1 names the layer concept.",
+            "rationale": "layer holds the fields (name). It is the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "incident",
@@ -616,7 +799,10 @@
                 "lessons",
                 "safeguards"
             ],
-            "source": "records/README.md"
+            "source": "records/README.md",
+            "evidence": "records/README.md names the incident concept.",
+            "rationale": "incident holds the fields (record, failure, root_cause, lessons, safeguards). It is the from end of 2 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "stage",
@@ -627,7 +813,10 @@
                 "script",
                 "product"
             ],
-            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md",
+            "evidence": "prompts/capabilities/artifacts/03-generated-data-products.md names the stage concept.",
+            "rationale": "stage holds the fields (id, number, feature, script, product). It is the from end of 2 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "work_product",
@@ -638,7 +827,10 @@
                 "produced_at",
                 "provenance"
             ],
-            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md",
+            "evidence": "prompts/capabilities/artifacts/03-generated-data-products.md names the work_product concept.",
+            "rationale": "work_product holds the fields (path, stage, parameters, produced_at, provenance). It is the from end of 1 relation(s), the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "dataset",
@@ -647,7 +839,10 @@
                 "source",
                 "digest"
             ],
-            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md",
+            "evidence": "prompts/capabilities/artifacts/03-generated-data-products.md names the dataset concept.",
+            "rationale": "dataset holds the fields (id, source, digest). It is the object of 1 operation(s), the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "provenance",
@@ -659,7 +854,10 @@
                 "fetched_at",
                 "commit"
             ],
-            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md",
+            "evidence": "prompts/capabilities/artifacts/03-generated-data-products.md names the provenance concept.",
+            "rationale": "provenance holds the fields (id, product, script, dataset, fetched_at, commit). It is the from end of 1 relation(s), the to end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "ruleset",
@@ -668,7 +866,10 @@
                 "rules",
                 "facts"
             ],
-            "source": "documents/10-rule-notation.md"
+            "source": "documents/10-rule-notation.md",
+            "evidence": "documents/10-rule-notation.md names the ruleset concept.",
+            "rationale": "ruleset holds the fields (id, rules, facts). It is the from end of 1 relation(s), the to end of 2 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "rule_case",
@@ -679,7 +880,10 @@
                 "note",
                 "suggestion"
             ],
-            "source": "prompts/features/04-browser-demo.md"
+            "source": "prompts/features/04-browser-demo.md",
+            "evidence": "prompts/features/04-browser-demo.md names the rule_case concept.",
+            "rationale": "rule_case holds the fields (rule, original, verdict, note, suggestion). It is the from end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "candidate",
@@ -689,7 +893,10 @@
                 "cases",
                 "explanation"
             ],
-            "source": "prompts/features/04-browser-demo.md"
+            "source": "prompts/features/04-browser-demo.md",
+            "evidence": "prompts/features/04-browser-demo.md names the candidate concept.",
+            "rationale": "candidate holds the fields (prompt, ruleset, cases, explanation). It is the object of 2 operation(s), the from end of 2 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "check",
@@ -700,7 +907,10 @@
                 "firings",
                 "emitted"
             ],
-            "source": "prompts/features/03-rules-engine.md"
+            "source": "prompts/features/03-rules-engine.md",
+            "evidence": "prompts/features/03-rules-engine.md names the check concept.",
+            "rationale": "check holds the fields (id, ruleset, facts, firings, emitted). It is the from end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "ambiguity",
@@ -708,7 +918,10 @@
                 "task",
                 "changes"
             ],
-            "source": "prompts/common/01-universal-rules.md Clarification Rules"
+            "source": "prompts/common/01-universal-rules.md Clarification Rules",
+            "evidence": "prompts/common/01-universal-rules.md Clarification Rules names the ambiguity concept.",
+            "rationale": "ambiguity holds the fields (task, changes). It is the object of 1 operation(s), the from end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "assumption",
@@ -717,7 +930,10 @@
                 "text",
                 "labeled"
             ],
-            "source": "prompts/common/01-universal-rules.md Clarification Rules"
+            "source": "prompts/common/01-universal-rules.md Clarification Rules",
+            "evidence": "prompts/common/01-universal-rules.md Clarification Rules names the assumption concept.",
+            "rationale": "assumption holds the fields (task, text, labeled). It is the from end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "delta",
@@ -725,7 +941,10 @@
                 "applies_to",
                 "fields"
             ],
-            "source": "prompts/01-contract.md 6"
+            "source": "prompts/01-contract.md 6",
+            "evidence": "prompts/01-contract.md 6 names the delta concept.",
+            "rationale": "delta holds the fields (applies_to, fields). It is the from end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "untrusted_content",
@@ -733,7 +952,10 @@
                 "source",
                 "kind"
             ],
-            "source": "prompts/01-contract.md 8"
+            "source": "prompts/01-contract.md 8",
+            "evidence": "prompts/01-contract.md 8 names the untrusted_content concept.",
+            "rationale": "untrusted_content holds the fields (source, kind). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "privacy",
@@ -741,7 +963,10 @@
                 "kind",
                 "path"
             ],
-            "source": "prompts/common/01-universal-rules.md Privacy-Boundary Rules"
+            "source": "prompts/common/01-universal-rules.md Privacy-Boundary Rules",
+            "evidence": "prompts/common/01-universal-rules.md Privacy-Boundary Rules names the privacy concept.",
+            "rationale": "privacy holds the fields (kind, path). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "risk",
@@ -750,14 +975,20 @@
                 "description",
                 "safeguard"
             ],
-            "source": "prompts/common/01-universal-rules.md Risky-Operations Rules"
+            "source": "prompts/common/01-universal-rules.md Risky-Operations Rules",
+            "evidence": "prompts/common/01-universal-rules.md Risky-Operations Rules names the risk concept.",
+            "rationale": "risk holds the fields (task, description, safeguard). It is the from end of 1 relation(s). The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "test_tier",
             "fields": [
                 "name"
             ],
-            "source": "prompts/02-workflow.md 4.1"
+            "source": "prompts/02-workflow.md 4.1",
+            "evidence": "prompts/02-workflow.md 4.1 names the test_tier concept.",
+            "rationale": "test_tier holds the fields (name). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "episode_section",
@@ -766,7 +997,10 @@
                 "name",
                 "present"
             ],
-            "source": "prompts/episodes/01-episode-template.md"
+            "source": "prompts/episodes/01-episode-template.md",
+            "evidence": "prompts/episodes/01-episode-template.md names the episode_section concept.",
+            "rationale": "episode_section holds the fields (episode, name, present). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         },
         {
             "id": "record_commit",
@@ -774,7 +1008,10 @@
                 "record",
                 "hash"
             ],
-            "source": "records/README.md"
+            "source": "records/README.md",
+            "evidence": "records/README.md names the record_commit concept.",
+            "rationale": "record_commit holds the fields (record, hash). No registered operation or relation names it yet. The fields must travel together, so the type is an object.",
+            "status": "confirmed"
         }
     ],
     "operations": [
@@ -783,245 +1020,350 @@
             "subject": "task",
             "object": "operation",
             "effect": "the operation is in scope",
-            "source": "prompts/01-contract.md 3"
+            "source": "prompts/01-contract.md 3",
+            "evidence": "prompts/01-contract.md 3 names the operation authorize.",
+            "rationale": "task applies authorize to operation; the effect \"the operation is in scope\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "refuse",
             "subject": "agent",
             "object": "operation",
             "effect": "the operation is not performed",
-            "source": "prompts/01-contract.md 3"
+            "source": "prompts/01-contract.md 3",
+            "evidence": "prompts/01-contract.md 3 names the operation refuse.",
+            "rationale": "agent applies refuse to operation; the effect \"the operation is not performed\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "permit",
             "subject": "agent",
             "object": "output",
             "effect": "the output is allowed",
-            "source": "prompts/01-contract.md 5"
+            "source": "prompts/01-contract.md 5",
+            "evidence": "prompts/01-contract.md 5 names the operation permit.",
+            "rationale": "agent applies permit to output; the effect \"the output is allowed\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "ask",
             "subject": "agent",
             "object": "ambiguity",
             "effect": "a clarification question is asked",
-            "source": "prompts/common/01-universal-rules.md Clarification Rules"
+            "source": "prompts/common/01-universal-rules.md Clarification Rules",
+            "evidence": "prompts/common/01-universal-rules.md Clarification Rules names the operation ask.",
+            "rationale": "agent applies ask to ambiguity; the effect \"a clarification question is asked\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "create",
             "subject": "agent",
             "object": "path",
             "effect": "a file exists",
-            "source": "prompts/how-to-write-tasks.md 3"
+            "source": "prompts/how-to-write-tasks.md 3",
+            "evidence": "prompts/how-to-write-tasks.md 3 names the operation create.",
+            "rationale": "agent applies create to path; the effect \"a file exists\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "modify",
             "subject": "agent",
             "object": "path",
             "effect": "a file changes",
-            "source": "prompts/how-to-write-tasks.md 3"
+            "source": "prompts/how-to-write-tasks.md 3",
+            "evidence": "prompts/how-to-write-tasks.md 3 names the operation modify.",
+            "rationale": "agent applies modify to path; the effect \"a file changes\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "delete",
             "subject": "agent",
             "object": "path",
             "effect": "a file does not exist",
-            "source": "prompts/how-to-write-tasks.md 3"
+            "source": "prompts/how-to-write-tasks.md 3",
+            "evidence": "prompts/how-to-write-tasks.md 3 names the operation delete.",
+            "rationale": "agent applies delete to path; the effect \"a file does not exist\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "rename",
             "subject": "agent",
             "object": "path",
             "effect": "a file moves",
-            "source": "prompts/how-to-write-tasks.md 3"
+            "source": "prompts/how-to-write-tasks.md 3",
+            "evidence": "prompts/how-to-write-tasks.md 3 names the operation rename.",
+            "rationale": "agent applies rename to path; the effect \"a file moves\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "inspect",
             "subject": "agent",
             "object": "path",
             "effect": "the content is read",
-            "source": "prompts/how-to-write-tasks.md 3"
+            "source": "prompts/how-to-write-tasks.md 3",
+            "evidence": "prompts/how-to-write-tasks.md 3 names the operation inspect.",
+            "rationale": "agent applies inspect to path; the effect \"the content is read\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "host",
             "subject": "agent",
             "object": "host",
             "effect": "live host state changes",
-            "source": "prompts/how-to-write-tasks.md 8"
+            "source": "prompts/how-to-write-tasks.md 8",
+            "evidence": "prompts/how-to-write-tasks.md 8 names the operation host.",
+            "rationale": "agent applies host to host; the effect \"live host state changes\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "run",
             "subject": "agent",
             "object": "command",
             "effect": "the command executes",
-            "source": "prompts/01-contract.md 3"
+            "source": "prompts/01-contract.md 3",
+            "evidence": "prompts/01-contract.md 3 names the operation run.",
+            "rationale": "agent applies run to command; the effect \"the command executes\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "verify",
             "subject": "agent",
             "object": "verification",
             "effect": "evidence is produced",
-            "source": "prompts/02-workflow.md 6"
+            "source": "prompts/02-workflow.md 6",
+            "evidence": "prompts/02-workflow.md 6 names the operation verify.",
+            "rationale": "agent applies verify to verification; the effect \"evidence is produced\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "test",
             "subject": "agent",
             "object": "test",
             "effect": "a test runs",
-            "source": "prompts/02-workflow.md 4"
+            "source": "prompts/02-workflow.md 4",
+            "evidence": "prompts/02-workflow.md 4 names the operation test.",
+            "rationale": "agent applies test to test; the effect \"a test runs\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "record",
             "subject": "agent",
             "object": "record",
             "effect": "the outcome is durable",
-            "source": "prompts/02-workflow.md 7.1"
+            "source": "prompts/02-workflow.md 7.1",
+            "evidence": "prompts/02-workflow.md 7.1 names the operation record.",
+            "rationale": "agent applies record to record; the effect \"the outcome is durable\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "commit",
             "subject": "agent",
             "object": "commit",
             "effect": "the work is versioned",
-            "source": "prompts/02-workflow.md 7"
+            "source": "prompts/02-workflow.md 7",
+            "evidence": "prompts/02-workflow.md 7 names the operation commit.",
+            "rationale": "agent applies commit to commit; the effect \"the work is versioned\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "tag",
             "subject": "agent",
             "object": "tag",
             "effect": "the commit is named",
-            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md",
+            "evidence": "prompts/capabilities/artifacts/04-release-and-publishing.md names the operation tag.",
+            "rationale": "agent applies tag to tag; the effect \"the commit is named\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "release",
             "subject": "agent",
             "object": "release",
             "effect": "the artifact is published",
-            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md",
+            "evidence": "prompts/capabilities/artifacts/04-release-and-publishing.md names the operation release.",
+            "rationale": "agent applies release to release; the effect \"the artifact is published\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "install",
             "subject": "agent",
             "object": "release",
             "effect": "the artifact is installed",
-            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md",
+            "evidence": "prompts/capabilities/artifacts/04-release-and-publishing.md names the operation install.",
+            "rationale": "agent applies install to release; the effect \"the artifact is installed\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "delegate",
             "subject": "agent",
             "object": "delegation",
             "effect": "a delegate acts under the dispatch",
-            "source": "prompts/capabilities/execution/08-delegation-authority.md"
+            "source": "prompts/capabilities/execution/08-delegation-authority.md",
+            "evidence": "prompts/capabilities/execution/08-delegation-authority.md names the operation delegate.",
+            "rationale": "agent applies delegate to delegation; the effect \"a delegate acts under the dispatch\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "dispatch",
             "subject": "agent",
             "object": "task",
             "effect": "the delegate receives authority",
-            "source": "prompts/capabilities/execution/08-delegation-authority.md 1"
+            "source": "prompts/capabilities/execution/08-delegation-authority.md 1",
+            "evidence": "prompts/capabilities/execution/08-delegation-authority.md 1 names the operation dispatch.",
+            "rationale": "agent applies dispatch to task; the effect \"the delegate receives authority\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "resume",
             "subject": "agent",
             "object": "session",
             "effect": "the log resumes",
-            "source": "prompts/capabilities/execution/07-session-log.md 1"
+            "source": "prompts/capabilities/execution/07-session-log.md 1",
+            "evidence": "prompts/capabilities/execution/07-session-log.md 1 names the operation resume.",
+            "rationale": "agent applies resume to session; the effect \"the log resumes\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "emit_event",
             "subject": "agent",
             "object": "session",
             "effect": "the log grows",
-            "source": "prompts/capabilities/execution/07-session-log.md"
+            "source": "prompts/capabilities/execution/07-session-log.md",
+            "evidence": "prompts/capabilities/execution/07-session-log.md names the operation emit_event.",
+            "rationale": "agent applies emit_event to session; the effect \"the log grows\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "compile",
             "subject": "agent",
             "object": "candidate",
             "effect": "a prompt becomes rules",
-            "source": "prompts/features/04-browser-demo.md"
+            "source": "prompts/features/04-browser-demo.md",
+            "evidence": "prompts/features/04-browser-demo.md names the operation compile.",
+            "rationale": "agent applies compile to candidate; the effect \"a prompt becomes rules\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "render",
             "subject": "agent",
             "object": "document",
             "effect": "rules become prose",
-            "source": "documents/10-rule-notation.md"
+            "source": "documents/10-rule-notation.md",
+            "evidence": "documents/10-rule-notation.md names the operation render.",
+            "rationale": "agent applies render to document; the effect \"rules become prose\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "reduce",
             "subject": "agent",
             "object": "document",
             "effect": "covered lines are removed",
-            "source": "prompts/features/04-browser-demo.md"
+            "source": "prompts/features/04-browser-demo.md",
+            "evidence": "prompts/features/04-browser-demo.md names the operation reduce.",
+            "rationale": "agent applies reduce to document; the effect \"covered lines are removed\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "approve",
             "subject": "human",
             "object": "candidate",
             "effect": "the choice is recorded",
-            "source": "prompts/features/04-browser-demo.md"
+            "source": "prompts/features/04-browser-demo.md",
+            "evidence": "prompts/features/04-browser-demo.md names the operation approve.",
+            "rationale": "human applies approve to candidate; the effect \"the choice is recorded\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "generate",
             "subject": "script",
             "object": "document",
             "effect": "a document is derived",
-            "source": "prompts/capabilities/artifacts/01-generated-documentation.md"
+            "source": "prompts/capabilities/artifacts/01-generated-documentation.md",
+            "evidence": "prompts/capabilities/artifacts/01-generated-documentation.md names the operation generate.",
+            "rationale": "script applies generate to document; the effect \"a document is derived\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "derive",
             "subject": "script",
             "object": "version",
             "effect": "the build names itself",
-            "source": "prompts/capabilities/artifacts/02-version-information.md"
+            "source": "prompts/capabilities/artifacts/02-version-information.md",
+            "evidence": "prompts/capabilities/artifacts/02-version-information.md names the operation derive.",
+            "rationale": "script applies derive to version; the effect \"the build names itself\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "pin",
             "subject": "project",
             "object": "lock",
             "effect": "a dependency is fixed",
-            "source": "prompts/capabilities/artifacts/05-pinned-dependencies.md"
+            "source": "prompts/capabilities/artifacts/05-pinned-dependencies.md",
+            "evidence": "prompts/capabilities/artifacts/05-pinned-dependencies.md names the operation pin.",
+            "rationale": "project applies pin to lock; the effect \"a dependency is fixed\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "upgrade",
             "subject": "project",
             "object": "lock",
             "effect": "a pinned version moves",
-            "source": "prompts/capabilities/artifacts/05-pinned-dependencies.md"
+            "source": "prompts/capabilities/artifacts/05-pinned-dependencies.md",
+            "evidence": "prompts/capabilities/artifacts/05-pinned-dependencies.md names the operation upgrade.",
+            "rationale": "project applies upgrade to lock; the effect \"a pinned version moves\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "fetch",
             "subject": "script",
             "object": "dataset",
             "effect": "raw input is cached",
-            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md",
+            "evidence": "prompts/capabilities/artifacts/03-generated-data-products.md names the operation fetch.",
+            "rationale": "script applies fetch to dataset; the effect \"raw input is cached\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "sanitize",
             "subject": "script",
             "object": "output",
             "effect": "sensitive content is refused",
-            "source": "prompts/conventions.md 6"
+            "source": "prompts/03-conventions.md 6",
+            "evidence": "prompts/03-conventions.md 6 names the operation sanitize.",
+            "rationale": "script applies sanitize to output; the effect \"sensitive content is refused\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "declare",
             "subject": "project",
             "object": "path",
             "effect": "a path joins the structure",
-            "source": "prompts/01-contract.md 7"
+            "source": "prompts/01-contract.md 7",
+            "evidence": "prompts/01-contract.md 7 names the operation declare.",
+            "rationale": "project applies declare to path; the effect \"a path joins the structure\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "override",
             "subject": "human",
             "object": "rule",
             "effect": "the rule is replaced for the task",
-            "source": "prompts/01-contract.md 10"
+            "source": "prompts/01-contract.md 10",
+            "evidence": "prompts/01-contract.md 10 names the operation override.",
+            "rationale": "human applies override to rule; the effect \"the rule is replaced for the task\" is a state change, so it is an operation.",
+            "status": "confirmed"
         },
         {
             "id": "accept",
             "subject": "human",
             "object": "acceptance",
             "effect": "the work is accepted",
-            "source": "prompts/02-workflow.md 8"
+            "source": "prompts/02-workflow.md 8",
+            "evidence": "prompts/02-workflow.md 8 names the operation accept.",
+            "rationale": "human applies accept to acceptance; the effect \"the work is accepted\" is a state change, so it is an operation.",
+            "status": "confirmed"
         }
     ],
     "relations": [
@@ -1030,357 +1372,648 @@
             "from": "task",
             "to": "operation",
             "cardinality": "one-to-many",
-            "source": "prompts/01-contract.md 3"
+            "source": "prompts/01-contract.md 3",
+            "evidence": "prompts/01-contract.md 3 names the relation task_authorizes_operation.",
+            "rationale": "task and operation are linked one-to-many; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "operation_targets_path",
             "from": "operation",
             "to": "path",
             "cardinality": "many-to-one",
-            "source": "prompts/how-to-write-tasks.md 3"
+            "source": "prompts/how-to-write-tasks.md 3",
+            "evidence": "prompts/how-to-write-tasks.md 3 names the relation operation_targets_path.",
+            "rationale": "operation and path are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "operation_targets_host",
             "from": "operation",
             "to": "host",
             "cardinality": "many-to-one",
-            "source": "prompts/how-to-write-tasks.md 8"
+            "source": "prompts/how-to-write-tasks.md 8",
+            "evidence": "prompts/how-to-write-tasks.md 8 names the relation operation_targets_host.",
+            "rationale": "operation and host are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "path_belongs_to_directory",
             "from": "path",
             "to": "directory",
             "cardinality": "many-to-one",
-            "source": "prompts/01-contract.md 7"
+            "source": "prompts/01-contract.md 7",
+            "evidence": "prompts/01-contract.md 7 names the relation path_belongs_to_directory.",
+            "rationale": "path and directory are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "directory_belongs_to_project",
             "from": "directory",
             "to": "project",
             "cardinality": "many-to-one",
-            "source": "prompts/01-contract.md 7"
+            "source": "prompts/01-contract.md 7",
+            "evidence": "prompts/01-contract.md 7 names the relation directory_belongs_to_project.",
+            "rationale": "directory and project are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "feature_has_requirement",
             "from": "feature",
             "to": "requirement",
             "cardinality": "one-to-many",
-            "source": "prompts/how-to-write-features.md 4"
+            "source": "prompts/how-to-write-features.md 4",
+            "evidence": "prompts/how-to-write-features.md 4 names the relation feature_has_requirement.",
+            "rationale": "feature and requirement are linked one-to-many; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "requirement_defined_in",
             "from": "requirement",
             "to": "rule_file",
             "cardinality": "many-to-one",
-            "source": "prompts/01-contract.md 2"
+            "source": "prompts/01-contract.md 2",
+            "evidence": "prompts/01-contract.md 2 names the relation requirement_defined_in.",
+            "rationale": "requirement and rule_file are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "task_references_feature",
             "from": "task",
             "to": "feature",
             "cardinality": "many-to-many",
-            "source": "prompts/how-to-write-tasks.md 6.3"
+            "source": "prompts/how-to-write-tasks.md 6.3",
+            "evidence": "prompts/how-to-write-tasks.md 6.3 names the relation task_references_feature.",
+            "rationale": "task and feature are linked many-to-many; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "task_satisfies_requirement",
             "from": "task",
             "to": "requirement",
             "cardinality": "many-to-many",
-            "source": "prompts/how-to-write-tasks.md 6.2"
+            "source": "prompts/how-to-write-tasks.md 6.2",
+            "evidence": "prompts/how-to-write-tasks.md 6.2 names the relation task_satisfies_requirement.",
+            "rationale": "task and requirement are linked many-to-many; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "feature_depends_on_feature",
             "from": "feature",
             "to": "feature",
             "cardinality": "many-to-many",
-            "source": "prompts/how-to-write-features.md 5"
+            "source": "prompts/how-to-write-features.md 5",
+            "evidence": "prompts/how-to-write-features.md 5 names the relation feature_depends_on_feature.",
+            "rationale": "feature and feature are linked many-to-many; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "episode_contains_phase",
             "from": "episode",
             "to": "phase",
             "cardinality": "one-to-many",
-            "source": "prompts/episodes/02-episode-plan.md"
+            "source": "prompts/episodes/02-episode-plan.md",
+            "evidence": "prompts/episodes/02-episode-plan.md names the relation episode_contains_phase.",
+            "rationale": "episode and phase are linked one-to-many; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "phase_contains_task",
             "from": "phase",
             "to": "task",
             "cardinality": "one-to-many",
-            "source": "prompts/episodes/02-episode-plan.md"
+            "source": "prompts/episodes/02-episode-plan.md",
+            "evidence": "prompts/episodes/02-episode-plan.md names the relation phase_contains_task.",
+            "rationale": "phase and task are linked one-to-many; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "task_produces_commit",
             "from": "task",
             "to": "commit",
             "cardinality": "one-to-many",
-            "source": "prompts/02-workflow.md 7"
+            "source": "prompts/02-workflow.md 7",
+            "evidence": "prompts/02-workflow.md 7 names the relation task_produces_commit.",
+            "rationale": "task and commit are linked one-to-many; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "task_produces_record",
             "from": "task",
             "to": "record",
             "cardinality": "one-to-one",
-            "source": "prompts/02-workflow.md 7.1"
+            "source": "prompts/02-workflow.md 7.1",
+            "evidence": "prompts/02-workflow.md 7.1 names the relation task_produces_record.",
+            "rationale": "task and record are linked one-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "record_cites_commit",
             "from": "record",
             "to": "commit",
             "cardinality": "many-to-many",
-            "source": "records/README.md"
+            "source": "records/README.md",
+            "evidence": "records/README.md names the relation record_cites_commit.",
+            "rationale": "record and commit are linked many-to-many; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "commit_on_branch",
             "from": "commit",
             "to": "branch",
             "cardinality": "many-to-one",
-            "source": "prompts/02-workflow.md 3.1"
+            "source": "prompts/02-workflow.md 3.1",
+            "evidence": "prompts/02-workflow.md 3.1 names the relation commit_on_branch.",
+            "rationale": "commit and branch are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "tag_names_commit",
             "from": "tag",
             "to": "commit",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md",
+            "evidence": "prompts/capabilities/artifacts/04-release-and-publishing.md names the relation tag_names_commit.",
+            "rationale": "tag and commit are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "release_names_commit",
             "from": "release",
             "to": "commit",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md",
+            "evidence": "prompts/capabilities/artifacts/04-release-and-publishing.md names the relation release_names_commit.",
+            "rationale": "release and commit are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "release_carries_version",
             "from": "release",
             "to": "version",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md"
+            "source": "prompts/capabilities/artifacts/04-release-and-publishing.md",
+            "evidence": "prompts/capabilities/artifacts/04-release-and-publishing.md names the relation release_carries_version.",
+            "rationale": "release and version are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "version_describes_commit",
             "from": "version",
             "to": "commit",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/artifacts/02-version-information.md"
+            "source": "prompts/capabilities/artifacts/02-version-information.md",
+            "evidence": "prompts/capabilities/artifacts/02-version-information.md names the relation version_describes_commit.",
+            "rationale": "version and commit are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "test_covers_requirement",
             "from": "test",
             "to": "requirement",
             "cardinality": "many-to-many",
-            "source": "tests/README.md"
+            "source": "tests/README.md",
+            "evidence": "tests/README.md names the relation test_covers_requirement.",
+            "rationale": "test and requirement are linked many-to-many; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "test_writes_log",
             "from": "test",
             "to": "log",
             "cardinality": "one-to-many",
-            "source": "tests/README.md"
+            "source": "tests/README.md",
+            "evidence": "tests/README.md names the relation test_writes_log.",
+            "rationale": "test and log are linked one-to-many; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "log_belongs_to_session",
             "from": "log",
             "to": "session",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/execution/07-session-log.md"
+            "source": "prompts/capabilities/execution/07-session-log.md",
+            "evidence": "prompts/capabilities/execution/07-session-log.md names the relation log_belongs_to_session.",
+            "rationale": "log and session are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "page_in_page_set",
             "from": "page",
             "to": "page_set",
             "cardinality": "many-to-one",
-            "source": "prompts/features/02-project-pages.md"
+            "source": "prompts/features/02-project-pages.md",
+            "evidence": "prompts/features/02-project-pages.md names the relation page_in_page_set.",
+            "rationale": "page and page_set are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "page_has_nav",
             "from": "page",
             "to": "nav",
             "cardinality": "one-to-many",
-            "source": "prompts/features/02-project-pages.md"
+            "source": "prompts/features/02-project-pages.md",
+            "evidence": "prompts/features/02-project-pages.md names the relation page_has_nav.",
+            "rationale": "page and nav are linked one-to-many; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "dashboard_reads_state",
             "from": "dashboard",
             "to": "site_state",
             "cardinality": "one-to-many",
-            "source": "prompts/features/02-project-pages.md"
+            "source": "prompts/features/02-project-pages.md",
+            "evidence": "prompts/features/02-project-pages.md names the relation dashboard_reads_state.",
+            "rationale": "dashboard and site_state are linked one-to-many; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "document_generated_from",
             "from": "document",
             "to": "rule_file",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/artifacts/01-generated-documentation.md"
+            "source": "prompts/capabilities/artifacts/01-generated-documentation.md",
+            "evidence": "prompts/capabilities/artifacts/01-generated-documentation.md names the relation document_generated_from.",
+            "rationale": "document and rule_file are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "session_has_goal",
             "from": "session",
             "to": "goal",
             "cardinality": "one-to-one",
-            "source": "prompts/capabilities/execution/07-session-log.md 3"
+            "source": "prompts/capabilities/execution/07-session-log.md 3",
+            "evidence": "prompts/capabilities/execution/07-session-log.md 3 names the relation session_has_goal.",
+            "rationale": "session and goal are linked one-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "delegation_from_agent",
             "from": "delegation",
             "to": "agent",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/execution/08-delegation-authority.md"
+            "source": "prompts/capabilities/execution/08-delegation-authority.md",
+            "evidence": "prompts/capabilities/execution/08-delegation-authority.md names the relation delegation_from_agent.",
+            "rationale": "delegation and agent are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "delegation_to_agent",
             "from": "delegation",
             "to": "agent",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/execution/08-delegation-authority.md"
+            "source": "prompts/capabilities/execution/08-delegation-authority.md",
+            "evidence": "prompts/capabilities/execution/08-delegation-authority.md names the relation delegation_to_agent.",
+            "rationale": "delegation and agent are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "delegation_authorized_by",
             "from": "delegation",
             "to": "task",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/execution/08-delegation-authority.md 1"
+            "source": "prompts/capabilities/execution/08-delegation-authority.md 1",
+            "evidence": "prompts/capabilities/execution/08-delegation-authority.md 1 names the relation delegation_authorized_by.",
+            "rationale": "delegation and task are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "boundary_of_sandbox",
             "from": "boundary",
             "to": "sandbox",
             "cardinality": "one-to-one",
-            "source": "prompts/capabilities/execution/06-execution-boundary.md 3"
+            "source": "prompts/capabilities/execution/06-execution-boundary.md 3",
+            "evidence": "prompts/capabilities/execution/06-execution-boundary.md 3 names the relation boundary_of_sandbox.",
+            "rationale": "boundary and sandbox are linked one-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "credential_held_by",
             "from": "credential",
             "to": "host",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/execution/06-execution-boundary.md 2"
+            "source": "prompts/capabilities/execution/06-execution-boundary.md 2",
+            "evidence": "prompts/capabilities/execution/06-execution-boundary.md 2 names the relation credential_held_by.",
+            "rationale": "credential and host are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "failure_attributed_to",
             "from": "failure",
             "to": "layer",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/execution/09-failure-attribution.md 1"
+            "source": "prompts/capabilities/execution/09-failure-attribution.md 1",
+            "evidence": "prompts/capabilities/execution/09-failure-attribution.md 1 names the relation failure_attributed_to.",
+            "rationale": "failure and layer are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "incident_records_failure",
             "from": "incident",
             "to": "failure",
             "cardinality": "one-to-many",
-            "source": "records/README.md"
+            "source": "records/README.md",
+            "evidence": "records/README.md names the relation incident_records_failure.",
+            "rationale": "incident and failure are linked one-to-many; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "incident_is_record",
             "from": "incident",
             "to": "record",
             "cardinality": "one-to-one",
-            "source": "records/README.md"
+            "source": "records/README.md",
+            "evidence": "records/README.md names the relation incident_is_record.",
+            "rationale": "incident and record are linked one-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "stage_produces_work_product",
             "from": "stage",
             "to": "work_product",
             "cardinality": "one-to-many",
-            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md",
+            "evidence": "prompts/capabilities/artifacts/03-generated-data-products.md names the relation stage_produces_work_product.",
+            "rationale": "stage and work_product are linked one-to-many; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "work_product_has_provenance",
             "from": "work_product",
             "to": "provenance",
             "cardinality": "one-to-one",
-            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md",
+            "evidence": "prompts/capabilities/artifacts/03-generated-data-products.md names the relation work_product_has_provenance.",
+            "rationale": "work_product and provenance are linked one-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "provenance_names_dataset",
             "from": "provenance",
             "to": "dataset",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md",
+            "evidence": "prompts/capabilities/artifacts/03-generated-data-products.md names the relation provenance_names_dataset.",
+            "rationale": "provenance and dataset are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "stage_matches_feature",
             "from": "stage",
             "to": "feature",
             "cardinality": "many-to-one",
-            "source": "prompts/capabilities/artifacts/03-generated-data-products.md"
+            "source": "prompts/capabilities/artifacts/03-generated-data-products.md",
+            "evidence": "prompts/capabilities/artifacts/03-generated-data-products.md names the relation stage_matches_feature.",
+            "rationale": "stage and feature are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "ruleset_contains_rule",
             "from": "ruleset",
             "to": "rule",
             "cardinality": "one-to-many",
-            "source": "documents/10-rule-notation.md"
+            "source": "documents/10-rule-notation.md",
+            "evidence": "documents/10-rule-notation.md names the relation ruleset_contains_rule.",
+            "rationale": "ruleset and rule are linked one-to-many; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "case_maps_rule",
             "from": "rule_case",
             "to": "rule",
             "cardinality": "many-to-one",
-            "source": "prompts/features/04-browser-demo.md"
+            "source": "prompts/features/04-browser-demo.md",
+            "evidence": "prompts/features/04-browser-demo.md names the relation case_maps_rule.",
+            "rationale": "rule_case and rule are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "candidate_compiles_prompt",
             "from": "candidate",
             "to": "rule_file",
             "cardinality": "many-to-one",
-            "source": "prompts/features/04-browser-demo.md"
+            "source": "prompts/features/04-browser-demo.md",
+            "evidence": "prompts/features/04-browser-demo.md names the relation candidate_compiles_prompt.",
+            "rationale": "candidate and rule_file are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "candidate_has_ruleset",
             "from": "candidate",
             "to": "ruleset",
             "cardinality": "one-to-one",
-            "source": "prompts/features/04-browser-demo.md"
+            "source": "prompts/features/04-browser-demo.md",
+            "evidence": "prompts/features/04-browser-demo.md names the relation candidate_has_ruleset.",
+            "rationale": "candidate and ruleset are linked one-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "check_runs_ruleset",
             "from": "check",
             "to": "ruleset",
             "cardinality": "many-to-one",
-            "source": "prompts/features/03-rules-engine.md"
+            "source": "prompts/features/03-rules-engine.md",
+            "evidence": "prompts/features/03-rules-engine.md names the relation check_runs_ruleset.",
+            "rationale": "check and ruleset are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "override_replaces_rule",
             "from": "override",
             "to": "rule",
             "cardinality": "many-to-one",
-            "source": "prompts/01-contract.md 10"
+            "source": "prompts/01-contract.md 10",
+            "evidence": "prompts/01-contract.md 10 names the relation override_replaces_rule.",
+            "rationale": "override and rule are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "ambiguity_of_task",
             "from": "ambiguity",
             "to": "task",
             "cardinality": "many-to-one",
-            "source": "prompts/common/01-universal-rules.md Clarification Rules"
+            "source": "prompts/common/01-universal-rules.md Clarification Rules",
+            "evidence": "prompts/common/01-universal-rules.md Clarification Rules names the relation ambiguity_of_task.",
+            "rationale": "ambiguity and task are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "assumption_of_task",
             "from": "assumption",
             "to": "task",
             "cardinality": "many-to-one",
-            "source": "prompts/common/01-universal-rules.md Clarification Rules"
+            "source": "prompts/common/01-universal-rules.md Clarification Rules",
+            "evidence": "prompts/common/01-universal-rules.md Clarification Rules names the relation assumption_of_task.",
+            "rationale": "assumption and task are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "delta_applies_to_output",
             "from": "delta",
             "to": "output",
             "cardinality": "many-to-one",
-            "source": "prompts/01-contract.md 6"
+            "source": "prompts/01-contract.md 6",
+            "evidence": "prompts/01-contract.md 6 names the relation delta_applies_to_output.",
+            "rationale": "delta and output are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "todo_item_selects_task",
             "from": "todo_item",
             "to": "task",
             "cardinality": "one-to-one",
-            "source": "prompts/02-workflow.md 2"
+            "source": "prompts/02-workflow.md 2",
+            "evidence": "prompts/02-workflow.md 2 names the relation todo_item_selects_task.",
+            "rationale": "todo_item and task are linked one-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
         },
         {
             "id": "risk_of_task",
             "from": "risk",
             "to": "task",
             "cardinality": "many-to-one",
-            "source": "prompts/common/01-universal-rules.md Risky-Operations Rules"
+            "source": "prompts/common/01-universal-rules.md Risky-Operations Rules",
+            "evidence": "prompts/common/01-universal-rules.md Risky-Operations Rules names the relation risk_of_task.",
+            "rationale": "risk and task are linked many-to-one; the link is a relation, not an object.",
+            "status": "confirmed"
+        }
+    ],
+    "proposals": [
+        {
+            "term": "prompt",
+            "kind": "object",
+            "guess": "exclude",
+            "status": "confirmed",
+            "evidence": "prompts/features/07-prompts-output.md names the prompt file that is compiled and its generated output.",
+            "rationale": "A prompt is a rule_file with kind 'prompt'; a separate object would duplicate rule_file.",
+            "source": "prompts/features/07-prompts-output.md"
+        },
+        {
+            "term": "prose",
+            "kind": "object",
+            "guess": "exclude",
+            "status": "confirmed",
+            "evidence": "prompts/01-contract.md 5 compares the prose a model writes with the prose a human wrote.",
+            "rationale": "Prose is text held in a rule's or an output's text field; it has no identity of its own.",
+            "source": "prompts/01-contract.md 5"
+        },
+        {
+            "term": "strength",
+            "kind": "object",
+            "guess": "exclude",
+            "status": "confirmed",
+            "evidence": "prompts/01-contract.md states a rule's strength with one of two words.",
+            "rationale": "Strength is a field of rule, not an entity the model tracks.",
+            "source": "prompts/01-contract.md"
+        },
+        {
+            "term": "section",
+            "kind": "object",
+            "guess": "exclude",
+            "status": "confirmed",
+            "evidence": "prompts/how-to-write-tasks.md 2 separates a task into named sections.",
+            "rationale": "A section is a part of a task or a feature; it is modeled as task_section or feature_section.",
+            "source": "prompts/how-to-write-tasks.md 2"
+        },
+        {
+            "term": "step",
+            "kind": "object",
+            "guess": "exclude",
+            "status": "confirmed",
+            "evidence": "sources/browser/index.html draws the studio as a step rail.",
+            "rationale": "A step is page state; it has no identity or operations in the domain.",
+            "source": "sources/browser/index.html"
+        },
+        {
+            "term": "panel",
+            "kind": "object",
+            "guess": "exclude",
+            "status": "confirmed",
+            "evidence": "sources/browser/index.html gives each step one panel.",
+            "rationale": "A panel is a view element, not domain data.",
+            "source": "sources/browser/index.html"
+        },
+        {
+            "term": "tab",
+            "kind": "object",
+            "guess": "exclude",
+            "status": "confirmed",
+            "evidence": "sources/browser/index.html groups a panel's content into tabs.",
+            "rationale": "A tab is a view element, not domain data.",
+            "source": "sources/browser/index.html"
+        },
+        {
+            "term": "cache",
+            "kind": "object",
+            "guess": "exclude",
+            "status": "confirmed",
+            "evidence": "prompts/03-conventions.md 6.3 names the raw caches a pipeline preserves.",
+            "rationale": "A cache is a host artifact with no modeled fields.",
+            "source": "prompts/03-conventions.md 6.3"
+        },
+        {
+            "term": "mount",
+            "kind": "object",
+            "guess": "exclude",
+            "status": "confirmed",
+            "evidence": "prompts/how-to-write-tasks.md 8 uses a mount as a host resource.",
+            "rationale": "A mount is a host resource, covered by the host object's resource field.",
+            "source": "prompts/how-to-write-tasks.md 8"
+        },
+        {
+            "term": "volume",
+            "kind": "object",
+            "guess": "exclude",
+            "status": "confirmed",
+            "evidence": "prompts/how-to-write-tasks.md 8 mentions creating a volume as host work.",
+            "rationale": "A volume is a host resource, covered by the host object.",
+            "source": "prompts/how-to-write-tasks.md 8"
+        },
+        {
+            "term": "service",
+            "kind": "object",
+            "guess": "exclude",
+            "status": "confirmed",
+            "evidence": "prompts/how-to-write-tasks.md 8 mentions restarting a service as host work.",
+            "rationale": "A service is host state, covered by the host object.",
+            "source": "prompts/how-to-write-tasks.md 8"
+        },
+        {
+            "term": "token",
+            "kind": "object",
+            "guess": "exclude",
+            "status": "confirmed",
+            "evidence": "prompts/how-to-write-tasks.md 3 writes an operation as a verb and a path.",
+            "rationale": "A token is a parse unit of an operation line, not an entity.",
+            "source": "prompts/how-to-write-tasks.md 3"
+        },
+        {
+            "term": "sentence",
+            "kind": "object",
+            "guess": "exclude",
+            "status": "confirmed",
+            "evidence": "prompts/03-conventions.md 1 asks for one sentence per line.",
+            "rationale": "A sentence is a unit of prose, not an entity with identity.",
+            "source": "prompts/03-conventions.md 1"
+        },
+        {
+            "term": "rule marker",
+            "kind": "object",
+            "guess": "exclude",
+            "status": "confirmed",
+            "evidence": "documents/13-markers.md defines a marker appended to a rule line.",
+            "rationale": "A marker is an annotation on a rule, modeled by the rule id in the marker.",
+            "source": "documents/13-markers.md"
+        },
+        {
+            "term": "review",
+            "kind": "operation",
+            "subject": "human",
+            "guess": "exclude",
+            "status": "confirmed",
+            "evidence": "records/README.md says the human reviews an episode before a record is written.",
+            "rationale": "Review is the human decision that accept already models; a second operation would duplicate it.",
+            "source": "records/README.md"
         }
     ]
 }

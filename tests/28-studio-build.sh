@@ -29,6 +29,7 @@ for file_expected in \
     "$DIRECTORY_TREE/browser/playground.html" \
     "$DIRECTORY_TREE/browser/demo.mjs" \
     "$DIRECTORY_TREE/browser/sample.json" \
+    "$DIRECTORY_TREE/browser/object-model.json" \
     "$DIRECTORY_TREE/krank.mjs" \
     "$DIRECTORY_TREE/ruleset-run.mjs" \
     "$DIRECTORY_TREE/ruleset-render.mjs"; do
@@ -45,22 +46,56 @@ node -e 'const data = require(process.argv[1]); if (!Array.isArray(data.files) |
     "$DIRECTORY_TREE/browser/files.json" || fail 'files.json has no files'
 
 cat > "$DIRECTORY_TEST/fake-compiler.mjs" <<'JS'
-process.stdout.write(JSON.stringify({ type: "session", sessionId: "fake" }) + "\n");
-process.stdout.write(JSON.stringify({ type: "status", phase: "turn_start", turn: 1 }) + "\n");
-process.stdout.write(JSON.stringify({ type: "reasoning", text: "dsh: reasoning:\nI am compiling this prompt.\n" }) + "\n");
-const candidates = {
-    candidates: [{
-        id: "fake",
-        title: "Fake candidate",
-        explanation: "A candidate the test compiler returns.",
-        rules: {
-            facts: [],
-            rules: [{ id: "always", when: [{ fact: { type: "file", path: "$p" } }], then: [{ emit: "seen" }] }],
-        },
-        cases: [{ rule: "always", source: "prompts/x.md", original: "A line.", verdict: "ok", note: "n", suggestion: "s" }],
-    }],
-};
-process.stdout.write(JSON.stringify({ type: "final", sessionId: "fake", reason: "done", text: JSON.stringify(candidates) }) + "\n");
+let input = "";
+process.stdin.on("data", (chunk) => {
+    input += chunk;
+});
+process.stdin.on("end", () => {
+    process.stdout.write(JSON.stringify({ type: "session", sessionId: "fake" }) + "\n");
+    process.stdout.write(JSON.stringify({ type: "status", phase: "turn_start", turn: 1 }) + "\n");
+    process.stdout.write(JSON.stringify({ type: "reasoning", text: "dsh: reasoning:\nI am reading this prompt.\n" }) + "\n");
+    let answer;
+    if (input.includes("Propose the object model")) {
+        answer = {
+            proposals: [{
+                term: "fixture_term",
+                kind: "object",
+                guess: "exclude",
+                status: "proposed",
+                evidence: "The prompt names the term.",
+                rationale: "It is a fixture term, not a domain object.",
+                source: "prompts/x.md",
+            }],
+        };
+    } else if (input.includes("UNCONFIRMED")) {
+        answer = {
+            candidates: [{
+                id: "bad",
+                title: "Bad candidate",
+                explanation: "A candidate with an unconfirmed fact type.",
+                rules: {
+                    facts: [],
+                    rules: [{ id: "ghost", when: [{ fact: { type: "ghost" } }], then: [{ emit: "seen" }] }],
+                },
+                cases: [{ rule: "ghost", source: "prompts/x.md", original: "A line.", verdict: "ok", note: "n", suggestion: "s" }],
+            }],
+        };
+    } else {
+        answer = {
+            candidates: [{
+                id: "fake",
+                title: "Fake candidate",
+                explanation: "A candidate the test compiler returns.",
+                rules: {
+                    facts: [],
+                    rules: [{ id: "always", when: [{ fact: { type: "file", path: "$p" } }], then: [{ emit: "seen" }] }],
+                },
+                cases: [{ rule: "always", source: "prompts/x.md", original: "A line.", verdict: "ok", note: "n", suggestion: "s" }],
+            }],
+        };
+    }
+    process.stdout.write(JSON.stringify({ type: "final", sessionId: "fake", reason: "done", text: JSON.stringify(answer) }) + "\n");
+});
 JS
 
 PORT=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')
@@ -93,6 +128,20 @@ curl -sf -X POST -H 'content-type: application/json' \
     || fail 'the compile endpoint failed'
 node -e 'const fs = require("fs"); const text = fs.readFileSync(process.argv[1], "utf8"); const events = [...text.matchAll(/^data: (.*)$/gm)].map((m) => JSON.parse(m[1])); if (!events.some((e) => e.type === "phase" && e.phase === "start")) process.exit(1); if (!events.some((e) => e.type === "reasoning")) process.exit(1); const done = events.find((e) => e.type === "done"); if (!done) process.exit(1); const candidate = done.candidates[0]; if (!candidate || candidate.rules.rules.length !== 1 || candidate.cases.length !== 1) process.exit(1);' \
     "$DIRECTORY_TEST/compile.sse" || fail 'the compile endpoint returned a bad candidate'
+
+curl -sf -X POST -H 'content-type: application/json' \
+    -d '{"source":"prompts/x.md","text":"A line."}' \
+    "http://127.0.0.1:$PORT/propose" > "$DIRECTORY_TEST/propose.sse" \
+    || fail 'the propose endpoint failed'
+node -e 'const fs = require("fs"); const text = fs.readFileSync(process.argv[1], "utf8"); const events = [...text.matchAll(/^data: (.*)$/gm)].map((m) => JSON.parse(m[1])); const done = events.find((e) => e.type === "done"); if (!done) process.exit(1); const proposal = done.proposals[0]; if (!proposal || proposal.term !== "fixture_term" || proposal.status !== "proposed" || !proposal.evidence || !proposal.rationale) process.exit(1);' \
+    "$DIRECTORY_TEST/propose.sse" || fail 'the propose endpoint returned a bad proposal'
+
+curl -s -X POST -H 'content-type: application/json' \
+    -d '{"source":"prompts/x.md","text":"UNCONFIRMED"}' \
+    "http://127.0.0.1:$PORT/compile" > "$DIRECTORY_TEST/refuse.sse" \
+    || fail 'the refusing compile endpoint could not be reached'
+node -e 'const fs = require("fs"); const text = fs.readFileSync(process.argv[1], "utf8"); const events = [...text.matchAll(/^data: (.*)$/gm)].map((m) => JSON.parse(m[1])); const error = events.find((e) => e.type === "error"); if (!error || !/not a confirmed object/.test(error.message)) process.exit(1);' \
+    "$DIRECTORY_TEST/refuse.sse" || fail 'the compile endpoint accepted an unconfirmed fact type'
 
 kill "$SERVER_PID" 2>/dev/null || true
 trap - EXIT

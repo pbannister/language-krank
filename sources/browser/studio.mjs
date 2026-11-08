@@ -14,6 +14,7 @@ import { diff_lines } from "./prompt-diff.mjs";
 
 const catalog = await load_json("./catalog.json");
 const bundle = await load_json("./files.json");
+const object_model = await load_json("./object-model.json");
 
 const select_prompt = document.querySelector("#prompt");
 const select_scope = document.querySelector("#scope");
@@ -31,12 +32,16 @@ const check_output = document.querySelector("#check-output");
 const approve = document.querySelector("#approve");
 const history_log = document.querySelector("#history-log");
 const prompt_panel = document.querySelector('.panel[data-panel="prompt"]');
+const proposals_box = document.querySelector("#proposals");
+const objects_count = document.querySelector("#objects-count");
+const propose_note = document.querySelector("#propose-note");
 
 let entry = catalog.entries.find((item) => item.compiled) ?? catalog.entries[0];
 let candidate = entry.candidates[0] ?? null;
 let working = entry.markdown;
 let edited = false;
 let last_check = null;
+let proposals = proposal_rows(object_model);
 const urls = [];
 
 async function load_json(path) {
@@ -58,6 +63,104 @@ function download_url(data, type) {
     const url = URL.createObjectURL(new Blob([data], { type }));
     urls.push(url);
     return url;
+}
+
+function proposal_rows(model) {
+    const rows = [];
+    for (const object of model.objects) {
+        rows.push({
+            term: object.id,
+            kind: "object",
+            guess: "include",
+            status: object.status,
+            evidence: object.evidence,
+            rationale: object.rationale,
+            source: object.source,
+        });
+    }
+    for (const operation of model.operations) {
+        rows.push({
+            term: operation.id,
+            kind: "operation",
+            subject: operation.subject,
+            guess: "include",
+            status: operation.status,
+            evidence: operation.evidence,
+            rationale: operation.rationale,
+            source: operation.source,
+        });
+    }
+    for (const relation of model.relations) {
+        rows.push({
+            term: relation.id,
+            kind: "relation",
+            guess: "include",
+            status: relation.status,
+            evidence: relation.evidence,
+            rationale: relation.rationale,
+            source: relation.source,
+        });
+    }
+    for (const proposal of model.proposals ?? []) {
+        rows.push({ ...proposal });
+    }
+    return rows;
+}
+
+function proposal_counts() {
+    const counts = { confirmed: 0, proposed: 0, rejected: 0 };
+    for (const row of proposals) {
+        counts[row.status] += 1;
+    }
+    return counts;
+}
+
+function status_label(status) {
+    return status === "proposed" ? "pending" : status;
+}
+
+let proposals_url = null;
+
+function render_proposals() {
+    proposals_box.replaceChildren();
+    const counts = proposal_counts();
+    objects_count.textContent = `${counts.confirmed} confirmed · ${counts.proposed} pending · ${counts.rejected} rejected`;
+    for (const row of proposals) {
+        const tr = document.createElement("tr");
+        tr.className = `proposal-${row.status}`;
+        tr.append(
+            cell(row.term),
+            cell(row.kind),
+            cell(row.guess),
+            cell(status_label(row.status)),
+            cell(row.evidence),
+            cell(row.rationale),
+        );
+        const decide = document.createElement("td");
+        decide.className = "decide";
+        const agree = document.createElement("button");
+        agree.type = "button";
+        agree.textContent = "Agree";
+        agree.addEventListener("click", () => {
+            row.status = "confirmed";
+            render_proposals();
+        });
+        const reject = document.createElement("button");
+        reject.type = "button";
+        reject.textContent = "Reject";
+        reject.addEventListener("click", () => {
+            row.status = "rejected";
+            render_proposals();
+        });
+        decide.append(agree, reject);
+        tr.append(decide);
+        proposals_box.append(tr);
+    }
+    if (proposals_url !== null) {
+        URL.revokeObjectURL(proposals_url);
+    }
+    proposals_url = download_url(JSON.stringify({ proposals }, null, 2), "application/json");
+    document.querySelector("#proposals-download").href = proposals_url;
 }
 
 function cell(text, class_name) {
@@ -229,6 +332,7 @@ function render_approve() {
 
 function render() {
     urls_reset();
+    render_proposals();
     render_prompt();
     render_candidates();
 
@@ -398,6 +502,83 @@ function reasoning_tail(text) {
     return `thinking: ${clipped}`;
 }
 
+// post_sse runs one server task and returns its terminal `done` event. A
+// `phase`, `status`, or `reasoning` event is passed to on_event so the caller can
+// show progress.
+async function post_sse(path, body, on_event) {
+    const response = await fetch(path, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+    });
+    if (!response.ok || !response.body) {
+        throw new Error(`HTTP ${response.status}`);
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let result = null;
+    while (true) {
+        const chunk = await reader.read();
+        if (chunk.done) {
+            break;
+        }
+        buffer += decoder.decode(chunk.value, { stream: true });
+        let index;
+        while ((index = buffer.indexOf("\n\n")) !== -1) {
+            const frame = buffer.slice(0, index);
+            buffer = buffer.slice(index + 2);
+            for (const line of frame.split("\n")) {
+                if (!line.startsWith("data: ")) {
+                    continue;
+                }
+                const event = JSON.parse(line.slice(6));
+                if (event.type === "error") {
+                    throw new Error(event.message);
+                }
+                if (event.type === "done") {
+                    result = event;
+                }
+                if (on_event) {
+                    on_event(event);
+                }
+            }
+        }
+    }
+    if (!result) {
+        throw new Error("the server returned no result");
+    }
+    return result;
+}
+
+document.querySelector("#propose").addEventListener("click", async () => {
+    const button = document.querySelector("#propose");
+    button.disabled = true;
+    propose_note.textContent = "Proposing…";
+    try {
+        const result = await post_sse("/propose", { source: entry.source, text: textarea.value }, (event) => {
+            if (event.type === "phase") {
+                propose_note.textContent = event.message ?? event.phase;
+            } else if (event.type === "status") {
+                propose_note.textContent = status_text(event);
+            }
+        });
+        const known = new Set(proposals.map((row) => row.term));
+        for (const proposal of result.proposals) {
+            if (!known.has(proposal.term)) {
+                proposals.push(proposal);
+                known.add(proposal.term);
+            }
+        }
+        render_proposals();
+        propose_note.textContent = `${result.proposals.length} proposal(s) read; new terms are pending.`;
+    } catch (error) {
+        propose_note.textContent = `Proposal failed: ${error.message}`;
+    } finally {
+        button.disabled = false;
+    }
+});
+
 document.querySelector("#generate").addEventListener("click", async () => {
     const button = document.querySelector("#generate");
     const note = document.querySelector("#generate-note");
@@ -419,51 +600,17 @@ document.querySelector("#generate").addEventListener("click", async () => {
     update();
     const timer = setInterval(update, 1000);
     try {
-        const response = await fetch("/compile", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ source: entry.source, text: textarea.value }),
+        const result = await post_sse("/compile", { source: entry.source, text: textarea.value }, (event) => {
+            if (event.type === "phase") {
+                phase = event.message ?? event.phase;
+            } else if (event.type === "status") {
+                phase = status_text(event);
+            } else if (event.type === "reasoning") {
+                reasoning += event.text;
+                phase = reasoning_tail(reasoning);
+            }
         });
-        if (!response.ok || !response.body) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let candidates = null;
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-                break;
-            }
-            buffer += decoder.decode(value, { stream: true });
-            let index;
-            while ((index = buffer.indexOf("\n\n")) !== -1) {
-                const frame = buffer.slice(0, index);
-                buffer = buffer.slice(index + 2);
-                for (const line of frame.split("\n")) {
-                    if (!line.startsWith("data: ")) {
-                        continue;
-                    }
-                    const event = JSON.parse(line.slice(6));
-                    if (event.type === "phase") {
-                        phase = event.message ?? event.phase;
-                    } else if (event.type === "status") {
-                        phase = status_text(event);
-                    } else if (event.type === "reasoning") {
-                        reasoning += event.text;
-                        phase = reasoning_tail(reasoning);
-                    } else if (event.type === "done") {
-                        candidates = event.candidates;
-                    } else if (event.type === "error") {
-                        throw new Error(event.message);
-                    }
-                }
-            }
-        }
-        if (!candidates) {
-            throw new Error("the compiler returned no candidates");
-        }
+        const candidates = result.candidates;
         entry = { ...entry, compiled: true, candidates };
         candidate = entry.candidates[0];
         working = textarea.value;

@@ -207,6 +207,18 @@
             opacity: 0.55;
         }
 
+        tr.proposal-proposed td {
+            background: color-mix(in srgb, Canvas 86%, #f9a825 14%);
+        }
+
+        tr.proposal-rejected td {
+            opacity: 0.55;
+        }
+
+        td.decide {
+            white-space: nowrap;
+        }
+
         label {
             display: block;
             margin: 0.75rem 0 0.25rem;
@@ -358,10 +370,11 @@
     <div class="studio">
         <nav class="steps" aria-label="Steps">
             <button type="button" data-step="prompt" class="active">1. Prompt</button>
-            <button type="button" data-step="candidates">2. Candidates</button>
-            <button type="button" data-step="rules">3. Rules</button>
-            <button type="button" data-step="check">4. Check</button>
-            <button type="button" data-step="approve">5. Approve</button>
+            <button type="button" data-step="objects">2. Objects</button>
+            <button type="button" data-step="candidates">3. Candidates</button>
+            <button type="button" data-step="rules">4. Rules</button>
+            <button type="button" data-step="check">5. Check</button>
+            <button type="button" data-step="approve">6. Approve</button>
         </nav>
 
         <main>
@@ -452,6 +465,35 @@
                 </div>
             </section>
 
+            <section class="panel" data-panel="objects" hidden>
+                <h2>2. Objects</h2>
+                <p class="note">The model proposes every noun and verb with an include or exclude guess and a
+                    reason. Agree confirms the guess; Reject overrides it. Only confirmed objects feed the
+                    compile and the rules. Nothing is written to the repository; the download is the review
+                    artifact.</p>
+                <div class="row">
+                    <button id="propose" type="button">Propose objects</button>
+                    <span class="note" id="propose-note"></span>
+                </div>
+                <p class="note" id="objects-count"></p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Term</th>
+                            <th>Kind</th>
+                            <th>Guess</th>
+                            <th>Status</th>
+                            <th>Evidence</th>
+                            <th>Rationale</th>
+                            <th>Decide</th>
+                        </tr>
+                    </thead>
+                    <tbody id="proposals"></tbody>
+                </table>
+                <p><a id="proposals-download" download="object-model-review.json">Download the reviewed
+                        proposals</a></p>
+            </section>
+
             <section class="panel" data-panel="candidates" hidden>
                 <div class="tabs" role="tablist">
                     <button type="button" class="tab active" data-tab="candidates" role="tab"
@@ -465,7 +507,7 @@
                     <p class="lead">The model reads the prompt and turns it into rules. Each card is one reading: the
                         rules it found and the prompt lines they came from. When a line is ambiguous, the model offers
                         more than one reading and explains the difference. Pick the one that says what you meant. The
-                        choice only changes this page; nothing is written until you download it in step 5.</p>
+                        choice only changes this page; nothing is written until you download it in step 6.</p>
                 </div>
             </section>
 
@@ -520,7 +562,7 @@
             </section>
 
             <section class="panel" data-panel="check" hidden>
-                <h2>4. Check a file or directory</h2>
+                <h2>5. Check a file or directory</h2>
                 <p class="note">The selected candidate's rules run against facts extracted from the project's files at
                     build time.</p>
                 <label for="scope">Scope</label>
@@ -532,7 +574,7 @@
             </section>
 
             <section class="panel" data-panel="approve" hidden>
-                <h2>5. Approve</h2>
+                <h2>6. Approve</h2>
                 <p class="note">Approval records the choice in this page. Nothing is written to the repository; the
                     downloads are the artifacts to review and commit.</p>
                 <dl class="summary" id="approve"></dl>
