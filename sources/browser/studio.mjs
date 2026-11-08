@@ -199,12 +199,6 @@ function render_proposals() {
         tr.className = `use-${row.use}${row.reviewed ? "" : " unreviewed"}`;
 
         const term = cell(row.term);
-        if (!row.reviewed) {
-            const hint = document.createElement("span");
-            hint.className = "review-hint";
-            hint.textContent = "unreviewed";
-            term.append(hint);
-        }
 
         const use = document.createElement("td");
         use.className = "use";
@@ -220,6 +214,12 @@ function render_proposals() {
                 render_proposals();
             });
             use.append(button);
+        }
+        if (!row.reviewed) {
+            const hint = document.createElement("div");
+            hint.className = "review-hint";
+            hint.textContent = "unreviewed";
+            use.append(hint);
         }
 
         const evidence = document.createElement("td");
