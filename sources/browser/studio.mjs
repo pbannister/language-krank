@@ -40,6 +40,10 @@ const check_output = document.querySelector("#check-output");
 const check_summary = document.querySelector("#check-summary");
 const approve = document.querySelector("#approve");
 const approve_warning = document.querySelector("#approve-warning");
+const build_cycle = document.querySelector("#build-cycle");
+const build_note = document.querySelector("#build-note");
+const build_entries = document.querySelector("#build-entries");
+const build_output = document.querySelector("#build-output");
 const history_log = document.querySelector("#history-log");
 const file_history = document.querySelector("#file-history");
 const object_file = document.querySelector("#object-file");
@@ -62,6 +66,7 @@ let edited = false;
 let last_check = null;
 let proposals = proposal_rows(object_model);
 const scan_times = new Map();
+let build_state = null;
 const urls = [];
 
 async function load_json(path) {
@@ -730,6 +735,114 @@ function render_object_file() {
     ]);
 }
 
+function build_slug(source) {
+    return source.replace(/^prompts\//, "").replace(/\.md$/, "").replace(/[/_]/g, "-");
+}
+
+function render_build_cycle() {
+    build_cycle.replaceChildren();
+    const counts = proposal_counts();
+    const built_entry = build_state?.entries?.find((item) => item.source === entry.source);
+    const rows = [
+        ["Objects", `${counts.accept} accept · ${counts.ignore} ignore · ${counts.unreviewed} unreviewed`],
+        ["Candidate", candidate ? candidate.id : "none"],
+        ["This prompt", `${candidate ? candidate.id : "none"} on the page · ${built_entry ? built_entry.candidate : "not built"} in prompts.out`],
+        ["prompts.out", build_state ? `built ${local_time(build_state.generated_at)}` : "not built"],
+        ["Entries", String(build_state?.entries?.length ?? 0)],
+    ];
+    for (const [label, value] of rows) {
+        const dt = document.createElement("dt");
+        dt.textContent = label;
+        const dd = document.createElement("dd");
+        dd.textContent = value;
+        build_cycle.append(dt, dd);
+    }
+}
+
+function render_build() {
+    render_build_cycle();
+    build_entries.replaceChildren();
+    if (!build_state) {
+        build_note.textContent = "prompts.out/ has not been built yet. Build it to produce the reduced prompts and rule sets.";
+        return;
+    }
+    build_note.textContent = `Built ${local_time(build_state.generated_at)}; ${build_state.entries.length} compiled prompt(s). The build reads the prompt files and the approved candidates recorded in dataflow.in/compile; it does not use the page's unsaved draft.`;
+    for (const item of build_state.entries) {
+        const article = document.createElement("article");
+        article.className = "build-entry";
+
+        const title = document.createElement("h3");
+        title.textContent = item.source;
+
+        const facts = document.createElement("p");
+        facts.className = "note";
+        facts.textContent = `Candidate ${item.candidate} · ${item.rules} rule(s) · ${item.cases} case(s) · ${item.markers_found} marker(s) found${item.markers_missing ? `, ${item.markers_missing} missing` : ""}.`;
+
+        const links = document.createElement("p");
+        const slug = build_slug(item.source);
+        const files = ["rules.json", "reduced.md", "rendered.md", "comparison.md"];
+        files.forEach((file, index) => {
+            if (index > 0) {
+                links.append(document.createTextNode(" · "));
+            }
+            const link = document.createElement("a");
+            link.href = `/prompts-out/${slug}/${file}`;
+            link.target = "_blank";
+            link.rel = "noopener";
+            link.textContent = file;
+            links.append(link);
+        });
+
+        article.append(title, facts, links);
+        build_entries.append(article);
+    }
+}
+
+async function load_build_state() {
+    try {
+        const response = await fetch("/build-state");
+        if (!response.ok) {
+            return;
+        }
+        const data = await response.json();
+        build_state = data.manifest;
+        render_build();
+    } catch {
+        // A missing build is shown as "not built".
+    }
+}
+
+function revise_prompt() {
+    show("prompt");
+    activate_tab("prompt", prompt_panel);
+    textarea.focus();
+    textarea.scrollIntoView({ block: "center" });
+}
+
+document.querySelector("#build").addEventListener("click", async () => {
+    const button = document.querySelector("#build");
+    button.disabled = true;
+    build_note.textContent = "Building…";
+    try {
+        const response = await fetch("/build", { method: "POST" });
+        const data = await response.json();
+        if (!response.ok || !data.ok) {
+            throw new Error(data.error ?? `HTTP ${response.status}`);
+        }
+        build_state = data.manifest;
+        build_output.textContent = data.output ?? "";
+        render_build();
+    } catch (error) {
+        build_note.textContent = `Build failed: ${error.message}`;
+    } finally {
+        button.disabled = false;
+    }
+});
+
+for (const id of ["#revise-comparison", "#revise-approve"]) {
+    document.querySelector(id).addEventListener("click", revise_prompt);
+}
+
 function render() {
     urls_reset();
     render_file_history();
@@ -774,6 +887,7 @@ function render() {
     render_reduced();
     render_check_result();
     render_approve();
+    render_build_cycle();
 }
 
 function populate_prompts() {
@@ -1086,3 +1200,4 @@ for (const button of document.querySelectorAll(".tab")) {
 populate_prompts();
 populate_scopes();
 render();
+load_build_state();

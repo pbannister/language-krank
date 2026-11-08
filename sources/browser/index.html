@@ -439,6 +439,17 @@
             margin-top: 0;
         }
 
+        .build-entry {
+            padding: 0.75rem 1rem;
+            margin: 0 0 0.75rem;
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            border-radius: 0.35rem;
+        }
+
+        .build-entry h3 {
+            margin-top: 0;
+        }
+
         .badges .badge[aria-expanded="true"] {
             background: color-mix(in srgb, Canvas 74%, CanvasText 26%);
         }
@@ -629,6 +640,7 @@
             <button type="button" data-step="rules">4. Rules</button>
             <button type="button" data-step="check">5. Check</button>
             <button type="button" data-step="approve">6. Approve</button>
+            <button type="button" data-step="build">7. Build</button>
         </nav>
 
         <main>
@@ -817,6 +829,7 @@
                             <h2>Comparison</h2>
                             <p class="note" id="compare-note"></p>
                         </div>
+                        <button id="revise-comparison" type="button">Revise the prompt</button>
                     </div>
                     <table>
                         <thead>
@@ -886,6 +899,7 @@
                         <p class="note">This page records the choice and writes nothing. The downloads are the
                             artifacts to review and commit.</p>
                     </div>
+                    <button id="revise-approve" type="button">Revise the prompt</button>
                 </div>
                 <div class="approve-grid">
                     <div class="approve-card">
@@ -901,6 +915,24 @@
                         <p class="note">Commit these files, or paste them into the repository.</p>
                     </div>
                 </div>
+            </section>
+
+            <section class="panel" data-panel="build" hidden>
+                <div class="step-head">
+                    <div>
+                        <h2>7. Build and use</h2>
+                        <p class="note">The build turns the approved candidates into the reduced prompts and rule
+                            sets under <code>prompts.out/</code>. Later iterations read those, not the full prose.</p>
+                    </div>
+                    <button id="build" type="button">Build prompts.out</button>
+                </div>
+                <dl class="summary" id="build-cycle"></dl>
+                <p class="note" id="build-note"></p>
+                <div id="build-entries"></div>
+                <details class="raw">
+                    <summary>Build output</summary>
+                    <pre id="build-output"></pre>
+                </details>
             </section>
         </main>
     </div>

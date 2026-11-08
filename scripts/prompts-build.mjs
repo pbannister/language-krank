@@ -141,12 +141,12 @@ const compiled = catalog.entries.filter((item) => item.compiled);
 const manifest_file = join(output, "manifest.json");
 
 if (source_arg) {
-    let manifest = { generated_by: "scripts/prompts-build.mjs", entries: [] };
+    let manifest = { generated_by: "scripts/prompts-build.mjs", generated_at: new Date().toISOString(), entries: [] };
     if (existsSync(manifest_file)) {
         try {
             manifest = JSON.parse(readFileSync(manifest_file, "utf8"));
         } catch {
-            manifest = { generated_by: "scripts/prompts-build.mjs", entries: [] };
+            manifest = { generated_by: "scripts/prompts-build.mjs", generated_at: new Date().toISOString(), entries: [] };
         }
     }
 
@@ -170,6 +170,7 @@ if (source_arg) {
         manifest.entries[index] = record;
     }
     manifest.entries.sort((left, right) => left.source.localeCompare(right.source));
+    manifest.generated_at = new Date().toISOString();
     writeFileSync(manifest_file, `${JSON.stringify(manifest, null, 4)}\n`);
     process.stdout.write(`prompts-build: wrote ${entry.source}\n`);
     process.exit(0);
@@ -179,7 +180,7 @@ rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
 writeFileSync(join(output, ".gitkeep"), "");
 
-const manifest = { generated_by: "scripts/prompts-build.mjs", entries: [] };
+const manifest = { generated_by: "scripts/prompts-build.mjs", generated_at: new Date().toISOString(), entries: [] };
 for (const entry of compiled) {
     manifest.entries.push(build_entry(entry, output));
 }

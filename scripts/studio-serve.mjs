@@ -25,7 +25,7 @@
 import { spawn } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
 import { createServer } from "node:http";
-import { extname, relative, resolve } from "node:path";
+import { extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ruleset_run } from "../sources/krank.mjs";
 
@@ -36,6 +36,7 @@ const compiler = process.env.STUDIO_COMPILER_SCRIPT ?? fileURLToPath(new URL("./
 const page_studio = "/browser/index.html";
 const page_playground = "/browser/playground.html";
 const model_path = fileURLToPath(new URL("../dataflow.in/object-model.json", import.meta.url));
+const prompts_out = join(repository_root, "prompts.out");
 const denied_files = [".git/", "node_modules/", "dataflow.out/", "site.out/", "logs/", "tests.out/"];
 
 const TYPES = {
@@ -249,6 +250,36 @@ function compile(task, on_event) {
     });
 }
 
+function run_build() {
+    return new Promise((resolve, reject) => {
+        const child = spawn(process.execPath, ["scripts/prompts-build.mjs"], { cwd: repository_root });
+        let output = "";
+        let error = "";
+        child.stdout.on("data", (chunk) => {
+            output += chunk.toString();
+        });
+        child.stderr.on("data", (chunk) => {
+            error += chunk.toString();
+        });
+        child.on("error", (failure) => reject(new Error(failure.message)));
+        child.on("close", (code) => {
+            if (code !== 0) {
+                reject(new Error(error.trim() || `prompts-build exited ${code}`));
+            } else {
+                resolve(output.trim());
+            }
+        });
+    });
+}
+
+function build_manifest() {
+    try {
+        return JSON.parse(readFileSync(join(prompts_out, "manifest.json"), "utf8"));
+    } catch {
+        return null;
+    }
+}
+
 // Distill a Harness run event into the compact status the studio shows.
 function progress_event(event) {
     switch (event.type) {
@@ -354,11 +385,54 @@ const server = createServer((request, response) => {
         return;
     }
 
+    if (request.method === "POST" && pathname === "/build") {
+        (async () => {
+            try {
+                const output = await run_build();
+                response.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+                response.end(JSON.stringify({ ok: true, output, manifest: build_manifest() }));
+            } catch (error) {
+                response.writeHead(500, { "content-type": "application/json", "cache-control": "no-store" });
+                response.end(JSON.stringify({ ok: false, error: error.message }));
+            }
+        })();
+        return;
+    }
+
     if (request.method !== "GET") {
         response.writeHead(405);
         response.end("method not allowed\n");
         return;
     }
+    if (pathname === "/build-state") {
+        const manifest = build_manifest();
+        response.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+        response.end(JSON.stringify({ built: manifest !== null, manifest }));
+        return;
+    }
+
+    if (pathname.startsWith("/prompts-out/")) {
+        const generated = pathname.slice("/prompts-out/".length);
+        const full = resolve(prompts_out, generated);
+        if (full !== prompts_out && !full.startsWith(`${prompts_out}/`)) {
+            response.writeHead(403, { "content-type": "text/plain; charset=utf-8" });
+            response.end("forbidden\n");
+            return;
+        }
+        try {
+            const data = readFileSync(full);
+            const type = extname(full) === ".json"
+                ? "application/json; charset=utf-8"
+                : "text/markdown; charset=utf-8";
+            response.writeHead(200, { "content-type": type, "cache-control": "no-store" });
+            response.end(data);
+        } catch {
+            response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+            response.end("not found\n");
+        }
+        return;
+    }
+
     if (pathname === "/file") {
         const requested = url.searchParams.get("path") ?? "";
         if (requested === "" || requested.startsWith("/")) {

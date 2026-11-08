@@ -70,14 +70,14 @@ test("each page loads its module", () => {
 
 test("the studio page carries the step rail and its panels", () => {
     const html = read("sources/browser/index.html");
-    for (const step of ["prompt", "objects", "candidates", "rules", "check", "approve"]) {
+    for (const step of ["prompt", "objects", "candidates", "rules", "check", "approve", "build"]) {
         assert.ok(html.includes(`data-step="${step}"`), `the rail has no ${step}`);
         assert.ok(html.includes(`data-panel="${step}"`), `no panel for ${step}`);
     }
     for (const tab of ["prompt", "history", "about", "object-status", "object-about", "candidates", "rules", "prose", "comparison", "reduced"]) {
         assert.ok(html.includes(`data-tab="${tab}"`), `no tab for ${tab}`);
     }
-    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "object-file", "file-history", "history-log", "prompt-download", "file-overlay", "file-overlay-body", "file-overlay-note", "file-overlay-close", "candidates-note", "rules-badges", "rule-summary", "uncovered", "check-summary", "approve-warning"]) {
+    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "object-file", "file-history", "history-log", "prompt-download", "file-overlay", "file-overlay-body", "file-overlay-note", "file-overlay-close", "candidates-note", "rules-badges", "rule-summary", "uncovered", "check-summary", "approve-warning", "build", "build-cycle", "build-note", "build-entries", "build-output", "revise-comparison", "revise-approve"]) {
         assert.ok(html.includes(`id="${id}"`), `the page has no #${id}`);
     }
 });
@@ -99,6 +99,14 @@ test("the studio links the evidence filename to a highlighting file viewer", () 
     const view = read("sources/browser/file-view.mjs");
     assert.match(view, /\/file\?path=/, "the renderer does not fetch a repository file");
     assert.match(view, /file-line highlight|highlight/, "the renderer has no highlight");
+});
+
+test("the studio closes the cycle with a build step", () => {
+    const source = read("sources/browser/studio.mjs");
+    assert.match(source, /\/build-state/, "the studio does not read the build state");
+    assert.match(source, /fetch\("\/build"/, "the studio has no build action");
+    assert.match(source, /\/prompts-out\//, "the build entries have no generated links");
+    assert.match(source, /revise_prompt/, "the studio has no revise-the-prompt action");
 });
 
 test("the prompt edit is marked as unsaved and downloadable", () => {
