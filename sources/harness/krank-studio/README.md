@@ -1,6 +1,6 @@
 # dsh-krank-studio
 
-A DeepSeek Harness client plugin: a **Studio** action in the conversation session
+A DeepSeek Harness client plugin: a **Krank** action in the conversation session
 header opens the local prompt studio.
 
 The plugin is a launcher, not a reimplementation: the studio is the page
@@ -17,7 +17,7 @@ make studio          # builds dataflow.out/studio and serves 127.0.0.1:8090
 # 2. Install this plugin into the Harness web profile.
 dsh plugin --profile web add ~/work/08-language-krank/sources/harness/krank-studio
 
-# 3. Reload the Harness page. A "Studio" action appears in the session header.
+# 3. Reload the Harness page. A "Krank" action appears in the session header.
 ```
 
 If `dsh` is not on `PATH`, use the launcher of the running installation, for

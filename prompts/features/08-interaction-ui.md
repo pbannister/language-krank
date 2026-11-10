@@ -10,7 +10,7 @@ core, three surfaces.
 
 - `UI-R001` — The cycle's logic must live in the core (the object model, the catalog and extractors, `prompts-build`, `krank check`, and the `/compile` endpoint); no surface may reimplement it.
 - `UI-R002` — The surfaces share one data contract: the catalog JSON, the `prompts.out/` tree, and the `/compile` request and response.
-- `UI-R003` — The Harness extension must grow the Studio action into a panel that renders the cycle and calls `/compile`; the standalone web remains the embedded renderer.
+- `UI-R003` — The Harness extension must grow the Krank action into a panel that renders the cycle and calls `/compile`; the standalone web remains the embedded renderer.
 - `UI-R004` — The standalone web (`make studio`) must stay the reference renderer and pass the coverage gate (`tests/31-prompts-build`) without the Harness.
 - `UI-R005` — A VSCode extension, if built, must be a thin webview over the same contract and the same web renderer.
 

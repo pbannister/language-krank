@@ -1,6 +1,6 @@
 // dsh-krank-studio — a Harness client plugin.
 //
-// It adds a "Studio" action to the conversation session header. The action opens
+// It adds a "Krank" action to the conversation session header. The action opens
 // the local prompt studio, which `make studio` serves at http://127.0.0.1:8090.
 //
 // The module is loaded by the Harness Web Client through its module loader, so it
@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
         const React = require("react");
         const STUDIO = "http://127.0.0.1:8090/browser/index.html";
 
-        function StudioAction() {
+        function KrankAction() {
             return React.createElement(
                 "button",
                 {
@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
                     title: "Open the krank prompt studio (make studio)",
                     onClick: () => window.open(STUDIO, "_blank", "noopener"),
                 },
-                "Studio",
+                "Krank",
             );
         }
 
@@ -36,7 +36,7 @@ window.__ModuleLoader__.load({
                         id: "krank-studio",
                         order: 100,
                     },
-                    StudioAction,
+                    KrankAction,
                 ));
         }
 

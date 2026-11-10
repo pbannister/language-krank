@@ -35,6 +35,8 @@ grep -q 'conversation.session.header.actions' "$DIRECTORY_PLUGIN/lib/client.js" 
     || fail 'the client registers no action'
 grep -q '127.0.0.1:8090/browser/index.html' "$DIRECTORY_PLUGIN/lib/client.js" \
     || fail 'the client points at no studio URL'
+grep -q '"Krank",' "$DIRECTORY_PLUGIN/lib/client.js" \
+    || fail 'the action is not labelled Krank'
 
 echo '29-harness-plugin: ok'
 exit 0
