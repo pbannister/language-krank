@@ -53,6 +53,12 @@ const file_overlay_body = document.querySelector("#file-overlay-body");
 const file_overlay_note = document.querySelector("#file-overlay-note");
 const file_overlay_title = document.querySelector("#file-overlay-title");
 const prompt_panel = document.querySelector('.panel[data-panel="prompt"]');
+const prompt_context = document.querySelector("#prompt-context");
+const prompt_next = document.querySelector("#prompt-next");
+const prompt_next_note = document.querySelector("#prompt-next-note");
+const apply_button = document.querySelector("#apply");
+const reset_button = document.querySelector("#reset");
+const generate_button = document.querySelector("#generate");
 const objects_count = document.querySelector("#objects-count");
 const propose_note = document.querySelector("#propose-note");
 const object_panel = document.querySelector('.panel[data-panel="objects"]');
@@ -447,13 +453,54 @@ function update_edit_note() {
     const unsaved = text !== working;
     const changed = text !== entry.markdown;
     edit_note.classList.toggle("edit-dirty", changed);
+    edit_note.classList.toggle("status-file", !changed);
+    edit_note.classList.toggle("status-applied", changed && !unsaved);
+    edit_note.classList.toggle("status-unsaved", unsaved);
     if (!changed) {
-        edit_note.textContent = "This is the file's text; nothing is unsaved.";
+        edit_note.textContent = "Draft matches the file. Nothing is unsaved.";
     } else if (unsaved) {
         edit_note.textContent = "Unsaved edit — the file is unchanged. Apply the edit to use it on this page, or download the text to keep a copy.";
     } else {
         edit_note.textContent = "Applied draft — the file is unchanged. The compile still uses the file's cases; the comparison marks a covered line the edit broke. Download the text to keep a copy.";
     }
+}
+
+function update_prompt_context() {
+    const text = textarea.value;
+    const lines = text === "" ? 0 : text.split("\n").length;
+    const count = entry.candidates.length;
+    const selected = candidate ? `selected ${candidate.id}` : "no candidate selected";
+    prompt_context.textContent = `${lines} line${lines === 1 ? "" : "s"} · ${text.length} character${text.length === 1 ? "" : "s"} · ${count} candidate reading${count === 1 ? "" : "s"} · ${selected}.`;
+}
+
+function update_prompt_actions() {
+    const text = textarea.value;
+    apply_button.disabled = text === working;
+    apply_button.title = apply_button.disabled
+        ? "No unsaved edits to apply."
+        : "Use the current text on this page. The file is unchanged.";
+    reset_button.disabled = text === entry.markdown;
+    reset_button.title = reset_button.disabled
+        ? "The draft already matches the file."
+        : "Discard the page-local draft and restore the file text.";
+}
+
+function update_prompt_next() {
+    const count = entry.candidates.length;
+    prompt_next.hidden = count === 0;
+    if (count === 0) {
+        prompt_next_note.textContent = "No candidate reading yet. Generate candidates from the current draft to create the first reading.";
+        return;
+    }
+    prompt_next_note.textContent = `Next: review ${count} candidate reading${count === 1 ? "" : "s"} in Candidates. Choosing a reading is not approval.`;
+}
+
+function update_prompt_state() {
+    update_edit_note();
+    update_prompt_context();
+    update_prompt_actions();
+    update_prompt_next();
+    update_prompt_download();
 }
 
 function update_prompt_download() {
@@ -469,8 +516,7 @@ function update_prompt_download() {
 function render_prompt() {
     select_prompt.value = entry.source;
     textarea.value = working;
-    update_edit_note();
-    update_prompt_download();
+    update_prompt_state();
 }
 
 function badge_toggle(count, noun, detail) {
@@ -1045,8 +1091,7 @@ textarea.addEventListener("input", () => {
         approve_warning.textContent = "Apply the edited prompt before checking or downloading review artifacts.";
     }
     render_proposals();
-    update_edit_note();
-    update_prompt_download();
+    update_prompt_state();
 });
 
 document.querySelector("#apply").addEventListener("click", () => {
@@ -1062,6 +1107,10 @@ document.querySelector("#reset").addEventListener("click", () => {
     edited = false;
     last_check = null;
     render();
+});
+
+prompt_next.addEventListener("click", () => {
+    show("candidates");
 });
 
 function status_text(event) {
@@ -1204,12 +1253,14 @@ document.querySelector("#propose").addEventListener("click", async () => {
 });
 
 document.querySelector("#generate").addEventListener("click", async () => {
-    const button = document.querySelector("#generate");
+    const button = generate_button;
     const request_entry = entry;
     const request_text = textarea.value;
     const request_revision = draft_revision;
     const note = document.querySelector("#generate-note");
     button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    button.textContent = "Generating…";
     let phase = "generation started";
     let reasoning = "";
     let last_appended = null;
@@ -1260,6 +1311,8 @@ document.querySelector("#generate").addEventListener("click", async () => {
     } finally {
         clearInterval(timer);
         button.disabled = false;
+        button.setAttribute("aria-busy", "false");
+        button.textContent = "Generate candidates";
     }
 });
 

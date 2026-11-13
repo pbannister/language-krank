@@ -310,6 +310,70 @@
             margin: 0.75rem 0;
         }
 
+        .prompt-intro {
+            margin-bottom: 0.75rem;
+        }
+
+        .prompt-context {
+            margin: 0.35rem 0 0;
+            font-size: 0.85rem;
+            font-variant-numeric: tabular-nums;
+            opacity: 0.8;
+        }
+
+        .prompt-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            margin: 0.75rem 0;
+        }
+
+        .prompt-actions .primary-action {
+            border: 2px solid color-mix(in srgb, Canvas 35%, CanvasText 65%);
+            font-weight: 600;
+        }
+
+        .prompt-actions .primary-action:disabled {
+            opacity: 0.55;
+        }
+
+        .prompt-next {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 0.75rem;
+            align-items: baseline;
+            margin: 0 0 0.75rem;
+        }
+
+        .prompt-next .note {
+            margin: 0;
+        }
+
+        #edit-note {
+            padding: 0.1rem 0.4rem;
+            border-radius: 0.2rem;
+            background: color-mix(in srgb, Canvas 88%, CanvasText 12%);
+        }
+
+        #edit-note.status-file {
+            background: color-mix(in srgb, Canvas 86%, #2e7d32 14%);
+        }
+
+        #edit-note.status-applied {
+            background: color-mix(in srgb, Canvas 82%, #f9a825 18%);
+            opacity: 1;
+        }
+
+        #edit-note.status-unsaved {
+            background: color-mix(in srgb, Canvas 82%, #c62828 18%);
+            opacity: 1;
+        }
+
+        #tab-prompt #source {
+            box-sizing: border-box;
+        }
+
         .note {
             opacity: 0.75;
             font-size: 0.875rem;
@@ -611,6 +675,10 @@
         }
 
         @media (max-width: 54rem) {
+            body {
+                padding-top: 3.5rem;
+            }
+
             .studio {
                 grid-template-columns: 1fr;
             }
@@ -653,19 +721,29 @@
                     <button type="button" class="tab" data-tab="about" role="tab" aria-selected="false">About</button>
                 </div>
                 <div class="tab-panel" id="tab-prompt" data-tab="prompt">
+                    <p class="lead prompt-intro">
+                        Select prose to formalize, then edit it as a page-local draft.
+                        Generate candidates uses the current text, including unsaved edits, but does not overwrite the prompt file.
+                        Generating and choosing a candidate are review steps, not approval.
+                    </p>
                     <select id="prompt" aria-label="Prompt file"></select>
-                    <div class="row">
+                    <p class="prompt-context" id="prompt-context" aria-live="polite"></p>
+                    <div class="prompt-actions">
+                        <button id="generate" type="button" class="primary-action">Generate candidates</button>
                         <button id="apply" type="button">Apply the edit</button>
                         <button id="reset" type="button">Reset to the file</button>
-                        <button id="generate" type="button">Generate candidates</button>
                         <a id="prompt-download" download="prompt.md">Download the prompt text</a>
                     </div>
                     <div class="label-row">
                         <label for="source">Prompt text</label>
-                        <span class="note" id="edit-note"></span>
+                        <span class="note" id="edit-note" role="status" aria-live="polite"></span>
                     </div>
                     <textarea id="source" spellcheck="false"></textarea>
                     <p class="note" id="generate-note"></p>
+                    <div class="prompt-next">
+                        <p class="note" id="prompt-next-note"></p>
+                        <button id="prompt-next" type="button" hidden>Go to Candidates</button>
+                    </div>
                 </div>
                 <div class="tab-panel" id="tab-history" data-tab="history" hidden>
                     <h3>File</h3>

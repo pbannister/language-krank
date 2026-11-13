@@ -251,7 +251,13 @@ async function with_studio(run) {
     const pending = [];
     const saved = new Map(["document", "window", "history", "fetch"].map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
     const original_fetch = globalThis.fetch;
-    const nodes = { querySelector: element, querySelectorAll: () => [], createElement: () => new Element(), createTextNode: (text) => ({ textContent: text }) };
+    const panels = ["prompt", "candidates"].map((name) => {
+        const panel = element(`.panel[data-panel="${name}"]`);
+        panel.dataset.panel = name;
+        panel.hidden = name !== "prompt";
+        return panel;
+    });
+    const nodes = { querySelector: element, querySelectorAll: (selector) => selector === ".panel" ? panels : [], createElement: () => new Element(), createTextNode: (text) => ({ textContent: text }) };
     globalThis.document = nodes;
     globalThis.window = { addEventListener() {} };
     globalThis.history = { state: null, back() {}, pushState() {} };
@@ -276,6 +282,35 @@ async function with_studio(run) {
         }
     }
 }
+
+test("studio reports draft state, action availability, context, and the next step", async () => {
+    await with_studio(async ({ element }) => {
+        assert.match(element("#edit-note").textContent, /Draft matches the file/);
+        assert.match(element("#prompt-context").textContent, /line.*candidate reading/);
+        assert.equal(element("#apply").disabled, true);
+        assert.equal(element("#reset").disabled, true);
+        assert.equal(element("#prompt-next").hidden, false);
+
+        element("#source").value = `${fixture.text}Changed.`;
+        await element("#source").fire("input");
+        assert.match(element("#edit-note").textContent, /Unsaved edit/);
+        assert.equal(element("#apply").disabled, false);
+        assert.equal(element("#reset").disabled, false);
+
+        await element("#apply").fire("click");
+        assert.match(element("#edit-note").textContent, /Applied draft/);
+        assert.equal(element("#apply").disabled, true);
+
+        await element("#reset").fire("click");
+        assert.match(element("#edit-note").textContent, /Draft matches the file/);
+        assert.equal(element("#source").value, fixture.text);
+        assert.equal(element("#reset").disabled, true);
+
+        await element("#prompt-next").fire("click");
+        assert.equal(element(".panel[data-panel=\"prompt\"]").hidden, true);
+        assert.equal(element(".panel[data-panel=\"candidates\"]").hidden, false);
+    });
+});
 
 test("studio loads the selected reading and invalidates downloads on an unapplied edit", async () => {
     await with_studio(async ({ element, original_fetch }) => {

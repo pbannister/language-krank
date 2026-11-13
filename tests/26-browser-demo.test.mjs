@@ -136,6 +136,26 @@ test("the prompt edit is marked as unsaved and downloadable", () => {
     assert.ok(!html.includes('<label for="prompt">Prompt file</label>'), "the prompt file label remains");
 });
 
+test("Prompt introduces draft decisions, accessible state, and the next action", () => {
+    const html = read("sources/browser/index.html");
+    const prompt = html.split('<div class="tab-panel" id="tab-prompt"')[1]
+        .split('<div class="tab-panel" id="tab-history"')[0];
+    const text = prompt.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
+    for (const phrase of ["Select prose", "page-local draft", "current text, including unsaved edits",
+        "does not overwrite the prompt file", "not approval"]) {
+        assert.ok(text.includes(phrase), `Prompt introduction is missing: ${phrase}`);
+    }
+    assert.match(prompt, /id="edit-note"[^>]*role="status"[^>]*aria-live="polite"/);
+    assert.match(prompt, /id="prompt-context"[^>]*aria-live="polite"/);
+    assert.match(prompt, /id="generate"[^>]*class="primary-action"/);
+    assert.ok(prompt.indexOf('id="generate"') < prompt.indexOf('id="apply"'));
+    assert.match(prompt, /id="prompt-next"[^>]*hidden/);
+    assert.match(prompt, /id="prompt-next-note"/);
+    assert.match(html, /\.prompt-actions\s*\{[^}]*flex-wrap:\s*wrap/s);
+    assert.match(html, /@media \(max-width: 54rem\)\s*\{\s*body\s*\{[^}]*padding-top:\s*3\.5rem/s);
+    assert.match(html, /#tab-prompt #source\s*\{[^}]*box-sizing:\s*border-box/s);
+});
+
 test("the candidate cards expand their rules and cases", () => {
     const source = read("sources/browser/studio.mjs");
     assert.match(source, /badge_toggle/, "the candidates have no expandable badges");
