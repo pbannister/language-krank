@@ -127,7 +127,8 @@ test("the studio exposes skip, step, and tab navigation semantics", () => {
 test("every step carries the processing-pipeline graphic", () => {
     const html = read("sources/browser/index.html");
     for (const id of ["pipeline-overview", "pipeline-title", "pipeline-track", "pipeline-detail-title",
-        "pipeline-consumes", "pipeline-produces", "pipeline-caution", "pipeline-flow"]) {
+        "pipeline-consumes", "pipeline-produces", "pipeline-caution", "pipeline-flow",
+        "pipeline-scroll-hint"]) {
         assert.ok(html.includes(`id="${id}"`), `pipeline is missing #${id}`);
     }
     assert.match(html, /<figure class="pipeline-overview"[\s\S]*?<figcaption id="pipeline-title">/);
@@ -137,10 +138,14 @@ test("every step carries the processing-pipeline graphic", () => {
     assert.ok(main < figure && figure < first_panel);
     assert.match(html, /\.pipeline-stage\[data-current="true"\]/);
     assert.match(html, /\.pipeline-flow li:not\(:last-child\)::after/);
+    assert.match(html, /id="pipeline-track"[^>]*tabindex="0"/);
+    assert.match(html, /id="pipeline-flow"[^>]*tabindex="0"/);
+    assert.match(html, /\.pipeline-track:focus-visible/);
+    assert.match(html, /\.pipeline-flow:focus-visible/);
     assert.match(html, /@media \(max-width: 54rem\)[\s\S]*?\.pipeline-detail\s*\{\s*grid-template-columns:\s*1fr/);
     const source = read("sources/browser/studio.mjs");
     for (const wiring of ["pipeline_track(", "pipeline_detail(current, context)", "render_pipeline(rows, pipeline_context)",
-        "pipeline_track_list.replaceChildren", "aria-current", "Current step", "draft_state", "candidate_count", "object_origins", "current_rule_count", "report", "scope_ready", "scope_fact_count", "build_freshness", "build_entries"]) {
+        "pipeline_track_list.replaceChildren", "aria-current", "Current step", "draft_state", "candidate_count", "object_origins", "current_rule_count", "report", "scope_ready", "scope_fact_count", "build_freshness", "build_entries", "current_item.offsetLeft", "pipeline_track_list.scrollLeft"]) {
         assert.ok(source.includes(wiring), `pipeline wiring is missing ${wiring}`);
     }
 });

@@ -2480,6 +2480,11 @@ function render_pipeline(status_rows, context = {}) {
         item.title = stage.detail;
         pipeline_track_list.append(item);
     }
+    const current_item = pipeline_track_list.querySelector?.('[data-current="true"]');
+    if (current_item && typeof current_item.offsetLeft === "number" && pipeline_track_list.clientWidth > 0) {
+        const centered = current_item.offsetLeft - (pipeline_track_list.clientWidth - current_item.offsetWidth) / 2;
+        pipeline_track_list.scrollLeft = Math.max(0, centered);
+    }
     const detail = pipeline_detail(current, context);
     pipeline_detail_title.textContent = detail.title;
     pipeline_consumes.textContent = detail.consumes;

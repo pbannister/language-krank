@@ -351,6 +351,12 @@
             opacity: 0.7;
         }
 
+        .pipeline-track:focus-visible,
+        .pipeline-flow:focus-visible {
+            outline: 2px solid Highlight;
+            outline-offset: 3px;
+        }
+
         .pipeline-flow strong {
             display: block;
             font-size: 0.78rem;
@@ -1812,7 +1818,10 @@
                 <p class="note" id="pipeline-summary">From prose to formal checks and generated output. The
                     highlighted stage is the step you are viewing; markers summarize recorded evidence, not
                     approval.</p>
-                <ol class="pipeline-track" id="pipeline-track" aria-label="Pipeline stages"></ol>
+                <p class="visually-hidden" id="pipeline-scroll-hint">Use the arrow keys to scroll the pipeline stages
+                    and the current step flow.</p>
+                <ol class="pipeline-track" id="pipeline-track" aria-label="Pipeline stages"
+                    aria-describedby="pipeline-scroll-hint" tabindex="0"></ol>
                 <div class="pipeline-detail">
                     <div class="pipeline-detail-copy">
                         <h3 id="pipeline-detail-title">Prose becomes a working draft</h3>
@@ -1824,7 +1833,8 @@
                         </dl>
                         <p class="note" id="pipeline-caution"></p>
                     </div>
-                    <ol class="pipeline-flow" id="pipeline-flow" aria-label="Current step flow"></ol>
+                    <ol class="pipeline-flow" id="pipeline-flow" aria-label="Current step flow"
+                        aria-describedby="pipeline-scroll-hint" tabindex="0"></ol>
                 </div>
             </figure>
             <section class="panel" id="step-prompt" data-panel="prompt" aria-label="Step 1: Prompt">
