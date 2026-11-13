@@ -128,7 +128,7 @@ test("every step carries the processing-pipeline graphic", () => {
     const html = read("sources/browser/index.html");
     for (const id of ["pipeline-overview", "pipeline-title", "pipeline-track", "pipeline-detail-title",
         "pipeline-consumes", "pipeline-produces", "pipeline-caution", "pipeline-flow",
-        "pipeline-scroll-hint"]) {
+        "pipeline-scroll-hint", "pipeline-toggle", "pipeline-body"]) {
         assert.ok(html.includes(`id="${id}"`), `pipeline is missing #${id}`);
     }
     assert.match(html, /<figure class="pipeline-overview"[\s\S]*?<figcaption id="pipeline-title">/);
@@ -142,10 +142,15 @@ test("every step carries the processing-pipeline graphic", () => {
     assert.match(html, /id="pipeline-flow"[^>]*tabindex="0"/);
     assert.match(html, /\.pipeline-track:focus-visible/);
     assert.match(html, /\.pipeline-flow:focus-visible/);
+    assert.match(html, /id="pipeline-toggle"[^>]*aria-expanded="true"[^>]*aria-controls="pipeline-body"/);
+    assert.match(html, /@media \(max-width: 30rem\)[\s\S]*?\.steps\s*\{[\s\S]*?grid-template-columns: repeat\(3/);
+    assert.match(html, /@media \(max-width: 30rem\)[\s\S]*?\.steps \.step-state\s*\{[\s\S]*?font-size: 0/);
+    assert.match(html, /@media \(max-width: 22rem\)[\s\S]*?grid-template-columns: repeat\(2/);
+    assert.match(html, /@media \(max-width: 54rem\)[\s\S]*?\.step-next\s*\{[\s\S]*?grid-template-columns/);
     assert.match(html, /@media \(max-width: 54rem\)[\s\S]*?\.pipeline-detail\s*\{\s*grid-template-columns:\s*1fr/);
     const source = read("sources/browser/studio.mjs");
     for (const wiring of ["pipeline_track(", "pipeline_detail(current, context)", "render_pipeline(rows, pipeline_context)",
-        "pipeline_track_list.replaceChildren", "aria-current", "Current step", "draft_state", "candidate_count", "object_origins", "current_rule_count", "report", "scope_ready", "scope_fact_count", "build_freshness", "build_entries", "current_item.offsetLeft", "pipeline_track_list.scrollLeft"]) {
+        "pipeline_track_list.replaceChildren", "aria-current", "Current step", "draft_state", "candidate_count", "object_origins", "current_rule_count", "report", "scope_ready", "scope_fact_count", "build_freshness", "build_entries", "current_item.offsetLeft", "pipeline_track_list.scrollLeft", "init_pipeline_toggle", "set_pipeline_collapsed", "pipeline_toggle.addEventListener"]) {
         assert.ok(source.includes(wiring), `pipeline wiring is missing ${wiring}`);
     }
     assert.match(source, /objects: proposal_counts\(\),\s*scope_label:/);

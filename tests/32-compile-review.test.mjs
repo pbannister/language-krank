@@ -405,6 +405,22 @@ test("studio marks one current step and announces step changes without moving fo
     });
 });
 
+test("studio can collapse and restore the pipeline graphic", async () => {
+    await with_studio(async ({ element }) => {
+        const toggle = element("#pipeline-toggle");
+        const body = element("#pipeline-body");
+        assert.equal(body.hidden, false);
+        assert.equal(toggle.getAttribute("aria-expanded"), "true");
+        await toggle.fire("click");
+        assert.equal(body.hidden, true);
+        assert.equal(toggle.getAttribute("aria-expanded"), "false");
+        assert.match(toggle.textContent, /Show pipeline/);
+        await toggle.fire("click");
+        assert.equal(body.hidden, false);
+        assert.match(toggle.textContent, /Hide pipeline/);
+    });
+});
+
 test("studio presents candidate choice as review, not approval", async () => {
     await with_studio(async ({ element }) => {
         assert.match(element("#candidates-summary").textContent, /2 readings/);

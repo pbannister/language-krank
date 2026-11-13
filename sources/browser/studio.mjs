@@ -128,6 +128,8 @@ const step_announcement = document.querySelector("#step-announcement");
 const step_next = document.querySelector("#step-next");
 const step_next_note = document.querySelector("#step-next-note");
 const step_next_action = document.querySelector("#step-next-action");
+const pipeline_toggle = document.querySelector("#pipeline-toggle");
+const pipeline_body = document.querySelector("#pipeline-body");
 const pipeline_track_list = document.querySelector("#pipeline-track");
 const pipeline_detail_title = document.querySelector("#pipeline-detail-title");
 const pipeline_consumes = document.querySelector("#pipeline-consumes");
@@ -199,6 +201,7 @@ let highlighted_term = "";
 const scan_times = new Map();
 let build_state = null;
 let build_filter_mode = "all";
+let pipeline_collapsed = null;
 const urls = [];
 
 async function load_json(path) {
@@ -2448,6 +2451,18 @@ const STEP_LABELS = {
     build: "Step 7: Build and use",
 };
 
+function set_pipeline_collapsed(collapsed) {
+    pipeline_collapsed = Boolean(collapsed);
+    pipeline_body.hidden = pipeline_collapsed;
+    pipeline_toggle.setAttribute("aria-expanded", String(!pipeline_collapsed));
+    pipeline_toggle.textContent = pipeline_collapsed ? "Show pipeline" : "Hide pipeline";
+}
+
+function init_pipeline_toggle() {
+    const compact = typeof window.matchMedia === "function" && window.matchMedia("(max-width: 54rem)").matches;
+    set_pipeline_collapsed(compact);
+}
+
 function render_pipeline(status_rows, context = {}) {
     const current = current_step ?? "prompt";
     const stages = pipeline_track(status_rows, current);
@@ -3145,8 +3160,13 @@ for (const button of document.querySelectorAll(".tab")) {
     button.addEventListener("click", () => activate_tab(button.dataset.tab, button.closest(".panel")));
 }
 
+pipeline_toggle.addEventListener("click", () => {
+    set_pipeline_collapsed(!pipeline_collapsed);
+});
+
 populate_prompts();
 populate_scopes();
+init_pipeline_toggle();
 reconcile_check();
 render();
 prepare_all_tabs();
