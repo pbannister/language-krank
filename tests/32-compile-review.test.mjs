@@ -326,6 +326,12 @@ test("studio reports draft state, action availability, context, and the next ste
         await element("#apply").fire("click");
         assert.match(element("#edit-note").textContent, /Applied draft/);
         assert.equal(element("#apply").disabled, true);
+        assert.equal(element("#draft-undo").disabled, false);
+        await element("#draft-undo").fire("click");
+        assert.equal(element("#source").value, fixture.text);
+        assert.equal(element("#draft-redo").disabled, false);
+        await element("#draft-redo").fire("click");
+        assert.equal(element("#source").value, `${fixture.text}Changed.`);
 
         await element("#reset").fire("click");
         assert.match(element("#edit-note").textContent, /Draft matches the file/);

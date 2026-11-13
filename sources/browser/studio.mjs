@@ -19,6 +19,7 @@ import { review_report, review_reduce, review_check, review_decide, review_obser
 import { filter_proposals, review_counts, review_breakdown } from "./object-filter.mjs";
 import { review_snapshot, undo_last_review } from "./review-history.mjs";
 import { parse_artifact, select_artifact_candidate, merge_candidate } from "./artifact-import.mjs";
+import { empty_draft_history, record_draft, undo_draft, redo_draft } from "./draft-history.mjs";
 import { candidate_stats, coverage_delta } from "./candidate-summary.mjs";
 import { rule_diff, rule_diff_summary, display_order, rule_field_changes } from "./candidate-diff.mjs";
 import { review_progress, filter_requirements } from "./review-queue.mjs";
@@ -160,6 +161,9 @@ const prompt_next = document.querySelector("#prompt-next");
 const prompt_next_note = document.querySelector("#prompt-next-note");
 const apply_button = document.querySelector("#apply");
 const reset_button = document.querySelector("#reset");
+const draft_undo_button = document.querySelector("#draft-undo");
+const draft_redo_button = document.querySelector("#draft-redo");
+const draft_history_note = document.querySelector("#draft-history-note");
 const generate_button = document.querySelector("#generate");
 const objects_count = document.querySelector("#objects-count");
 const propose_note = document.querySelector("#propose-note");
@@ -192,6 +196,7 @@ let edited = false;
 let last_check = null;
 let check_running = false;
 let draft_revision = 0;
+let draft_history_state = empty_draft_history();
 let outline_entries = [];
 let outline_selected_line = null;
 let outline_source = null;
@@ -1362,7 +1367,18 @@ function render_draft_diff() {
     }
 }
 
+function update_draft_history_buttons() {
+    const past = draft_history_state.past.length;
+    const future = draft_history_state.future.length;
+    draft_undo_button.disabled = past === 0;
+    draft_redo_button.disabled = future === 0;
+    draft_history_note.textContent = past === 0 && future === 0
+        ? "Draft history is page-local: it tracks applied drafts, not keystrokes, and is lost on reload."
+        : `Page-local draft history: ${past} earlier applied draft${past === 1 ? "" : "s"}, ${future} redo draft${future === 1 ? "" : "s"}. It is lost on reload.`;
+}
+
 function update_prompt_state() {
+    update_draft_history_buttons();
     update_edit_note();
     update_prompt_context();
     update_prompt_actions();
@@ -2832,6 +2848,7 @@ select_prompt.addEventListener("change", () => {
     working = entry.markdown;
     edited = false;
     last_check = null;
+    draft_history_state = empty_draft_history();
     reset_review_filters();
     reset_review_focus();
     reset_line_status();
@@ -2881,6 +2898,10 @@ prompt_outline_select.addEventListener("change", () => {
 });
 
 document.querySelector("#apply").addEventListener("click", () => {
+    if (textarea.value === working) {
+        return;
+    }
+    draft_history_state = record_draft(draft_history_state, working, "Applied draft");
     working = textarea.value;
     edited = working !== entry.markdown;
     last_check = null;
@@ -2888,11 +2909,44 @@ document.querySelector("#apply").addEventListener("click", () => {
 });
 
 document.querySelector("#reset").addEventListener("click", () => {
+    if (working === entry.markdown) {
+        return;
+    }
+    draft_history_state = record_draft(draft_history_state, working, "Before reset");
     draft_revision += 1;
     working = entry.markdown;
     edited = false;
     last_check = null;
     render();
+});
+
+function restore_draft_entry(entry) {
+    working = entry.text;
+    edited = working !== entry.markdown;
+    draft_revision += 1;
+    last_check = null;
+    urls_reset();
+    render();
+}
+
+draft_undo_button.addEventListener("click", () => {
+    const result = undo_draft(draft_history_state, working);
+    if (!result) {
+        return;
+    }
+    draft_history_state = result.history;
+    restore_draft_entry(result.entry);
+    draft_history_note.textContent = `Restored ${result.entry.label.toLowerCase()}.`;
+});
+
+draft_redo_button.addEventListener("click", () => {
+    const result = redo_draft(draft_history_state, working);
+    if (!result) {
+        return;
+    }
+    draft_history_state = result.history;
+    restore_draft_entry(result.entry);
+    draft_history_note.textContent = "Restored the next applied draft.";
 });
 
 prompt_next.addEventListener("click", () => {

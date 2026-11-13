@@ -1978,6 +1978,8 @@
                         <button id="generate" type="button" class="primary-action">Generate candidates</button>
                         <button id="apply" type="button">Apply the edit</button>
                         <button id="reset" type="button">Reset to the file</button>
+                        <button id="draft-undo" type="button" disabled title="Restore the previous applied draft">Undo draft</button>
+                        <button id="draft-redo" type="button" disabled title="Restore the next applied draft">Redo draft</button>
                         <a id="prompt-download" download="prompt.md">Download the prompt text</a>
                     </div>
                     <div class="label-row">
@@ -1985,6 +1987,8 @@
                         <span class="note" id="edit-note" role="status" aria-live="polite"></span>
                     </div>
                     <textarea id="source" spellcheck="false"></textarea>
+                    <p class="note" id="draft-history-note">Draft history is page-local: it tracks applied drafts,
+                        not keystrokes, and is lost on reload.</p>
                     <p class="note" id="generate-note"></p>
                     <details class="raw draft-diff" id="draft-diff-section">
                         <summary id="draft-diff-toggle">Draft differences from the file</summary>

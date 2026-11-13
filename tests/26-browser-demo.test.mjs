@@ -20,6 +20,7 @@ import { rule_diff, rule_diff_summary, display_order, rule_field_changes } from 
 import { filter_proposals, review_counts, review_breakdown } from "../sources/browser/object-filter.mjs";
 import { review_snapshot, undo_last_review } from "../sources/browser/review-history.mjs";
 import { parse_artifact, select_artifact_candidate, merge_candidate } from "../sources/browser/artifact-import.mjs";
+import { empty_draft_history, record_draft, undo_draft, redo_draft } from "../sources/browser/draft-history.mjs";
 import { review_progress, filter_requirements } from "../sources/browser/review-queue.mjs";
 import { resolve_focus_index, move_focus_index, focus_position, focus_item } from "../sources/browser/review-focus.mjs";
 import { reduction_summary, retained_reason, line_status_rows, filter_line_status, line_status_counts } from "../sources/browser/reduction-summary.mjs";
@@ -316,6 +317,22 @@ test("the prompt edit is marked as unsaved and downloadable", () => {
     assert.ok(!html.includes('<label for="prompt">Prompt file</label>'), "the prompt file label remains");
 });
 
+test("applied draft history undoes and redoes without mutation", () => {
+    const empty = empty_draft_history();
+    const first = record_draft(empty, "one", "Applied draft");
+    const second = record_draft(first, "two", "Before reset");
+    assert.deepEqual(second.past.map((item) => item.text), ["one", "two"]);
+    assert.deepEqual(second.future, []);
+    const undo = undo_draft(second, "current");
+    assert.equal(undo.entry.text, "two");
+    assert.deepEqual(undo.history.future.map((item) => item.text), ["current"]);
+    const redo = redo_draft(undo.history, "two");
+    assert.equal(redo.entry.text, "current");
+    assert.equal(undo_draft(empty, "x"), null);
+    assert.equal(redo_draft(empty, "x"), null);
+    assert.equal(empty.past.length, 0);
+});
+
 test("Prompt introduces draft decisions, accessible state, and the next action", () => {
     const html = read("sources/browser/index.html");
     const prompt = html.split('<div class="tab-panel" id="tab-prompt"')[1]
@@ -332,12 +349,18 @@ test("Prompt introduces draft decisions, accessible state, and the next action",
     assert.match(prompt, /id="prompt-next"[^>]*hidden/);
     assert.match(prompt, /id="prompt-next-note"/);
     assert.match(prompt, /id="draft-diff-section"/);
+    assert.match(prompt, /id="draft-undo"[^>]*disabled/);
+    assert.match(prompt, /id="draft-redo"[^>]*disabled/);
+    assert.match(prompt, /id="draft-history-note"/);
     assert.match(prompt, /id="draft-diff-summary"[^>]*aria-live="polite"/);
     assert.match(prompt, /id="draft-diff"/);
     const source = read("sources/browser/studio.mjs");
     assert.match(source, /function render_draft_diff\(\)/);
     assert.match(source, /diff_lines\(entry\.markdown, textarea\.value\)/);
     assert.match(source, /render_draft_diff\(\);/);
+    assert.match(source, /record_draft\(draft_history_state/);
+    assert.match(source, /undo_draft\(draft_history_state, working\)/);
+    assert.match(source, /redo_draft\(draft_history_state, working\)/);
     assert.match(html, /\.prompt-actions\s*\{[^}]*flex-wrap:\s*wrap/s);
     assert.match(html, /@media \(max-width: 54rem\)\s*\{\s*body\s*\{[^}]*padding-top:\s*3\.5rem/s);
     assert.match(html, /#tab-prompt #source\s*\{[^}]*box-sizing:\s*border-box/s);
