@@ -26,6 +26,7 @@ for file_expected in \
     "$DIRECTORY_TREE/browser/object-filter.mjs" \
     "$DIRECTORY_TREE/browser/candidate-summary.mjs" \
     "$DIRECTORY_TREE/browser/review-queue.mjs" \
+    "$DIRECTORY_TREE/browser/reduction-summary.mjs" \
     "$DIRECTORY_TREE/browser/prompt-diff.mjs" \
     "$DIRECTORY_TREE/browser/catalog.json" \
     "$DIRECTORY_TREE/browser/files.json" \

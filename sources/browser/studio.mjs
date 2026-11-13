@@ -19,6 +19,7 @@ import { review_report, review_reduce, review_check, review_decide, review_obser
 import { filter_proposals, review_counts } from "./object-filter.mjs";
 import { candidate_stats, coverage_delta } from "./candidate-summary.mjs";
 import { review_progress, filter_requirements } from "./review-queue.mjs";
+import { reduction_summary, retained_reason } from "./reduction-summary.mjs";
 
 const catalog = await load_json("./catalog.json");
 const bundle = await load_json("./files.json");
@@ -53,10 +54,24 @@ const review_empty_clear = document.querySelector("#review-empty-clear");
 const review_empty_regenerate = document.querySelector("#review-empty-regenerate");
 const prose_box = document.querySelector("#prose");
 const compare_note = document.querySelector("#compare-note");
+const compare_readiness = document.querySelector("#compare-readiness");
+const compare_status = document.querySelector("#compare-status");
+const compare_counts_box = document.querySelector("#compare-counts");
+const compare_blockers = document.querySelector("#compare-blockers");
+const compare_action_note = document.querySelector("#compare-action-note");
+const compare_actions = document.querySelector("#compare-actions");
+const compare_table_wrap = document.querySelector("#compare-table-wrap");
 const comparison = document.querySelector("#comparison");
 const uncovered = document.querySelector("#uncovered");
+const reduced_readiness = document.querySelector("#reduced-readiness");
+const reduced_status = document.querySelector("#reduced-status");
+const reduced_counts_box = document.querySelector("#reduced-counts");
+const reduced_blockers = document.querySelector("#reduced-blockers");
+const reduced_action_note = document.querySelector("#reduced-action-note");
+const reduced_download = document.querySelector("#reduced-download");
 const reduced_box = document.querySelector("#reduced");
 const diff_box = document.querySelector("#diff");
+const diff_empty = document.querySelector("#diff-empty");
 const check_output = document.querySelector("#check-output");
 const check_summary = document.querySelector("#check-summary");
 const approve = document.querySelector("#approve");
@@ -538,6 +553,100 @@ function review_count_item(label, value, class_name = "") {
     caption.textContent = label;
     item.append(number, caption);
     return item;
+}
+
+function readiness_caption(summary) {
+    if (summary.legacy) {
+        return "Nothing can be removed yet. This reading has no requirement-level review; regenerate candidates to inventory requirements and record decisions.";
+    }
+    if (!summary.available) {
+        return "Nothing can be removed yet. The review metadata is stale or invalid; regenerate candidates before relying on this comparison.";
+    }
+    if (summary.removable === 0) {
+        return `Nothing can be removed yet. ${summary.retained} nonblank line${summary.retained === 1 ? "" : "s"} remain because review or check evidence is incomplete.`;
+    }
+    if (summary.readiness === "ready") {
+        return `${summary.removable} nonblank line${summary.removable === 1 ? "" : "s"} can be removed for the recorded scope. Headings and context still remain.`;
+    }
+    return `${summary.removable} nonblank line${summary.removable === 1 ? "" : "s"} can be removed, while ${summary.retained} remain. Resolve the blockers below before treating the reduction as complete.`;
+}
+
+function render_readiness_counts(container, summary) {
+    container.replaceChildren(
+        review_count_item("nonblank lines", summary.total_nonblank),
+        review_count_item("removable now", summary.removable, summary.removable > 0 ? "good" : ""),
+        review_count_item("retained", summary.retained, summary.removable === 0 ? "attention" : ""),
+        review_count_item("approved requirements", summary.decisions.approved, summary.decisions.approved > 0 ? "good" : ""),
+        review_count_item("unreviewed", summary.decisions.unreviewed, summary.decisions.unreviewed > 0 ? "attention" : ""),
+    );
+}
+
+function render_readiness_blockers(container, summary) {
+    container.replaceChildren();
+    if (summary.blockers.length === 0) {
+        const note = document.createElement("p");
+        note.className = "note";
+        note.textContent = "No extraction or approval blocker is recorded. Counts describe this reading, not proven completeness.";
+        container.append(note);
+        return;
+    }
+    const heading = document.createElement("p");
+    heading.className = "note";
+    heading.textContent = "What keeps prose in place:";
+    const list = document.createElement("ul");
+    for (const blocker of summary.blockers) {
+        const item = document.createElement("li");
+        item.textContent = `${blocker.label}${blocker.count > 1 ? ` (${blocker.count})` : ""}`;
+        list.append(item);
+    }
+    container.append(heading, list);
+}
+
+function readiness_button(label, handler, primary = false) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+    if (primary) {
+        button.className = "review-primary-action";
+    }
+    button.addEventListener("click", handler);
+    return button;
+}
+
+function render_readiness_actions(summary, container, note, allow_approve = true) {
+    container.replaceChildren();
+    const actions = [];
+    if (summary.legacy || !summary.available) {
+        actions.push(readiness_button("Regenerate candidates", review_regenerate, true));
+        actions.push(readiness_button("Go to Check", review_go_check));
+        note.textContent = "Regeneration creates requirement-level review. A recorded reading alone cannot approve removal.";
+    } else {
+        const needs_review = summary.decisions.unreviewed > 0;
+        const needs_check = summary.executable > 0 && !summary.check_scope;
+        if (needs_review || summary.blockers.some((item) => ["rejected", "non_executable"].includes(item.key))) {
+            actions.push(readiness_button("Review requirements", continue_to_rules, true));
+        }
+        if (needs_check) {
+            actions.push(readiness_button("Go to Check", review_go_check));
+        }
+        if (summary.identified === 0) {
+            actions.push(readiness_button("Regenerate candidates", review_regenerate));
+        }
+        if (allow_approve && summary.removable > 0) {
+            actions.push(readiness_button("Continue to Approve", review_continue_approve, actions.length === 0));
+        }
+        if (actions.length === 0) {
+            actions.push(readiness_button("Regenerate candidates", review_regenerate));
+        }
+        note.textContent = needs_review
+            ? "Decisions remain in Rules. Review is separate from approval."
+            : needs_check
+                ? "Run a supported check before approval can unlock removal."
+                : summary.removable > 0
+                    ? "Continue only after reviewing the exact rules, limitations, and recorded scope."
+                    : "No complete line is eligible yet. Review the retained reasons and current decisions.";
+    }
+    container.append(...actions);
 }
 
 function review_chip(text, class_name = "") {
@@ -1180,42 +1289,141 @@ function render_prose() {
     prose_box.textContent = ruleset_render(candidate.rules);
 }
 
+function render_comparison_row(item, row, report) {
+    const tr = document.createElement("tr");
+    tr.append(cell(`Line ${item.line} — ${item.quote}`));
+
+    const requirement_cell = document.createElement("td");
+    const title = document.createElement("div");
+    title.className = "cell-text";
+    title.textContent = item.title ?? item.id;
+    const meta = document.createElement("div");
+    meta.className = "case-meta";
+    meta.textContent = `${item.id} · ${item.status.replaceAll("_", " ")}`;
+    const detail = document.createElement("details");
+    detail.className = "comparison-detail";
+    const label = document.createElement("summary");
+    label.textContent = "Explanation and rationale";
+    const explanation = explanation_current(candidate, item.id, entry.source, working, catalog.fact_contract);
+    const prose = document.createElement("p");
+    prose.textContent = explanation?.text ?? (item.status === "executable"
+        ? candidate.review?.explanation_error ?? "Explanation unavailable. Review the exact rules in Rules."
+        : "This requirement is retained rather than formally executable.");
+    const limitations = document.createElement("p");
+    limitations.className = "note";
+    limitations.textContent = explanation?.limitations
+        ?? `Extraction reason: ${item.reason}. Missing facts: ${item.missing_facts.join(", ") || "none specified"}.`;
+    const rules = { facts: [], rules: candidate.rules.rules.filter((rule) => item.rules.includes(rule.id)) };
+    const exact = document.createElement("pre");
+    exact.textContent = ruleset_render(rules);
+    detail.append(label, prose, limitations, exact);
+    requirement_cell.append(title, meta, detail);
+
+    const decision = row?.decision ?? "unreviewed";
+    const eligibility = row?.eligible === true ? "Eligible for removal" : "Retained";
+    tr.append(requirement_cell, cell(decision, "verdict"), cell(eligibility),
+        cell(row?.reason ?? retained_reason(report, item.line, [item])));
+    return tr;
+}
+
+function render_retained_groups(report, summary) {
+    uncovered.replaceChildren();
+    const groups = new Map();
+    working.split("\n").forEach((line, index) => {
+        const line_number = index + 1;
+        if (!line.trim() || summary.removed_lines.includes(line_number)) {
+            return;
+        }
+        const reason = retained_reason(report, line_number, candidate.review?.requirements);
+        const group = groups.get(reason) ?? [];
+        group.push({ line: line_number, text: line });
+        groups.set(reason, group);
+    });
+    if (groups.size === 0) {
+        const note = document.createElement("p");
+        note.className = "note";
+        note.textContent = "No nonblank line is retained.";
+        uncovered.append(note);
+        return;
+    }
+    for (const [reason, lines] of groups) {
+        const detail = document.createElement("details");
+        detail.className = "retained-group";
+        if (!/^Context line/.test(reason)) {
+            detail.open = true;
+        }
+        const label = document.createElement("summary");
+        label.textContent = `${reason} (${lines.length} line${lines.length === 1 ? "" : "s"})`;
+        const list = document.createElement("ul");
+        for (const item of lines) {
+            const entry = document.createElement("li");
+            entry.textContent = `Line ${item.line}: ${item.text}`;
+            list.append(entry);
+        }
+        detail.append(label, list);
+        uncovered.append(detail);
+    }
+}
+
 function render_compare() {
     const report = review_status();
-    compare_note.textContent = `${report.identified} requirements identified; ${report.executable} executable; ${report.approved} approved; ${report.removed.length} removable lines. These counts do not prove extraction completeness. ${report.reasons.join(" ")}`;
+    const summary = reduction_summary(report, working);
+    compare_note.textContent = "Readiness describes this selected reading, not proven extraction completeness. "
+        + "A line is removable only when every requirement on that exact line is eligible.";
+    compare_readiness.dataset.readiness = summary.readiness;
+    compare_status.textContent = readiness_caption(summary);
+    render_readiness_counts(compare_counts_box, summary);
+    render_readiness_blockers(compare_blockers, summary);
+    render_readiness_actions(summary, compare_actions, compare_action_note);
+    compare_table_wrap.hidden = summary.legacy || !summary.available || summary.identified === 0;
     comparison.replaceChildren();
-    for (const item of report.reasons.length === 0 && Array.isArray(candidate.review?.requirements) ? candidate.review.requirements : []) {
-        const row = document.createElement("tr");
-        const explanation = explanation_current(candidate, item.id, entry.source, working, catalog.fact_contract);
-        row.append(cell(`Line ${item.line}: ${item.quote}`), cell(explanation?.text ?? "Explanation unavailable"),
-            cell(item.status), cell(item.reason), cell(item.missing_facts.join(", ")));
-        comparison.append(row);
-    }
-    uncovered.replaceChildren();
-    working.split("\n").forEach((line, index) => {
-        if (line.trim() && !report.removed.includes(index + 1)) {
-            const item = document.createElement("li");
-            item.textContent = `Line ${index + 1} retained: ${line}`;
-            uncovered.append(item);
+    if (!compare_table_wrap.hidden) {
+        const rows = new Map(report.requirements.map((row) => [row.id, row]));
+        for (const item of Array.isArray(candidate.review?.requirements) ? candidate.review.requirements : []) {
+            comparison.append(render_comparison_row(item, rows.get(item.id), report));
         }
-    });
+    }
+    render_retained_groups(report, summary);
 }
 
 function render_reduced() {
-    const reduced = review_reduce(candidate, entry.source, working, catalog.fact_contract).text;
-    reduced_box.textContent = reduced;
+    const reduction = review_reduce(candidate, entry.source, working, catalog.fact_contract);
+    const summary = reduction_summary(reduction.report, working);
+    reduced_box.textContent = reduction.text;
+
+    reduced_readiness.dataset.readiness = summary.readiness;
+    reduced_status.textContent = readiness_caption(summary);
+    render_readiness_counts(reduced_counts_box, summary);
+    render_readiness_blockers(reduced_blockers, summary);
+
+    const can_download = summary.removed_lines.length > 0;
+    if (can_download) {
+        reduced_download.href = download_url(reduction.text, "text/markdown");
+        reduced_download.download = `${candidate.id}-reduced.md`;
+        reduced_download.setAttribute("aria-disabled", "false");
+        reduced_download.textContent = `Download the reduced prompt (${summary.removable} line${summary.removable === 1 ? "" : "s"} removed)`;
+        reduced_action_note.textContent = "This download is a review preview for the recorded scope. Later work must run the saved rules and supply suitable facts.";
+    } else {
+        reduced_download.removeAttribute("href");
+        reduced_download.setAttribute("aria-disabled", "true");
+        reduced_download.textContent = "Reduced prompt download unavailable";
+        reduced_action_note.textContent = "Nothing is approved for removal, so there is no reduced prompt to download. "
+            + "Resolve the retained reasons and current review blockers first.";
+    }
 
     diff_box.replaceChildren();
-    for (const row of diff_lines(working, reduced)) {
+    diff_empty.hidden = can_download;
+    diff_empty.textContent = "No line is removed, so there is no difference yet.";
+    diff_box.hidden = !can_download;
+    if (!can_download) {
+        return;
+    }
+    for (const row of diff_lines(working, reduction.text)) {
         const line = document.createElement("div");
         line.className = `diff-line diff-${row.kind}`;
         line.textContent = `${row.kind === "remove" ? "- " : row.kind === "add" ? "+ " : "  "}${row.text}`;
         diff_box.append(line);
     }
-
-    const link = document.querySelector("#reduced-download");
-    link.href = download_url(reduced, "text/markdown");
-    link.download = `${candidate.id}-reduced.md`;
 }
 
 function render_check_result() {
@@ -1450,8 +1658,27 @@ function render() {
         prose_box.textContent = "";
         comparison.replaceChildren();
         compare_note.textContent = "";
+        compare_readiness.dataset.readiness = "legacy";
+        compare_status.textContent = "Nothing can be removed yet. This prompt has no candidate rule set.";
+        compare_counts_box.replaceChildren();
+        compare_blockers.replaceChildren();
+        compare_action_note.textContent = "Generate candidates before reviewing a reduction.";
+        compare_actions.replaceChildren(readiness_button("Generate candidates", review_regenerate, true));
+        compare_table_wrap.hidden = true;
+        uncovered.replaceChildren();
+        reduced_readiness.dataset.readiness = "legacy";
+        reduced_status.textContent = "Nothing can be removed yet. This prompt has no candidate rule set.";
+        reduced_counts_box.replaceChildren();
+        reduced_blockers.replaceChildren();
+        reduced_action_note.textContent = "There is no reduced prompt to download.";
+        reduced_download.removeAttribute("href");
+        reduced_download.setAttribute("aria-disabled", "true");
+        reduced_download.textContent = "Reduced prompt download unavailable";
         reduced_box.textContent = working;
-        diff_box.textContent = "No candidate rule set for this prompt yet.";
+        diff_box.replaceChildren();
+        diff_box.hidden = true;
+        diff_empty.hidden = false;
+        diff_empty.textContent = "No candidate rule set exists, so no comparison can be shown.";
         check_output.textContent = "";
         check_summary.replaceChildren();
         const no_check = document.createElement("p");

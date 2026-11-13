@@ -850,6 +850,114 @@
             opacity: 0.8;
         }
 
+        .reduction-readiness {
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            border-left: 4px solid color-mix(in srgb, Canvas 62%, CanvasText 38%);
+            border-radius: 0.35rem;
+            padding: 0.75rem 1rem;
+            margin: 0 0 1rem;
+        }
+
+        .reduction-readiness[data-readiness="ready"] {
+            border-left-color: #2e7d32;
+        }
+
+        .reduction-readiness[data-readiness="partial"] {
+            border-left-color: #b26a00;
+        }
+
+        .reduction-readiness[data-readiness="blocked"],
+        .reduction-readiness[data-readiness="legacy"] {
+            border-left-color: #c62828;
+        }
+
+        .reduction-readiness h3 {
+            margin: 0 0 0.35rem;
+        }
+
+        .readiness-status {
+            margin: 0 0 0.6rem;
+            font-weight: 600;
+            max-width: var(--measure);
+        }
+
+        .reduction-blockers {
+            margin: 0.35rem 0 0.6rem;
+        }
+
+        .reduction-blockers ul {
+            margin: 0.25rem 0 0;
+            padding-left: 1.2rem;
+        }
+
+        .reduction-blockers li {
+            margin-bottom: 0.2rem;
+        }
+
+        .reduction-blockers .note {
+            margin: 0;
+        }
+
+        .table-scroll {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        .table-scroll table {
+            min-width: 44rem;
+        }
+
+        .retained-group {
+            margin: 0.5rem 0;
+            border-left: 2px solid color-mix(in srgb, Canvas 70%, CanvasText 30%);
+            padding-left: 0.75rem;
+        }
+
+        .retained-group h4 {
+            margin: 0.5rem 0 0.25rem;
+        }
+
+        .retained-group ul {
+            margin: 0;
+            padding-left: 1.2rem;
+        }
+
+        .retained-group li {
+            margin-bottom: 0.2rem;
+            overflow-wrap: anywhere;
+        }
+
+        .diff-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem 0.75rem;
+            font-size: 0.8rem;
+        }
+
+        .diff-legend span {
+            padding: 0.05rem 0.4rem;
+            border-radius: 0.2rem;
+        }
+
+        .legend-removed {
+            background: color-mix(in srgb, Canvas 78%, #c62828 22%);
+        }
+
+        .legend-same {
+            background: color-mix(in srgb, Canvas 92%, CanvasText 8%);
+        }
+
+        .legend-added {
+            background: color-mix(in srgb, Canvas 78%, #2e7d32 22%);
+        }
+
+        #reduced-download[aria-disabled="true"] {
+            opacity: 0.55;
+            text-decoration: none;
+            cursor: not-allowed;
+        }
+
         .diff {
             font-family: ui-monospace, monospace;
             font-size: 0.8125rem;
@@ -994,6 +1102,18 @@
             .review-next button,
             .review-actions button {
                 flex: 1 1 auto;
+            }
+
+            .reduction-readiness {
+                padding: 0.65rem 0.75rem;
+            }
+
+            .table-scroll table {
+                min-width: 36rem;
+            }
+
+            .diff-legend {
+                margin-bottom: 0.5rem;
             }
         }
     </style>
@@ -1306,35 +1426,71 @@
                         </div>
                         <button id="revise-comparison" type="button">Revise the prompt</button>
                     </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Original</th>
-                                <th>Rendered</th>
-                                <th>Verdict</th>
-                                <th>What was kept and lost</th>
-                                <th>Hint for the prompt</th>
-                            </tr>
-                        </thead>
-                        <tbody id="comparison"></tbody>
-                    </table>
+                    <section class="reduction-readiness" id="compare-readiness" data-readiness="blocked"
+                        aria-labelledby="compare-readiness-title">
+                        <h3 id="compare-readiness-title">Reduction readiness</h3>
+                        <p class="readiness-status" id="compare-status" role="status" aria-live="polite"></p>
+                        <div class="review-counts" id="compare-counts" role="list"
+                            aria-label="Comparison line counts"></div>
+                        <div id="compare-blockers" class="reduction-blockers"></div>
+                        <div class="review-next">
+                            <p class="note" id="compare-action-note"></p>
+                            <div class="review-actions" id="compare-actions"></div>
+                        </div>
+                    </section>
+                    <div class="table-scroll" id="compare-table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Source line</th>
+                                    <th>Requirement</th>
+                                    <th>Decision</th>
+                                    <th>Eligibility</th>
+                                    <th>Why retained or eligible</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comparison"></tbody>
+                        </table>
+                    </div>
                     <details class="raw">
-                        <summary>Retained lines (context, unresolved, unchecked, or unapproved)</summary>
-                        <ul id="uncovered"></ul>
+                        <summary>Retained lines grouped by reason</summary>
+                        <div id="uncovered"></div>
                     </details>
                 </div>
                 <div class="tab-panel" id="tab-reduced" data-tab="reduced" hidden>
                     <div class="step-head">
                         <div>
                             <h2>Reduced prompt</h2>
-                            <p class="note">Only fully covered lines with explicitly approved executable requirements and a recorded check are removed. Partial lines and context stay intact. Source, rules, or fact-contract changes require a fresh review.</p>
+                            <p class="note">Only fully covered lines with explicitly approved executable requirements and a recorded check are removed. Partial lines, headings, and context stay intact. Source, rules, or fact-contract changes require a fresh review.</p>
                         </div>
-                        <p><a id="reduced-download" download="reduced-prompt.md">Download the reduced prompt</a></p>
                     </div>
-                    <h3>The difference</h3>
+                    <section class="reduction-readiness" id="reduced-readiness" data-readiness="blocked"
+                        aria-labelledby="reduced-readiness-title">
+                        <h3 id="reduced-readiness-title">Reduction readiness</h3>
+                        <p class="readiness-status" id="reduced-status" role="status" aria-live="polite"></p>
+                        <div class="review-counts" id="reduced-counts" role="list"
+                            aria-label="Reduced prompt line counts"></div>
+                        <div id="reduced-blockers" class="reduction-blockers"></div>
+                        <div class="review-next">
+                            <p class="note" id="reduced-action-note"></p>
+                            <p><a id="reduced-download" download="reduced-prompt.md" aria-disabled="true">Reduced prompt download unavailable</a></p>
+                        </div>
+                        <p class="note">A recorded check is evidence for that scope only. It does not guarantee future enforcement; later work must load these rules and supply suitable facts.</p>
+                    </section>
+                    <div class="step-head">
+                        <div>
+                            <h3>The difference</h3>
+                            <p class="note" id="diff-empty" hidden>No line is removed, so there is no difference yet.</p>
+                        </div>
+                        <div class="diff-legend" aria-label="Diff legend">
+                            <span class="legend-removed">Removed</span>
+                            <span class="legend-same">Unchanged</span>
+                            <span class="legend-added">Pointer added</span>
+                        </div>
+                    </div>
                     <div id="diff" class="diff"></div>
                     <details class="raw">
-                        <summary>Full reduced prompt</summary>
+                        <summary>Full reduced prompt text</summary>
                         <pre id="reduced" class="fill"></pre>
                     </details>
                 </div>

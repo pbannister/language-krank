@@ -211,7 +211,7 @@ test("export, catalog, full and single-source builds preserve approved metadata 
 
 // A small DOM adapter executes the actual studio event handlers without adding a
 // browser dependency. It tests state/download behavior, not visual layout.
-async function with_studio(run) {
+async function with_studio(run, prepare = null) {
     class Element {
         constructor() {
             this.children = [];
@@ -227,6 +227,7 @@ async function with_studio(run) {
         replaceChildren(...children) { this.text = ""; this.children = children; }
         insertBefore(child) { this.append(child); }
         setAttribute(key, value) { this[key] = value; }
+        getAttribute(key) { return this[key]; }
         removeAttribute(key) { delete this[key]; }
         querySelector(selector) { return element(selector); }
         querySelectorAll() { return []; }
@@ -242,6 +243,7 @@ async function with_studio(run) {
     }
     const selected = candidate_new();
     approve(selected);
+    prepare?.(selected);
     const first = candidate_new();
     first.id = "not-selected";
     const catalog = { fact_contract: contract, entries: [
@@ -377,6 +379,31 @@ test("studio discards delayed compile results after edits, resets, or prompt swi
             if (change === "switch") assert.equal(element("#source").value, "Other prompt.");
         });
     }
+});
+
+test("studio distinguishes a removable reduction from a blocked one", async () => {
+    await with_studio(async ({ element }) => {
+        assert.match(element("#compare-status").textContent, /1 nonblank line can be removed/);
+        assert.match(element("#reduced-status").textContent, /1 nonblank line can be removed/);
+        assert.match(element("#reduced-download").textContent, /1 line removed/);
+        assert.equal(element("#reduced-download").getAttribute("aria-disabled"), "false");
+        assert.match(element("#reduced-download").href, /^blob:/);
+        assert.equal(element("#diff-empty").hidden, true);
+        assert.match(element("#uncovered").textContent, /Context line: no extracted requirement/);
+        assert.match(element("#uncovered").textContent, /Needs a decision in Rules/);
+    });
+    await with_studio(async ({ element }) => {
+        assert.match(element("#compare-status").textContent, /Nothing can be removed yet/);
+        assert.match(element("#reduced-status").textContent, /Nothing can be removed yet/);
+        assert.equal(element("#reduced-download").href, undefined);
+        assert.equal(element("#reduced-download").getAttribute("aria-disabled"), "true");
+        assert.match(element("#reduced-download").textContent, /unavailable/);
+        assert.equal(element("#diff-empty").hidden, false);
+        assert.equal(element("#diff").hidden, true);
+        assert.match(element("#compare-blockers").textContent, /need a decision/);
+    }, (selected) => {
+        selected.review.approvals = {};
+    });
 });
 
 test("studio scope changes discard checked approvals", async () => {

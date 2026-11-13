@@ -18,6 +18,7 @@ import { diff_lines } from "../sources/browser/prompt-diff.mjs";
 import { candidate_stats, coverage_delta } from "../sources/browser/candidate-summary.mjs";
 import { filter_proposals, review_counts } from "../sources/browser/object-filter.mjs";
 import { review_progress, filter_requirements } from "../sources/browser/review-queue.mjs";
+import { reduction_summary, retained_reason } from "../sources/browser/reduction-summary.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const read = (rel) => readFileSync(`${root}${rel}`, "utf8");
@@ -70,6 +71,9 @@ test("every demo module imports the barrel and no node: builtin", () => {
     const queue = read("sources/browser/review-queue.mjs");
     assert.ok(!/from\s+["']node:/.test(queue), "review-queue.mjs imports a node: builtin");
     assert.ok(!/\bdocument\b|\bwindow\b/.test(queue), "review-queue.mjs depends on the DOM");
+    const reduction = read("sources/browser/reduction-summary.mjs");
+    assert.ok(!/from\s+["']node:/.test(reduction), "reduction-summary.mjs imports a node: builtin");
+    assert.ok(!/\bdocument\b|\bwindow\b/.test(reduction), "reduction-summary.mjs depends on the DOM");
 });
 
 test("each page loads its module", () => {
@@ -243,6 +247,93 @@ test("review progress separates decisions, checks, and removable lines", () => {
     assert.equal(empty.all_reviewed, false);
 });
 
+test("reduction summaries derive readiness only from the review report", () => {
+    const text = "# Policy\nUse spaces.\nReviews are helpful.\n";
+    const legacy = {
+        identified: 0, executable: 0, approved: 0, removed: [], check_scope: null,
+        requirements: [], reasons: ["legacy or stale review; regenerate before approval"],
+    };
+    const blocked = {
+        identified: 2, executable: 1, approved: 0, removed: [], check_scope: null,
+        requirements: [
+            { id: "spaces", decision: "unreviewed", eligible: false },
+            { id: "helpful", decision: "unreviewed", eligible: false },
+        ],
+        reasons: [],
+    };
+    const partial = {
+        identified: 2, executable: 1, approved: 2, removed: [2], check_scope: "file:sample.mjs",
+        requirements: [
+            { id: "spaces", decision: "approved", eligible: true },
+            { id: "helpful", decision: "approved", eligible: false },
+        ],
+        reasons: [],
+    };
+    const ready = {
+        identified: 2, executable: 2, approved: 2, removed: [2, 3], check_scope: "file:sample.mjs",
+        requirements: [
+            { id: "spaces", decision: "approved", eligible: true },
+            { id: "helpful", decision: "approved", eligible: true },
+        ],
+        reasons: [],
+    };
+    const before = JSON.stringify([legacy, blocked, partial, ready]);
+    assert.equal(reduction_summary(legacy, text).readiness, "legacy");
+    assert.equal(reduction_summary(legacy, text).retained, 3);
+    assert.equal(reduction_summary(legacy, text).blockers[0].key, "stale");
+    const blocked_summary = reduction_summary(blocked, text);
+    assert.equal(blocked_summary.readiness, "blocked");
+    assert.equal(blocked_summary.removable, 0);
+    assert.deepEqual(blocked_summary.blockers.map((item) => [item.key, item.count]), [
+        ["unreviewed", 2], ["non_executable", 1], ["needs_check", 1],
+    ]);
+    const partial_summary = reduction_summary(partial, text);
+    assert.equal(partial_summary.readiness, "partial");
+    assert.equal(partial_summary.removable, 1);
+    assert.equal(partial_summary.retained, 2);
+    assert.deepEqual(partial_summary.blockers.map((item) => item.key), ["non_executable"]);
+    const ready_summary = reduction_summary(ready, text);
+    assert.equal(ready_summary.readiness, "ready");
+    assert.equal(ready_summary.removable, 2);
+    assert.deepEqual(ready_summary.blockers, []);
+    assert.equal(reduction_summary({ ...ready, removed: [99, "x", -1] }, text).removable, 0);
+    assert.equal(reduction_summary({ identified: 0, executable: 0, requirements: [], reasons: [], removed: [] }, text).readiness, "blocked");
+    assert.equal(reduction_summary({ reasons: ["bad metadata"], requirements: [{ id: "x" }] }, text).available, false);
+    assert.equal(JSON.stringify([legacy, blocked, partial, ready]), before, "summary mutated its report");
+});
+
+test("retained reasons explain context, decisions, status, and check evidence", () => {
+    const requirements = [
+        { id: "spaces", line: 2, status: "executable" },
+        { id: "helpful", line: 3, status: "human_judgment" },
+    ];
+    const report = {
+        identified: 2, executable: 1, check_scope: "file:sample.mjs", removed: [],
+        requirements: [
+            { id: "spaces", decision: "approved", eligible: true },
+            { id: "helpful", decision: "approved", eligible: false },
+        ],
+        reasons: [],
+    };
+    assert.equal(retained_reason(report, 1, requirements), "Context line: no extracted requirement.");
+    assert.match(retained_reason(report, 3, requirements), /non-executable/);
+    const pending = { ...report, requirements: [{ id: "spaces", decision: "unreviewed", eligible: false }] };
+    assert.match(retained_reason(pending, 2, requirements), /Needs a decision/);
+    const rejected = { ...report, requirements: [{ id: "spaces", decision: "rejected", eligible: false }] };
+    assert.match(retained_reason(rejected, 2, requirements), /Rejected/);
+    const unchecked = { ...report, check_scope: null, requirements: [{ id: "spaces", decision: "approved", eligible: false }] };
+    assert.match(retained_reason(unchecked, 2, requirements), /current check/);
+    const checked = { ...report, requirements: [{ id: "spaces", decision: "approved", eligible: false }] };
+    assert.match(retained_reason(checked, 2, requirements), /recorded check/);
+    assert.match(retained_reason(null, 2, requirements), /No review artifact/);
+    assert.match(retained_reason({
+        identified: 0, executable: 0, requirements: [], reasons: ["legacy review"], removed: [],
+    }, 2, []), /No requirement-level review/);
+    assert.match(retained_reason({
+        identified: 1, executable: 1, requirements: [{ id: "x" }], reasons: ["stale metadata"], removed: [],
+    }, 2, requirements), /Review unavailable/);
+});
+
 test("requirement filtering uses report decisions and never mutates", () => {
     const requirements = [
         { id: "a", status: "executable", title: "Files use spaces", quote: "Files use spaces.", reason: "Observed.", missing_facts: [], explanation: { title: "Spaces", text: "Reject tabs.", limitations: "Lexical only." } },
@@ -301,6 +392,33 @@ test("Rules explains review progress, legacy recovery, and next actions", () => 
     assert.match(source, /aria-describedby/, "a disabled approval must point to its explanation");
     assert.match(html, /\.review-card\[data-decision="approved"\]/);
     assert.match(html, /\.review-legacy/);
+});
+
+test("Comparison and Reduced explain readiness and never offer a vacuous reduction", () => {
+    const html = read("sources/browser/index.html");
+    for (const id of ["compare-readiness", "compare-status", "compare-counts", "compare-blockers",
+        "compare-action-note", "compare-actions", "compare-table-wrap", "reduced-readiness",
+        "reduced-status", "reduced-counts", "reduced-blockers", "reduced-action-note",
+        "reduced-download", "diff-empty"]) {
+        assert.ok(html.includes(`id="${id}"`), `Reduction UI is missing #${id}`);
+    }
+    assert.match(html, /id="compare-status"[^>]*aria-live="polite"/);
+    assert.match(html, /id="reduced-status"[^>]*aria-live="polite"/);
+    assert.match(html, /id="reduced-download"[^>]*aria-disabled="true"/);
+    assert.match(html, /class="diff-legend"/);
+    for (const column of ["Source line", "Requirement", "Decision", "Eligibility", "Why retained or eligible"]) {
+        assert.ok(html.includes(`<th>${column}</th>`), `Comparison is missing the ${column} column`);
+    }
+    assert.match(html, /\.table-scroll\s*\{[^}]*overflow-x:\s*auto/s);
+    assert.match(html, /#reduced-download\[aria-disabled="true"\]/);
+    const source = read("sources/browser/studio.mjs");
+    for (const text of ["reduction_summary(", "retained_reason(", "Nothing can be removed yet.",
+        "Reduced prompt download unavailable", "No extraction or approval blocker is recorded",
+        "Resolve the retained reasons", "removeAttribute(\"href\")", "setAttribute(\"aria-disabled\", \"true\")",
+        "setAttribute(\"aria-disabled\", \"false\")", "render_retained_groups("]) {
+        assert.ok(source.includes(text), `Reduction UI is missing: ${text}`);
+    }
+    assert.match(source, /if \(can_download\)/);
 });
 
 test("candidate statistics separate selected-source lines from all case files", () => {
