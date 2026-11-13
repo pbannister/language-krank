@@ -367,6 +367,7 @@ test("Prompt introduces draft decisions, accessible state, and the next action",
     assert.match(html, /\.prompt-actions\s*\{[^}]*flex-wrap:\s*wrap/s);
     assert.match(html, /@media \(max-width: 54rem\)\s*\{\s*body\s*\{[^}]*padding-top:\s*3\.5rem/s);
     assert.match(html, /#tab-prompt #source\s*\{[^}]*box-sizing:\s*border-box/s);
+    assert.match(html, /#source\s*\{[^}]*min-height:\s*18rem/s);
 });
 
 test("prompt outline ignores fenced headings and preserves Markdown levels", () => {
