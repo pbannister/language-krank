@@ -1,11 +1,12 @@
 # dsh-krank-studio
 
 A DeepSeek Harness client plugin: a **Krank** action in the conversation session
-header opens the local prompt studio.
+header opens the local prompt studio in a full-viewport dialog over the Harness.
 
-The plugin is a launcher, not a reimplementation: the studio is the page
-`make studio` serves. The action opens it in a browser tab, so the studio keeps
-its own state, downloads, and diff view.
+The plugin is a host, not a reimplementation: the studio is the page `make studio`
+serves. The dialog embeds that page in an iframe, keeps it mounted when closed so
+page-local review state survives reopening, and offers **Open in new tab** as a
+fallback. The studio keeps its own downloads and diff view.
 
 ## Run
 
@@ -18,6 +19,8 @@ make studio          # builds dataflow.out/studio and serves 127.0.0.1:8090
 dsh plugin --profile web add ~/work/08-language-krank/sources/harness/krank-studio
 
 # 3. Reload the Harness page. A "Krank" action appears in the session header.
+#    It opens the embedded panel; Escape or Close hides it without losing the
+#    studio page state.
 ```
 
 If `dsh` is not on `PATH`, use the launcher of the running installation, for
@@ -34,7 +37,9 @@ The Harness Web Client loads a client entry through `window.__ModuleLoader__`;
 `lib/client.js` uses that wrapper directly, so the plugin needs no separate build.
 It registers into `conversation.session.header.actions`, a list slot declared by
 `@deepseek-ai/dsh-client-ui-conversation`, which is why that package is named under
-`dsh.client.inject` in `package.json`. The host half (`lib/index.js`) is empty.
+`dsh.client.inject` in `package.json`. The panel portals to the document body and
+uses an iframe, so the header's clipped action slot cannot constrain the studio.
+The host half (`lib/index.js`) is empty.
 
 ## Remove
 
