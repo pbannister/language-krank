@@ -23,6 +23,7 @@ import { resolve_focus_index, move_focus_index, focus_position, focus_item } fro
 import { reduction_summary, retained_reason, line_status_rows, filter_line_status, line_status_counts } from "../sources/browser/reduction-summary.mjs";
 import { scope_stats, required_fact_types, check_readiness, evaluation_summary } from "../sources/browser/check-summary.mjs";
 import { scope_options, rank_scope_suggestions, suggestion_label } from "../sources/browser/scope-suggestions.mjs";
+import { step_statuses, next_recommended_step } from "../sources/browser/step-status.mjs";
 import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals, build_rows, sort_build_rows, filter_build_rows, build_filter_counts } from "../sources/browser/approve-build-summary.mjs";
 import { parse_outline, selection_for_line, outline_matches } from "../sources/browser/prompt-outline.mjs";
 
@@ -104,11 +105,16 @@ test("the studio exposes skip, step, and tab navigation semantics", () => {
         assert.ok(html.includes(`aria-label="${label}"`), `no panel label for ${step}`);
     }
     assert.match(html, /id="step-prompt"[^>]*aria-label="Step 1: Prompt"/);
+    assert.match(html, /id="step-next"[^>]*hidden/);
+    assert.match(html, /id="step-next-note"/);
+    assert.match(html, /id="step-next-action"/);
+    assert.match(html, /\.step-state\.blocked/);
     assert.match(html, /id="file-overlay"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="file-overlay-title"/);
     const source = read("sources/browser/studio.mjs");
     for (const wiring of ["aria-current", "step_announcement.textContent", "function prepare_tab",
         "aria-controls", "tabIndex = active ? 0 : -1", "ArrowRight", "ArrowLeft", "Home", "End",
-        "file_overlay_return_focus", "file_overlay_close.focus()", "restore.focus()"]) {
+        "file_overlay_return_focus", "file_overlay_close.focus()", "restore.focus()",
+        "step_statuses(", "next_recommended_step(", "update_step_status(", "step-state"]) {
         assert.ok(source.includes(wiring), `accessibility wiring is missing ${wiring}`);
     }
     assert.match(html, /:where\(a, button, input, select, textarea, summary\):focus-visible/);
@@ -1212,6 +1218,53 @@ test("build freshness and totals fail conservatively", () => {
         { coverage: { removed: [2, 3] } }, { coverage: { removed: [] } }, {}
     ], generated_at: "today" }), { entries: 3, with_removable: 1, removable: 2, generated_at: "today" });
     assert.deepEqual(build_totals(null), { entries: 0, with_removable: 0, removable: 0, generated_at: "" });
+});
+
+test("step status summarizes readiness without claiming approval", () => {
+    const blocked = step_statuses({
+        candidate: null, report: null, objects: { total: 0, reviewed: 0, unreviewed: 0 }, edited: false,
+        build: { present: false, freshness: null },
+    });
+    assert.equal(blocked.length, 7);
+    assert.equal(blocked.find((row) => row.step === "candidates").state, "blocked");
+    assert.equal(blocked.find((row) => row.step === "rules").state, "blocked");
+    assert.equal(blocked.find((row) => row.step === "objects").state, "optional");
+    assert.equal(blocked.find((row) => row.step === "build").state, "blocked");
+    assert.equal(next_recommended_step(blocked).step, "candidates");
+
+    const ready = step_statuses({
+        candidate: { id: "c", review: { requirements: [{ id: "r" }] } },
+        report: {
+            requirements: [{ id: "r", decision: "approved", eligible: true }],
+            executable: 1, check_scope: "file:x", removed: [1], reasons: [],
+        },
+        objects: { total: 2, reviewed: 2, unreviewed: 0 },
+        edited: false,
+        build: { present: true, freshness: "fresh" },
+    });
+    assert.equal(ready.find((row) => row.step === "prompt").state, "ready");
+    for (const step of ["objects", "candidates", "rules", "check", "approve", "build"]) {
+        assert.equal(ready.find((row) => row.step === step).state, "done", step);
+    }
+    assert.equal(next_recommended_step(ready), null);
+
+    const attention = step_statuses({
+        candidate: { id: "c", review: { requirements: [{ id: "r" }] } },
+        report: {
+            requirements: [{ id: "r", decision: "unreviewed" }],
+            executable: 1, check_scope: null, removed: [], reasons: [],
+        },
+        objects: { total: 2, reviewed: 1, unreviewed: 1 },
+        edited: true,
+        build: { present: true, freshness: "stale" },
+    });
+    assert.equal(attention.find((row) => row.step === "prompt").state, "attention");
+    assert.equal(attention.find((row) => row.step === "objects").state, "attention");
+    assert.equal(attention.find((row) => row.step === "rules").state, "attention");
+    assert.equal(attention.find((row) => row.step === "check").state, "blocked");
+    assert.equal(attention.find((row) => row.step === "build").state, "attention");
+    assert.equal(next_recommended_step(attention).step, "check");
+    assert.deepEqual(step_statuses(null), blocked);
 });
 
 test("the Approve and Build panels expose readiness, artifacts, and freshness", () => {

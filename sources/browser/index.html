@@ -157,6 +157,55 @@
             cursor: default;
         }
 
+        .step-state {
+            display: inline-block;
+            margin-left: 0.35rem;
+            padding: 0 0.35rem;
+            border-radius: 0.25rem;
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            background: color-mix(in srgb, Canvas 88%, CanvasText 12%);
+            color: CanvasText;
+        }
+
+        .step-state.done,
+        .step-state.ready {
+            background: color-mix(in srgb, Canvas 78%, #2e7d32 30%);
+        }
+
+        .step-state.attention {
+            background: color-mix(in srgb, Canvas 78%, #b26a00 30%);
+        }
+
+        .step-state.blocked {
+            background: color-mix(in srgb, Canvas 78%, #b00020 30%);
+        }
+
+        .step-state.optional {
+            background: color-mix(in srgb, Canvas 88%, CanvasText 12%);
+            opacity: 0.75;
+        }
+
+        .step-next {
+            margin-top: 0.6rem;
+            padding-top: 0.6rem;
+            border-top: 1px solid color-mix(in srgb, Canvas 80%, CanvasText 20%);
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .step-next[hidden] {
+            display: none;
+        }
+
+        .step-next .note {
+            margin: 0;
+            font-size: 0.8rem;
+        }
+
         .panel[hidden] {
             display: none;
         }
@@ -1518,6 +1567,10 @@
                 white-space: normal;
             }
 
+            .step-next {
+                flex: 1 1 100%;
+            }
+
             .review-field,
             #object-search,
             .review-field select {
@@ -1582,6 +1635,10 @@
             <button type="button" data-step="check" aria-controls="step-check">5. Check</button>
             <button type="button" data-step="approve" aria-controls="step-approve">6. Approve</button>
             <button type="button" data-step="build" aria-controls="step-build">7. Build</button>
+            <div class="step-next" id="step-next" hidden>
+                <span class="note" id="step-next-note"></span>
+                <button id="step-next-action" type="button">Next</button>
+            </div>
         </nav>
 
         <main id="main" tabindex="-1">

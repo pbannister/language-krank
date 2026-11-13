@@ -24,6 +24,7 @@ import { resolve_focus_index, move_focus_index, focus_position, focus_item } fro
 import { reduction_summary, retained_reason, line_status_rows, filter_line_status, line_status_counts } from "./reduction-summary.mjs";
 import { scope_stats, check_readiness, evaluation_summary } from "./check-summary.mjs";
 import { scope_options, rank_scope_suggestions, suggestion_label } from "./scope-suggestions.mjs";
+import { step_statuses, next_recommended_step } from "./step-status.mjs";
 import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals, build_rows, sort_build_rows, filter_build_rows, build_filter_counts } from "./approve-build-summary.mjs";
 import { parse_outline, selection_for_line, outline_matches } from "./prompt-outline.mjs";
 
@@ -122,6 +123,9 @@ const object_file = document.querySelector("#object-file");
 const file_overlay = document.querySelector("#file-overlay");
 const file_overlay_close = document.querySelector("#file-overlay-close");
 const step_announcement = document.querySelector("#step-announcement");
+const step_next = document.querySelector("#step-next");
+const step_next_note = document.querySelector("#step-next-note");
+const step_next_action = document.querySelector("#step-next-action");
 const file_overlay_body = document.querySelector("#file-overlay-body");
 const file_overlay_note = document.querySelector("#file-overlay-note");
 const file_overlay_title = document.querySelector("#file-overlay-title");
@@ -627,6 +631,7 @@ function render_proposals() {
     }
     proposals_url = download_url(JSON.stringify({ proposals }, null, 2), "application/json");
     document.querySelector("#proposals-download").href = proposals_url;
+    update_step_status();
 }
 
 function cell(text, class_name) {
@@ -1924,6 +1929,7 @@ function render_check_result() {
         note.className = "note";
         note.textContent = "No evaluation is recorded for the current scope. Run the rules to supply check evidence; this alone approves nothing.";
         check_summary.append(note);
+        update_step_status();
         return;
     }
     const summary = evaluation_summary(last_check);
@@ -2213,6 +2219,7 @@ function render_build() {
         article.append(title, meta, links);
         build_entries.append(article);
     }
+    update_step_status();
 }
 
 async function load_build_state() {
@@ -2337,6 +2344,7 @@ function render() {
         for (const id of ["#rules-download", "#reduced-download", "#approve-rules", "#approve-reduced", "#approve-compile"]) {
             document.querySelector(id).removeAttribute("href");
         }
+        update_step_status();
         return;
     }
 
@@ -2351,6 +2359,7 @@ function render() {
     render_check_result();
     render_approve();
     render_build_cycle();
+    update_step_status();
 }
 
 function populate_prompts() {
@@ -2421,6 +2430,43 @@ const STEP_LABELS = {
     approve: "Step 6: Approve",
     build: "Step 7: Build and use",
 };
+
+function update_step_status() {
+    const built = build_state?.entries?.find((item) => item.source === entry?.source);
+    const freshness = built ? build_freshness(built, build_catalog_entry(entry.source)).state : null;
+    const rows = step_statuses({
+        candidate,
+        report: candidate ? review_status() : null,
+        objects: proposal_counts(),
+        edited,
+        build: { present: Boolean(build_state && built), freshness },
+    });
+    const by_step = new Map(rows.map((row) => [row.step, row]));
+    for (const button of document.querySelectorAll(".steps button")) {
+        const row = by_step.get(button.dataset.step);
+        if (!row) {
+            continue;
+        }
+        let marker = button.querySelector(".step-state");
+        if (!marker) {
+            marker = document.createElement("span");
+            marker.className = "step-state";
+            marker.setAttribute("aria-hidden", "true");
+            button.append(marker);
+        }
+        marker.className = `step-state ${row.state}`;
+        marker.textContent = row.state;
+        button.setAttribute("aria-label", `${row.title} — ${row.state}. ${row.detail}`);
+        button.title = row.detail;
+    }
+    const next = next_recommended_step(rows);
+    step_next.hidden = !next;
+    if (next) {
+        step_next_note.textContent = `Next: ${next.title} — ${next.detail}`;
+        step_next_action.textContent = `Go to ${next.title.replace(/^Step [0-9]+: /, "")}`;
+        step_next_action.onclick = () => show(next.step);
+    }
+}
 
 function show(step, announce = true) {
     for (const button of document.querySelectorAll(".steps button")) {
