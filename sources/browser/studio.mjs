@@ -17,6 +17,7 @@ import { diff_lines } from "./prompt-diff.mjs";
 import { render_file } from "./file-view.mjs";
 import { review_report, review_reduce, review_check, review_decide, review_observations_match, explanation_current } from "../compile-review.mjs";
 import { filter_proposals, review_counts } from "./object-filter.mjs";
+import { candidate_stats, coverage_delta } from "./candidate-summary.mjs";
 
 const catalog = await load_json("./catalog.json");
 const bundle = await load_json("./files.json");
@@ -28,6 +29,8 @@ const textarea = document.querySelector("#source");
 const edit_note = document.querySelector("#edit-note");
 const candidates_box = document.querySelector("#candidates");
 const candidates_note = document.querySelector("#candidates-note");
+const candidates_summary = document.querySelector("#candidates-summary");
+const candidates_next = document.querySelector("#candidates-next");
 const rules_box = document.querySelector("#rules");
 const rules_note = document.querySelector("#rules-note");
 const rules_badges = document.querySelector("#rules-badges");
@@ -690,17 +693,90 @@ function cases_detail(item) {
     return detail;
 }
 
-function render_candidates() {
-    candidates_box.replaceChildren();
-    if (entry.candidates.length === 0) {
-        candidates_note.textContent = "No candidate rule set for this prompt yet.";
-        const note = document.createElement("p");
-        note.className = "note";
-        note.textContent = "This prompt has no candidate rule set yet.";
-        candidates_box.append(note);
+function candidate_stat_line(item) {
+    const stats = candidate_stats(item, entry.source);
+    const lines = `${stats.source_lines} quoted prompt line${stats.source_lines === 1 ? "" : "s"}`;
+    const files = `${stats.source_files} source file${stats.source_files === 1 ? "" : "s"}`;
+    const cross = stats.cross_file_cases === 0 ? "" : ` · ${stats.cross_file_cases} other-file case${stats.cross_file_cases === 1 ? "" : "s"}`;
+    return `${stats.rule_count} rule${stats.rule_count === 1 ? "" : "s"} · ${lines} · ${files}${cross}`;
+}
+
+function continue_to_rules() {
+    if (!candidate) {
         return;
     }
-    candidates_note.textContent = `${entry.candidates.length} reading(s); ${candidate ? `${candidate.id} selected` : "none selected"}.`;
+    show("rules");
+    activate_tab("rules", document.querySelector('.panel[data-panel="rules"]'));
+}
+
+function candidate_delta(item) {
+    const detail = document.createElement("details");
+    detail.className = "candidate-delta";
+    if (!candidate) {
+        const summary = document.createElement("summary");
+        summary.textContent = "No current choice to compare with";
+        detail.append(summary);
+        return detail;
+    }
+    const delta = coverage_delta(item, candidate, entry.source);
+    const summary = document.createElement("summary");
+    summary.textContent = `Compared with ${candidate.id}: ${delta.shared} shared · ${delta.only_this} only here · ${delta.only_current} only current`;
+    detail.append(summary);
+    for (const [key, label] of [["only_this", "Only this reading"], ["only_current", "Only the current choice"], ["shared", "Shared by both"]]) {
+        const heading = document.createElement("p");
+        heading.className = "candidate-label";
+        heading.textContent = label;
+        detail.append(heading);
+        if (delta.examples[key].length === 0) {
+            const none = document.createElement("p");
+            none.className = "note";
+            none.textContent = "None.";
+            detail.append(none);
+            continue;
+        }
+        const list = document.createElement("ul");
+        for (const line of delta.examples[key]) {
+            const item = document.createElement("li");
+            item.textContent = line;
+            list.append(item);
+        }
+        detail.append(list);
+    }
+    const note = document.createElement("p");
+    note.className = "note";
+    note.textContent = "Examples are limited to three. The counts are distinct quoted lines from this prompt; cases from another file stay in the case details.";
+    detail.append(note);
+    return detail;
+}
+
+function render_candidates() {
+    candidates_box.replaceChildren();
+    candidates_next.hidden = !candidate;
+    if (!candidate) {
+        candidates_summary.textContent = "No reading has been generated for this prompt.";
+        candidates_note.textContent = "A reading is required before rules, checks, or approval. Generate candidates from the Prompt step using the current draft.";
+        const empty = document.createElement("div");
+        empty.className = "candidate-empty";
+        const note = document.createElement("p");
+        note.className = "note";
+        note.textContent = "Generate candidates is the next action. Generation sends the prompt to the model; it does not approve anything.";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = "Go to Prompt and generate";
+        button.addEventListener("click", () => {
+            show("prompt");
+            activate_tab("prompt", prompt_panel);
+            generate_button.focus();
+        });
+        empty.append(note, button);
+        candidates_box.append(empty);
+        return;
+    }
+    const current = candidate_stats(candidate, entry.source);
+    candidates_summary.textContent = `${entry.candidates.length} reading${entry.candidates.length === 1 ? "" : "s"}. `
+        + `Current choice: ${candidate.title} (${candidate.id}), with ${current.source_lines} quoted prompt line${current.source_lines === 1 ? "" : "s"}. `
+        + "Choosing a reading changes which rules are reviewed; it does not approve them.";
+    candidates_note.textContent = "Counts describe quoted lines from this prompt only. Other-file cases remain visible in each card's Case details.";
     for (const item of entry.candidates) {
         const article = document.createElement("article");
         article.className = `candidate${item.id === candidate.id ? " selected" : ""}`;
@@ -709,8 +785,8 @@ function render_candidates() {
         title.textContent = `${item.title} (${item.id})`;
         if (item.id === candidate.id) {
             const badge = document.createElement("span");
-            badge.className = "badge selected-badge";
-            badge.textContent = "selected";
+            badge.className = "badge current-choice";
+            badge.textContent = "Current choice";
             title.append(" ", badge);
         }
 
@@ -722,12 +798,9 @@ function render_candidates() {
         explanation.className = "candidate-why";
         explanation.textContent = item.explanation;
 
-        const sources = [...new Set(item.cases.map((case_item) => case_item.source ?? entry.source))];
-        const cover = document.createElement("p");
-        cover.className = "note candidate-cover";
-        cover.textContent = item.cases.length === 0
-            ? "Covers no prompt lines."
-            : `Covers ${item.cases.length} line(s) from ${sources.join(", ")}.`;
+        const stats = document.createElement("p");
+        stats.className = "candidate-stats";
+        stats.textContent = candidate_stat_line(item);
 
         const rule_detail = rules_detail(item);
         const case_detail = cases_detail(item);
@@ -741,18 +814,27 @@ function render_candidates() {
 
         const choose = document.createElement("button");
         choose.type = "button";
-        choose.textContent = item.id === candidate.id ? "Selected" : "Choose this candidate";
-        choose.disabled = item.id === candidate.id;
-        choose.addEventListener("click", () => {
-            candidate = item;
-            last_check = null;
-            reconcile_check();
-            check_output.textContent = "";
-            urls_reset();
-            render();
-        });
+        if (item.id === candidate.id) {
+            choose.className = "primary-action";
+            choose.textContent = "Continue to Rules";
+            choose.addEventListener("click", continue_to_rules);
+        } else {
+            choose.textContent = "Choose this reading";
+            choose.addEventListener("click", () => {
+                candidate = item;
+                last_check = null;
+                reconcile_check();
+                check_output.textContent = "";
+                urls_reset();
+                render();
+            });
+        }
 
-        article.append(title, explanation_label, explanation, cover, badges, choose, rule_detail, case_detail);
+        article.append(title, explanation_label, explanation, stats, badges);
+        if (item.id !== candidate.id) {
+            article.append(candidate_delta(item));
+        }
+        article.append(choose, rule_detail, case_detail);
         candidates_box.append(article);
     }
 }
@@ -1031,6 +1113,8 @@ document.querySelector("#build").addEventListener("click", async () => {
 for (const id of ["#revise-comparison", "#revise-approve"]) {
     document.querySelector(id).addEventListener("click", revise_prompt);
 }
+
+candidates_next.addEventListener("click", continue_to_rules);
 
 function render() {
     urls_reset();

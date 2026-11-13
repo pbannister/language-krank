@@ -312,6 +312,17 @@ test("studio reports draft state, action availability, context, and the next ste
     });
 });
 
+test("studio presents candidate choice as review, not approval", async () => {
+    await with_studio(async ({ element }) => {
+        assert.match(element("#candidates-summary").textContent, /2 readings/);
+        assert.match(element("#candidates-summary").textContent, /does not approve/);
+        assert.equal(element("#candidates-next").hidden, false);
+        assert.match(element("#candidates").textContent, /Current choice/);
+        assert.match(element("#candidates").textContent, /Choose this reading/);
+        assert.match(element("#candidates").textContent, /Compared with/);
+    });
+});
+
 test("studio loads the selected reading and invalidates downloads on an unapplied edit", async () => {
     await with_studio(async ({ element, original_fetch }) => {
         const before = await (await original_fetch(element("#approve-compile").href)).json();

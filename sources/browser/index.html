@@ -500,6 +500,51 @@
             margin: 0 0 0.35rem;
         }
 
+        .candidate .current-choice {
+            margin-left: 0.4rem;
+            background: #2e7d32;
+            color: white;
+            white-space: nowrap;
+        }
+
+        .step-head .primary-action {
+            border: 2px solid color-mix(in srgb, Canvas 35%, CanvasText 65%);
+            font-weight: 600;
+        }
+
+        .candidate-stats {
+            font-size: 0.85rem;
+            font-variant-numeric: tabular-nums;
+            opacity: 0.9;
+        }
+
+        .candidate-delta {
+            margin: 0.5rem 0;
+            padding: 0.5rem 0.75rem;
+            border-left: 2px solid color-mix(in srgb, Canvas 70%, CanvasText 30%);
+            font-size: 0.85rem;
+        }
+
+        .candidate-delta summary {
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .candidate-delta ul {
+            margin: 0.25rem 0 0.75rem;
+            padding-left: 1.1rem;
+        }
+
+        .candidate-empty {
+            padding: 1rem;
+            border: 1px dashed color-mix(in srgb, Canvas 70%, CanvasText 30%);
+            border-radius: 0.35rem;
+        }
+
+        .candidate-empty button {
+            margin-top: 0.25rem;
+        }
+
         .candidate p {
             margin: 0 0 0.5rem;
         }
@@ -1002,6 +1047,13 @@
                     <button type="button" class="tab" data-tab="about" role="tab" aria-selected="false">About</button>
                 </div>
                 <div class="tab-panel" id="tab-candidates" data-tab="candidates">
+                    <div class="step-head">
+                        <div>
+                            <h2>3. Candidates</h2>
+                            <p class="note" id="candidates-summary" aria-live="polite"></p>
+                        </div>
+                        <button id="candidates-next" type="button" class="primary-action" hidden>Continue to Rules</button>
+                    </div>
                     <p class="note" id="candidates-note"></p>
                     <div id="candidates"></div>
                 </div>

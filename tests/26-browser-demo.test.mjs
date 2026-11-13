@@ -15,6 +15,7 @@ import { relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ruleset_render, ruleset_run } from "../sources/krank.mjs";
 import { diff_lines } from "../sources/browser/prompt-diff.mjs";
+import { candidate_stats, coverage_delta } from "../sources/browser/candidate-summary.mjs";
 import { filter_proposals, review_counts } from "../sources/browser/object-filter.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -81,7 +82,7 @@ test("the studio page carries the step rail and its panels", () => {
     for (const tab of ["prompt", "history", "about", "object-status", "object-about", "candidates", "rules", "prose", "comparison", "reduced"]) {
         assert.ok(html.includes(`data-tab="${tab}"`), `no tab for ${tab}`);
     }
-    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "object-file", "file-history", "history-log", "prompt-download", "file-overlay", "file-overlay-body", "file-overlay-note", "file-overlay-close", "candidates-note", "rules-badges", "rule-summary", "uncovered", "check-summary", "approve-warning", "build", "build-cycle", "build-note", "build-entries", "build-output", "revise-comparison", "revise-approve"]) {
+    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "object-file", "file-history", "history-log", "prompt-download", "file-overlay", "file-overlay-body", "file-overlay-note", "file-overlay-close", "candidates-note", "candidates-summary", "candidates-next", "rules-badges", "rule-summary", "uncovered", "check-summary", "approve-warning", "build", "build-cycle", "build-note", "build-entries", "build-output", "revise-comparison", "revise-approve"]) {
         assert.ok(html.includes(`id="${id}"`), `the page has no #${id}`);
     }
 });
@@ -198,6 +199,64 @@ test("Prompt introduces draft decisions, accessible state, and the next action",
     assert.match(html, /\.prompt-actions\s*\{[^}]*flex-wrap:\s*wrap/s);
     assert.match(html, /@media \(max-width: 54rem\)\s*\{\s*body\s*\{[^}]*padding-top:\s*3\.5rem/s);
     assert.match(html, /#tab-prompt #source\s*\{[^}]*box-sizing:\s*border-box/s);
+});
+
+test("candidate statistics separate cases from quoted source lines", () => {
+    const candidate = {
+        rules: { facts: [], rules: [{ id: "one" }, { id: "two" }] },
+        cases: [
+            { rule: "one", source: "prompts/x.md", original: "Rule A" },
+            { rule: "two", source: "prompts/x.md", original: "Rule A" },
+            { rule: "two", source: "prompts/y.md", original: "Rule B" },
+            { rule: "two", original: "Rule C" },
+        ],
+    };
+    const before = JSON.stringify(candidate);
+    assert.deepEqual(candidate_stats(candidate, "prompts/x.md"), {
+        rule_count: 2,
+        case_count: 4,
+        source_lines: 2,
+        source_files: 1,
+        cross_file_cases: 1,
+    });
+    assert.equal(JSON.stringify(candidate), before, "statistics mutated the candidate");
+    const current = {
+        rules: { facts: [], rules: [{ id: "old" }] },
+        cases: [
+            { rule: "old", source: "prompts/x.md", original: "Rule A" },
+            { rule: "old", source: "prompts/x.md", original: "Rule D" },
+        ],
+    };
+    assert.deepEqual(coverage_delta(candidate, current, "prompts/x.md"), {
+        shared: 1,
+        only_this: 1,
+        only_current: 1,
+        examples: { shared: ["Rule A"], only_this: ["Rule C"], only_current: ["Rule D"] },
+    });
+    const none = coverage_delta(candidate, null, "prompts/x.md");
+    assert.equal(none.shared, 0);
+    assert.equal(none.only_this, 2);
+    assert.equal(none.only_current, 0);
+});
+
+test("Candidates clarifies stats, choice, comparison, and next action", () => {
+    const source = read("sources/browser/studio.mjs");
+    const html = read("sources/browser/index.html");
+    assert.match(source, /candidate_stats\(/, "Candidates does not use distinct statistics");
+    assert.match(source, /coverage_delta\(/, "Candidates has no coverage comparison");
+    assert.match(source, /candidate_stats\(item, entry\.source\)/, "statistics do not use the selected source");
+    assert.ok(!/Covers .*line\(s\)/.test(source), "case count is still presented as covered lines");
+    assert.match(source, /Current choice/);
+    assert.match(source, /Choose this reading/);
+    assert.match(source, /Continue to Rules/);
+    assert.match(source, /Choosing a reading changes which rules are reviewed; it does not approve them/);
+    assert.match(source, /No reading has been generated/);
+    assert.match(source, /Go to Prompt and generate/);
+    assert.match(html, /id="candidates-summary"[^>]*aria-live="polite"/);
+    assert.match(html, /id="candidates-next"[^>]*hidden/);
+    assert.match(html, /\.candidate-stats/);
+    assert.match(html, /\.candidate-delta/);
+    assert.match(html, /\.candidate-empty/);
 });
 
 test("the candidate cards expand their rules and cases", () => {
