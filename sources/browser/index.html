@@ -366,6 +366,38 @@
             font-size: 0.875rem;
         }
 
+        .review-focus-toggle {
+            flex-direction: row;
+            align-items: center;
+            gap: 0.4rem;
+            align-self: center;
+            white-space: nowrap;
+        }
+
+        .review-focus-toggle input {
+            margin: 0;
+        }
+
+        .review-focus-nav {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0 0;
+            padding-top: 0.5rem;
+            border-top: 1px solid color-mix(in srgb, Canvas 84%, CanvasText 16%);
+        }
+
+        .review-focus-nav[hidden] {
+            display: none;
+        }
+
+        #review-focus-position {
+            font-size: 0.875rem;
+            font-weight: 600;
+            min-width: 10rem;
+        }
+
         .object-empty {
             border-left: 3px solid color-mix(in srgb, Canvas 60%, CanvasText 40%);
             padding: 0.5rem 0.75rem;
@@ -1803,8 +1835,19 @@
                                 <button id="review-clear-filters" type="button">Clear filters</button>
                                 <button id="review-next-needing" type="button">Next needing review</button>
                             </div>
+                            <label class="review-field review-focus-toggle" for="review-focus-toggle">
+                                <input id="review-focus-toggle" type="checkbox">
+                                One at a time
+                            </label>
                         </div>
                         <p class="review-progress" id="review-queue-summary" role="status" aria-live="polite"></p>
+                        <div class="review-focus-nav" id="review-focus-nav" hidden>
+                            <button id="review-focus-prev" type="button">Previous</button>
+                            <span id="review-focus-position" role="status" aria-live="polite">No requirement in focus</span>
+                            <button id="review-focus-next" type="button">Next</button>
+                            <button id="review-focus-exit" type="button">Show all requirements</button>
+                            <p class="note" id="review-focus-status" role="status" aria-live="polite"></p>
+                        </div>
                         <div class="review-empty" id="review-empty" hidden>
                             <p id="review-empty-message">No requirements match these filters.</p>
                             <button id="review-empty-clear" type="button">Clear filters</button>

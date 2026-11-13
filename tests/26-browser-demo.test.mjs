@@ -19,6 +19,7 @@ import { candidate_stats, coverage_delta } from "../sources/browser/candidate-su
 import { rule_diff, rule_diff_summary, display_order } from "../sources/browser/candidate-diff.mjs";
 import { filter_proposals, review_counts, review_breakdown } from "../sources/browser/object-filter.mjs";
 import { review_progress, filter_requirements } from "../sources/browser/review-queue.mjs";
+import { resolve_focus_index, move_focus_index, focus_position, focus_item } from "../sources/browser/review-focus.mjs";
 import { reduction_summary, retained_reason } from "../sources/browser/reduction-summary.mjs";
 import { scope_stats, required_fact_types, check_readiness, evaluation_summary } from "../sources/browser/check-summary.mjs";
 import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals } from "../sources/browser/approve-build-summary.mjs";
@@ -514,6 +515,50 @@ test("requirement filtering uses report decisions and never mutates", () => {
     assert.equal(JSON.stringify(requirements), before, "requirement filtering mutated its input");
     const orphan = filter_requirements(requirements, {}, "", "needs_review");
     assert.equal(orphan.length, 4, "an absent report must not silently hide requirements");
+});
+
+test("focused review navigation is pure, bounded, and immutable", () => {
+    const items = [{ id: "a" }, { id: "b" }, { id: "c" }];
+    const before = JSON.stringify(items);
+    assert.equal(resolve_focus_index(items, "b"), 1);
+    assert.equal(resolve_focus_index(items, "missing"), 0);
+    assert.equal(resolve_focus_index([], "a"), -1);
+    assert.equal(resolve_focus_index(null, "a"), -1);
+    assert.equal(move_focus_index(items, 1, 1), 2);
+    assert.equal(move_focus_index(items, 2, 1), 2);
+    assert.equal(move_focus_index(items, 0, -1), 0);
+    assert.equal(move_focus_index([], 0, 1), -1);
+    assert.deepEqual(focus_position(items, 1), { index: 1, count: 3, label: "Requirement 2 of 3" });
+    assert.deepEqual(focus_position([], 0), { index: -1, count: 0, label: "No requirements visible" });
+    assert.deepEqual(focus_item(items, 2), { id: "c" });
+    assert.equal(focus_item(items, 9), null);
+    assert.equal(focus_item(items, -1), null);
+    assert.equal(JSON.stringify(items), before);
+    assert.equal(resolve_focus_index([{ id: "x" }, { id: "x" }], "x"), 0);
+});
+
+test("Rules exposes a bounded one-at-a-time review mode", () => {
+    const html = read("sources/browser/index.html");
+    for (const id of ["review-focus-toggle", "review-focus-nav", "review-focus-prev", "review-focus-next",
+        "review-focus-position", "review-focus-exit", "review-focus-status"]) {
+        assert.ok(html.includes(`id="${id}"`), `Rules focus mode is missing #${id}`);
+    }
+    assert.match(html, /id="review-focus-nav"[^>]*hidden/);
+    assert.match(html, /id="review-focus-status"[^>]*aria-live="polite"/);
+    assert.match(html, /One at a time/);
+    const source = read("sources/browser/studio.mjs");
+    for (const text of ["review_focused", "review_focus_id", "set_review_focus(", "focus_visible_review(",
+        "review_focus_nav.hidden", "reset_review_focus(", "Rendered = focused ? [focused] : []"]) {
+        if (text === "Rendered = focused ? [focused] : []") {
+            assert.match(source, /rendered = focused \? \[focused\] : \[\]/);
+            continue;
+        }
+        assert.ok(source.includes(text), `Rules focus mode is missing: ${text}`);
+    }
+    assert.match(source, /review_focus_toggle\.addEventListener/);
+    assert.match(source, /review_focus_prev\.addEventListener/);
+    assert.match(source, /review_focus_next\.addEventListener/);
+    assert.match(html, /\.review-focus-nav\[hidden\]\s*\{\s*display:\s*none/);
 });
 
 test("Rules explains review progress, legacy recovery, and next actions", () => {

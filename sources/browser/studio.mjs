@@ -20,6 +20,7 @@ import { filter_proposals, review_counts, review_breakdown } from "./object-filt
 import { candidate_stats, coverage_delta } from "./candidate-summary.mjs";
 import { rule_diff, rule_diff_summary, display_order } from "./candidate-diff.mjs";
 import { review_progress, filter_requirements } from "./review-queue.mjs";
+import { resolve_focus_index, move_focus_index, focus_position, focus_item } from "./review-focus.mjs";
 import { reduction_summary, retained_reason } from "./reduction-summary.mjs";
 import { scope_stats, check_readiness, evaluation_summary } from "./check-summary.mjs";
 import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals } from "./approve-build-summary.mjs";
@@ -51,6 +52,13 @@ const review_search = document.querySelector("#review-search");
 const review_filter = document.querySelector("#review-filter");
 const review_clear_filters = document.querySelector("#review-clear-filters");
 const review_next_needing = document.querySelector("#review-next-needing");
+const review_focus_toggle = document.querySelector("#review-focus-toggle");
+const review_focus_nav = document.querySelector("#review-focus-nav");
+const review_focus_prev = document.querySelector("#review-focus-prev");
+const review_focus_next = document.querySelector("#review-focus-next");
+const review_focus_position = document.querySelector("#review-focus-position");
+const review_focus_exit = document.querySelector("#review-focus-exit");
+const review_focus_status = document.querySelector("#review-focus-status");
 const review_queue_summary = document.querySelector("#review-queue-summary");
 const review_empty = document.querySelector("#review-empty");
 const review_empty_message = document.querySelector("#review-empty-message");
@@ -155,6 +163,8 @@ let object_mode = "all";
 let object_origin = "all";
 let review_query = "";
 let review_mode = "all";
+let review_focused = false;
+let review_focus_id = null;
 let current_review_report = null;
 let current_step = null;
 let file_overlay_return_focus = null;
@@ -639,6 +649,14 @@ function reset_review_filters() {
     review_filter.value = "all";
 }
 
+function reset_review_focus() {
+    review_focused = false;
+    review_focus_id = null;
+    review_focus_toggle.checked = false;
+    review_focus_nav.hidden = true;
+    review_focus_status.textContent = "";
+}
+
 function review_regenerate() {
     show("prompt");
     activate_tab("prompt", prompt_panel);
@@ -1019,13 +1037,28 @@ function focus_next_review() {
         return;
     }
     const report = review_status();
-    const next = candidate.review.requirements.find((requirement) => {
+    const requirements = candidate.review.requirements;
+    const visible = filter_requirements(requirements, report, review_query, review_mode,
+        (requirement) => explanation_current(candidate, requirement.id, entry.source, working, catalog.fact_contract));
+    const next = visible.find((requirement) => {
         const row = report.requirements.find((item) => item.id === requirement.id);
         return (row?.decision ?? "unreviewed") === "unreviewed";
     });
     if (!next) {
-        review_next_note.textContent = "No requirement is waiting for a decision.";
+        review_next_note.textContent = review_focused
+            ? "No visible requirement is waiting for a decision under the current filters."
+            : "No requirement is waiting for a decision.";
         render_review_queue(report, review_progress(report));
+        return;
+    }
+    if (review_focused) {
+        review_focus_id = next.id;
+        render_review_queue(report, review_progress(report));
+        review_queue_summary.textContent = `Focused requirement ${next.id}. Its decision is still unreviewed.`;
+        review_focus_status.textContent = `Focused requirement ${next.id}; its decision is still unreviewed.`;
+        const card = review_card_elements.get(next.id);
+        card?.focus({ preventScroll: true });
+        card?.scrollIntoView?.({ block: "center" });
         return;
     }
     review_query = "";
@@ -1052,8 +1085,25 @@ function render_review_queue(report, progress) {
     const requirements = candidate.review.requirements;
     const visible = filter_requirements(requirements, report, review_query, review_mode,
         (requirement) => explanation_current(candidate, requirement.id, entry.source, working, catalog.fact_contract));
+    let rendered = visible;
+    review_focus_toggle.checked = review_focused;
+    if (review_focused) {
+        const focus_index = resolve_focus_index(visible, review_focus_id);
+        const focused = focus_item(visible, focus_index);
+        review_focus_id = focused?.id ?? null;
+        rendered = focused ? [focused] : [];
+        const position = focus_position(visible, focus_index);
+        review_focus_nav.hidden = false;
+        review_focus_position.textContent = position.label;
+        review_focus_prev.disabled = focus_index <= 0;
+        review_focus_next.disabled = focus_index < 0 || focus_index >= visible.length - 1;
+    } else {
+        review_focus_nav.hidden = true;
+        review_focus_status.textContent = "";
+    }
     review_queue_summary.textContent = `${visible.length} of ${requirements.length} requirements shown. `
-        + `${progress.unreviewed} awaiting a decision; ${progress.approved} approved; ${progress.rejected} rejected.`;
+        + `${progress.unreviewed} awaiting a decision; ${progress.approved} approved; ${progress.rejected} rejected.`
+        + (review_focused ? " One at a time mode is on." : "");
     review_empty.hidden = visible.length > 0;
     review_next_needing.disabled = progress.unreviewed === 0;
     const no_requirements = requirements.length === 0;
@@ -1062,11 +1112,11 @@ function render_review_queue(report, progress) {
         : "No requirements match these filters.";
     review_empty_clear.hidden = no_requirements;
     review_empty_regenerate.hidden = !no_requirements;
-    if (visible.length === 0) {
+    if (rendered.length === 0) {
         rule_summary.replaceChildren();
         return;
     }
-    const cards = visible.map((requirement) => {
+    const cards = rendered.map((requirement) => {
         const card = review_requirement_card(requirement, report, progress);
         review_card_elements.set(requirement.id, card);
         return card;
@@ -1537,6 +1587,7 @@ function render_candidates() {
             choose.addEventListener("click", () => {
                 candidate = item;
                 reset_review_filters();
+                reset_review_focus();
                 last_check = null;
                 reconcile_check();
                 check_output.textContent = "";
@@ -2161,6 +2212,7 @@ function render() {
     render_candidates();
 
     if (!candidate) {
+        reset_review_focus();
         rules_box.textContent = "";
         rules_note.textContent = "No candidate rule set for this prompt yet.";
         prose_box.textContent = "";
@@ -2384,6 +2436,7 @@ select_prompt.addEventListener("change", () => {
     edited = false;
     last_check = null;
     reset_review_filters();
+    reset_review_focus();
     reconcile_check();
     render();
 });
@@ -2600,6 +2653,67 @@ review_empty_clear.addEventListener("click", clear_review_filters);
 review_empty_regenerate.addEventListener("click", review_regenerate);
 review_next_needing.addEventListener("click", focus_next_review);
 
+function focus_visible_review(delta) {
+    if (!candidate?.review) {
+        return;
+    }
+    const report = review_status();
+    const visible = filter_requirements(candidate.review.requirements, report, review_query, review_mode,
+        (requirement) => explanation_current(candidate, requirement.id, entry.source, working, catalog.fact_contract));
+    const current = resolve_focus_index(visible, review_focus_id);
+    const next = move_focus_index(visible, current, delta);
+    const item = focus_item(visible, next);
+    if (!item) {
+        review_focus_status.textContent = "No requirement is visible under the current filters.";
+        return;
+    }
+    review_focus_id = item.id;
+    review_focused = true;
+    review_focus_toggle.checked = true;
+    render_review_queue(report, review_progress(report));
+    const position = focus_position(visible, next);
+    review_focus_status.textContent = `${position.label}: ${item.title}.`;
+    const card = review_card_elements.get(item.id);
+    card?.focus({ preventScroll: true });
+    card?.scrollIntoView?.({ block: "center" });
+}
+
+function set_review_focus(on) {
+    review_focused = Boolean(on);
+    review_focus_toggle.checked = review_focused;
+    if (!review_focused) {
+        review_focus_nav.hidden = true;
+        review_focus_status.textContent = "";
+        if (candidate?.review) {
+            const report = review_status();
+            render_review_queue(report, review_progress(report));
+        }
+        return;
+    }
+    if (!candidate?.review) {
+        reset_review_focus();
+        return;
+    }
+    const report = review_status();
+    const visible = filter_requirements(candidate.review.requirements, report, review_query, review_mode,
+        (requirement) => explanation_current(candidate, requirement.id, entry.source, working, catalog.fact_contract));
+    const unreviewed = visible.find((requirement) => {
+        const row = report.requirements.find((item) => item.id === requirement.id);
+        return (row?.decision ?? "unreviewed") === "unreviewed";
+    });
+    const chosen = visible.find((requirement) => requirement.id === review_focus_id) ?? unreviewed ?? visible[0];
+    review_focus_id = chosen?.id ?? null;
+    render_review_queue(report, review_progress(report));
+    review_focus_status.textContent = chosen
+        ? `${focus_position(visible, resolve_focus_index(visible, chosen.id)).label}: ${chosen.title}.`
+        : "No requirement is visible under the current filters.";
+}
+
+review_focus_toggle.addEventListener("change", () => set_review_focus(review_focus_toggle.checked));
+review_focus_prev.addEventListener("click", () => focus_visible_review(-1));
+review_focus_next.addEventListener("click", () => focus_visible_review(1));
+review_focus_exit.addEventListener("click", () => set_review_focus(false));
+
 propose_button.addEventListener("click", async () => {
     const source_scan = entry.source;
     propose_button.disabled = true;
@@ -2683,6 +2797,7 @@ document.querySelector("#generate").addEventListener("click", async () => {
         entry = { ...entry, compiled: true, candidates };
         candidate = entry.candidates[0];
         reset_review_filters();
+        reset_review_focus();
         working = request_text;
         edited = working !== entry.markdown;
         last_check = null;
