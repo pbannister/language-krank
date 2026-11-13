@@ -20,6 +20,7 @@ import { filter_proposals, review_counts, review_breakdown } from "./object-filt
 import { review_snapshot, undo_last_review } from "./review-history.mjs";
 import { parse_artifact, select_artifact_candidate, merge_candidate } from "./artifact-import.mjs";
 import { empty_draft_history, record_draft, undo_draft, redo_draft } from "./draft-history.mjs";
+import { decision_summary } from "./decision-summary.mjs";
 import { candidate_stats, coverage_delta } from "./candidate-summary.mjs";
 import { rule_diff, rule_diff_summary, display_order, rule_change_examples } from "./candidate-diff.mjs";
 import { review_progress, filter_requirements } from "./review-queue.mjs";
@@ -45,6 +46,7 @@ const candidates_note = document.querySelector("#candidates-note");
 const candidates_summary = document.querySelector("#candidates-summary");
 const candidates_next = document.querySelector("#candidates-next");
 const rules_box = document.querySelector("#rules");
+const rules_summary_download = document.querySelector("#rules-summary-download");
 const rules_note = document.querySelector("#rules-note");
 const rules_badges = document.querySelector("#rules-badges");
 const rule_summary = document.querySelector("#rule-summary");
@@ -1797,6 +1799,16 @@ function render_rules() {
     const link = document.querySelector("#rules-download");
     link.href = download_url(text, "application/json");
     link.download = `${candidate.id}-rules.json`;
+    if (candidate.review) {
+        const summary = decision_summary(candidate, report, entry.source);
+        rules_summary_download.href = download_url(summary, "text/markdown");
+        rules_summary_download.setAttribute("aria-disabled", "false");
+        rules_summary_download.textContent = "Download the decision summary (Markdown)";
+    } else {
+        rules_summary_download.removeAttribute("href");
+        rules_summary_download.setAttribute("aria-disabled", "true");
+        rules_summary_download.textContent = "Decision summary unavailable without requirement review";
+    }
 }
 
 function render_prose() {
@@ -2553,7 +2565,7 @@ function render() {
         dd.textContent = "No candidate rule set for this prompt yet.";
         approve.append(dt, dd);
         approve_warning.hidden = true;
-        for (const id of ["#rules-download", "#reduced-download", "#approve-rules", "#approve-reduced", "#approve-compile"]) {
+        for (const id of ["#rules-download", "#rules-summary-download", "#reduced-download", "#approve-rules", "#approve-reduced", "#approve-compile"]) {
             document.querySelector(id).removeAttribute("href");
         }
         update_step_status();

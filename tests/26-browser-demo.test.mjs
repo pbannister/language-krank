@@ -21,6 +21,7 @@ import { filter_proposals, review_counts, review_breakdown } from "../sources/br
 import { review_snapshot, undo_last_review } from "../sources/browser/review-history.mjs";
 import { parse_artifact, select_artifact_candidate, merge_candidate } from "../sources/browser/artifact-import.mjs";
 import { empty_draft_history, record_draft, undo_draft, redo_draft } from "../sources/browser/draft-history.mjs";
+import { decision_summary } from "../sources/browser/decision-summary.mjs";
 import { review_progress, filter_requirements } from "../sources/browser/review-queue.mjs";
 import { resolve_focus_index, move_focus_index, focus_position, focus_item } from "../sources/browser/review-focus.mjs";
 import { reduction_summary, retained_reason, line_status_rows, filter_line_status, line_status_counts } from "../sources/browser/reduction-summary.mjs";
@@ -659,6 +660,31 @@ test("Rules exposes a bounded one-at-a-time review mode", () => {
     assert.match(html, /\.review-focus-nav\[hidden\]\s*\{\s*display:\s*none/);
 });
 
+test("decision summary exports decisions without claiming enforcement", () => {
+    const candidate = { id: "c", review: { requirements: [
+        { id: "r1", line: 2, status: "executable", reason: "A | B" },
+        { id: "r2", line: 4, status: "human_judgment", reason: "Judge" },
+    ] } };
+    const report = {
+        identified: 2, executable: 1, approved: 1, removed: [2], check_scope: "file:x", reasons: [],
+        requirements: [
+            { id: "r1", decision: "approved", eligible: true, reason: "A | B covered" },
+            { id: "r2", decision: "unreviewed", eligible: false, reason: "needs review" },
+        ],
+    };
+    const before = JSON.stringify({ candidate, report });
+    const text = decision_summary(candidate, report, "prompts/x.md");
+    assert.match(text, /# Decision summary: prompts\/x\.md/);
+    assert.match(text, /Check scope: file:x/);
+    assert.match(text, /\| r1 \| 2 \| executable \| approved \| yes \|/);
+    assert.ok(text.includes("A \\| B covered"));
+    assert.match(text, /not an approval/);
+    assert.equal(JSON.stringify({ candidate, report }), before);
+    const legacy = decision_summary({ id: "l" }, { reasons: ["legacy"] }, "prompts/y.md");
+    assert.match(legacy, /no requirement-level review/);
+    assert.match(legacy, /legacy/);
+});
+
 test("Rules explains review progress, legacy recovery, and next actions", () => {
     const html = read("sources/browser/index.html");
     for (const id of ["rules-overview", "review-policy", "review-counts", "review-next-note",
@@ -671,11 +697,13 @@ test("Rules explains review progress, legacy recovery, and next actions", () => 
     assert.match(html, /id="review-next-note"[^>]*aria-live="polite"/);
     assert.match(html, /id="review-queue-summary"[^>]*aria-live="polite"/);
     assert.match(html, /id="review-toolbar"[^>]*hidden/);
+    assert.match(html, /id="rules-summary-download"[^>]*aria-disabled="true"/);
     const source = read("sources/browser/studio.mjs");
     for (const text of ["review_progress(", "filter_requirements(", "This reading has no requirement review",
         "This review is stale or incomplete", "Regenerate candidates", "Approve retained prose",
         "Go to Check", "Continue to Approve", "Review reduction blockers", "Needs a check.",
-        "No requirements were extracted", "Exact deterministic interpretation and raw rules", "review_decide(candidate"]) {
+        "No requirements were extracted", "Exact deterministic interpretation and raw rules", "review_decide(candidate",
+        "decision_summary(candidate, report, entry.source)", "rules_summary_download"]) {
         assert.ok(source.includes(text), `Rules is missing: ${text}`);
     }
     assert.match(source, /ruleset_render\(rule_set\)/);
