@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 import { ruleset_render, ruleset_run } from "../sources/krank.mjs";
 import { diff_lines } from "../sources/browser/prompt-diff.mjs";
 import { candidate_stats, coverage_delta } from "../sources/browser/candidate-summary.mjs";
-import { rule_diff, rule_diff_summary, display_order, rule_field_changes } from "../sources/browser/candidate-diff.mjs";
+import { rule_diff, rule_diff_summary, display_order, rule_field_changes, rule_change_examples } from "../sources/browser/candidate-diff.mjs";
 import { filter_proposals, review_counts, review_breakdown } from "../sources/browser/object-filter.mjs";
 import { review_snapshot, undo_last_review } from "../sources/browser/review-history.mjs";
 import { parse_artifact, select_artifact_candidate, merge_candidate } from "../sources/browser/artifact-import.mjs";
@@ -902,6 +902,10 @@ test("candidate rule changes identify the changed fields", () => {
     ]);
     assert.deepEqual(rule_field_changes(current, current), []);
     assert.deepEqual(rule_field_changes(null, current), []);
+    const examples = rule_change_examples(candidate, current);
+    assert.equal(examples.length, 3);
+    assert.match(examples[0].before, /"type": "file"/);
+    assert.match(examples[0].after, /"type": "task"/);
     assert.equal(JSON.stringify({ current, candidate }), before);
 });
 
@@ -923,7 +927,7 @@ test("Candidates clarifies stats, choice, comparison, and next action", () => {
     assert.match(source, /display_order\(entry\.candidates, candidate\.id\)/, "the current choice is not rendered first");
     assert.match(source, /candidate_rules_delta\(item\)/, "Candidates has no formal rule comparison");
     assert.match(source, /Formal differences:/);
-    assert.match(source, /rule_field_changes\(item, candidate\)/);
+    assert.match(source, /rule_change_examples\(item, candidate\)/);
     assert.match(source, /Same rule id, changed definition/);
     assert.match(html, /\.candidate-label/);
     assert.match(source, /These rule sets cannot be compared safely/);

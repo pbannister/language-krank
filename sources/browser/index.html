@@ -1454,6 +1454,33 @@
             margin: 0 0 0.35rem;
         }
 
+        .rule-change-list {
+            display: grid;
+            gap: 0.4rem;
+            margin: 0.25rem 0 0.5rem;
+        }
+
+        .rule-change {
+            border-left: 2px solid color-mix(in srgb, Canvas 70%, CanvasText 30%);
+            padding-left: 0.55rem;
+        }
+
+        .rule-change summary {
+            cursor: pointer;
+        }
+
+        .rule-change-compare {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.35rem;
+        }
+
+        .rule-change-compare pre {
+            margin: 0;
+            max-height: 12rem;
+        }
+
         .candidate-detail {
             margin: 0.5rem 0;
             padding: 0.5rem 0.75rem;
@@ -1800,6 +1827,10 @@
             }
 
             .pipeline-detail {
+                grid-template-columns: 1fr;
+            }
+
+            .rule-change-compare {
                 grid-template-columns: 1fr;
             }
 

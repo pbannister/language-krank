@@ -21,7 +21,7 @@ import { review_snapshot, undo_last_review } from "./review-history.mjs";
 import { parse_artifact, select_artifact_candidate, merge_candidate } from "./artifact-import.mjs";
 import { empty_draft_history, record_draft, undo_draft, redo_draft } from "./draft-history.mjs";
 import { candidate_stats, coverage_delta } from "./candidate-summary.mjs";
-import { rule_diff, rule_diff_summary, display_order, rule_field_changes } from "./candidate-diff.mjs";
+import { rule_diff, rule_diff_summary, display_order, rule_change_examples } from "./candidate-diff.mjs";
 import { review_progress, filter_requirements } from "./review-queue.mjs";
 import { resolve_focus_index, move_focus_index, focus_position, focus_item } from "./review-focus.mjs";
 import { reduction_summary, retained_reason, line_status_rows, filter_line_status, line_status_counts } from "./reduction-summary.mjs";
@@ -1603,7 +1603,7 @@ function candidate_rules_delta(item) {
         detail.append(rule_id_list("Rules only in the current choice", diff.only_current));
     }
     if (diff.changed.length > 0) {
-        const changes = rule_field_changes(item, candidate);
+        const changes = rule_change_examples(item, candidate);
         const listed = new Set(changes.map((change) => change.id));
         const missing = diff.changed.filter((id) => !listed.has(id));
         const list = document.createElement("div");
@@ -1633,16 +1633,32 @@ function candidate_rules_delta(item) {
 }
 
 function rule_change_list(changes) {
-    const list = document.createElement("ul");
-    list.className = "case-list";
+    const list = document.createElement("div");
+    list.className = "rule-change-list";
     for (const change of changes) {
-        const item = document.createElement("li");
+        const detail = document.createElement("details");
+        detail.className = "rule-change";
+        const summary = document.createElement("summary");
         const id = document.createElement("code");
         id.textContent = change.id;
         const fields = document.createElement("span");
         fields.textContent = ` — ${change.fields.join(", ")}`;
-        item.append(id, fields);
-        list.append(item);
+        summary.append(id, fields);
+        const compare = document.createElement("div");
+        compare.className = "rule-change-compare";
+        const after_label = document.createElement("p");
+        after_label.className = "candidate-label";
+        after_label.textContent = "This reading";
+        const after = document.createElement("pre");
+        after.textContent = change.after;
+        const before_label = document.createElement("p");
+        before_label.className = "candidate-label";
+        before_label.textContent = "Current choice";
+        const before = document.createElement("pre");
+        before.textContent = change.before;
+        compare.append(after_label, after, before_label, before);
+        detail.append(summary, compare);
+        list.append(detail);
     }
     return list;
 }

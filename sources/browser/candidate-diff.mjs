@@ -126,6 +126,30 @@ export function rule_field_changes(candidate, current) {
     return changes;
 }
 
+function sorted_value(value) {
+    if (Array.isArray(value)) {
+        return value.map(sorted_value);
+    }
+    if (value !== null && typeof value === "object") {
+        return Object.fromEntries(Object.keys(value).sort().map((key) => [key, sorted_value(value[key])]));
+    }
+    return value;
+}
+
+export function rule_change_examples(candidate, current) {
+    const errors = [];
+    const this_rules = rule_map(candidate, "This reading", errors);
+    const current_rules = rule_map(current, "Current choice", errors);
+    if (errors.length > 0) {
+        return [];
+    }
+    return rule_field_changes(candidate, current).map((change) => ({
+        ...change,
+        before: JSON.stringify(sorted_value(current_rules.get(change.id)), null, 2),
+        after: JSON.stringify(sorted_value(this_rules.get(change.id)), null, 2),
+    }));
+}
+
 export function display_order(candidates, current_id) {
     const list = Array.isArray(candidates) ? candidates : [];
     const current = list.find((item) => item?.id === current_id);
