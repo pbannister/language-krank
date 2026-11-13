@@ -218,7 +218,11 @@ async function with_studio(run, prepare = null) {
             this.dataset = {};
             this.listeners = {};
             this.value = "";
-            this.classList = { toggle() {} };
+            this.classes = new Set();
+            this.classList = {
+                toggle: (name, on) => { if (on) this.classes.add(name); else this.classes.delete(name); },
+                contains: (name) => this.classes.has(name),
+            };
             this.hidden = false;
         }
         set textContent(value) { this.text = String(value); this.children = []; }
@@ -227,7 +231,7 @@ async function with_studio(run, prepare = null) {
         replaceChildren(...children) { this.text = ""; this.children = children; }
         insertBefore(child) { this.append(child); }
         setAttribute(key, value) { this[key] = value; }
-        getAttribute(key) { return this[key]; }
+        getAttribute(key) { return this[key] ?? null; }
         removeAttribute(key) { delete this[key]; }
         querySelector(selector) { return element(selector); }
         querySelectorAll() { return []; }
@@ -259,7 +263,14 @@ async function with_studio(run, prepare = null) {
         panel.hidden = name !== "prompt";
         return panel;
     });
-    const nodes = { querySelector: element, querySelectorAll: (selector) => selector === ".panel" ? panels : [], createElement: () => new Element(), createTextNode: (text) => ({ textContent: text }) };
+    const steps = ["prompt", "candidates"].map((name) => {
+        const step = new Element();
+        step.dataset.step = name;
+        step.setAttribute("aria-controls", `step-${name}`);
+        return step;
+    });
+    const nodes = { querySelector: element, querySelectorAll: (selector) => selector === ".panel" ? panels
+        : selector === ".steps button" ? steps : [], createElement: () => new Element(), createTextNode: (text) => ({ textContent: text }) };
     globalThis.document = nodes;
     globalThis.window = { addEventListener() {} };
     globalThis.history = { state: null, back() {}, pushState() {} };
@@ -276,7 +287,7 @@ async function with_studio(run, prepare = null) {
     element("#scope").value = "file:sample.mjs";
     try {
         await import(`../sources/browser/studio.mjs?review-test=${Math.random()}`);
-        await run({ element, pending, selected, original_fetch });
+        await run({ element, pending, selected, original_fetch, steps });
     } finally {
         for (const [key, descriptor] of saved) {
             if (descriptor) Object.defineProperty(globalThis, key, descriptor);
@@ -309,6 +320,18 @@ test("studio reports draft state, action availability, context, and the next ste
         assert.equal(element("#reset").disabled, true);
 
         await element("#prompt-next").fire("click");
+        assert.equal(element(".panel[data-panel=\"prompt\"]").hidden, true);
+        assert.equal(element(".panel[data-panel=\"candidates\"]").hidden, false);
+    });
+});
+
+test("studio marks one current step and announces step changes without moving focus", async () => {
+    await with_studio(async ({ element, steps }) => {
+        assert.equal(steps[0].getAttribute("aria-current"), "step");
+        await steps[1].fire("click");
+        assert.equal(steps[0].getAttribute("aria-current"), null);
+        assert.equal(steps[1].getAttribute("aria-current"), "step");
+        assert.equal(element("#step-announcement").textContent, "Step 3: Candidates");
         assert.equal(element(".panel[data-panel=\"prompt\"]").hidden, true);
         assert.equal(element(".panel[data-panel=\"candidates\"]").hidden, false);
     });

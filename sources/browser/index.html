@@ -60,6 +60,65 @@
             max-width: var(--measure);
         }
 
+        .skip-link {
+            position: fixed;
+            left: 0.75rem;
+            top: -4rem;
+            z-index: 5;
+            padding: 0.55rem 0.85rem;
+            border: 2px solid CanvasText;
+            border-radius: 0.25rem;
+            background: Canvas;
+            color: CanvasText;
+            font-weight: 600;
+        }
+
+        .skip-link:focus {
+            top: 0.75rem;
+        }
+
+        .visually-hidden {
+            position: absolute !important;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        :where(a, button, input, select, textarea, summary):focus-visible {
+            outline: 3px solid color-mix(in srgb, Canvas 35%, #1565c0 65%);
+            outline-offset: 2px;
+        }
+
+        body,
+        .studio,
+        main,
+        .panel,
+        .tab-panel {
+            min-width: 0;
+        }
+
+        body {
+            overflow-wrap: anywhere;
+        }
+
+        .steps button {
+            min-height: 2.35rem;
+        }
+
+        .file-overlay-bar {
+            flex-wrap: wrap;
+        }
+
+        .file-overlay-bar span {
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
         .studio {
             flex: 1 1 auto;
             min-height: 0;
@@ -192,8 +251,10 @@
 
         table {
             width: 100%;
+            max-width: 100%;
             border-collapse: collapse;
             font-size: 0.875rem;
+            table-layout: fixed;
         }
 
         th,
@@ -206,6 +267,11 @@
 
         th {
             background: color-mix(in srgb, Canvas 92%, CanvasText 8%);
+        }
+
+        td,
+        th {
+            overflow-wrap: anywhere;
         }
 
         tr.missing td {
@@ -1225,6 +1291,12 @@
 
             .studio {
                 grid-template-columns: 1fr;
+                align-content: start;
+            }
+
+            body {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
             }
 
             .approve-grid {
@@ -1233,6 +1305,11 @@
 
             .step-head {
                 flex-wrap: wrap;
+            }
+
+            #source {
+                flex: 1 0 18rem;
+                min-height: 18rem;
             }
 
             .approval-item {
@@ -1247,6 +1324,12 @@
                 position: static;
                 flex-direction: row;
                 flex-wrap: wrap;
+            }
+
+            .steps button {
+                flex: 1 1 auto;
+                min-width: 0;
+                white-space: normal;
             }
 
             .review-field,
@@ -1291,21 +1374,23 @@
 
 <body>
     <!-- HOMELAB-NAV -->
+    <a class="skip-link" href="#main">Skip to main content</a>
+    <p class="visually-hidden" id="step-announcement" role="status" aria-live="polite" aria-atomic="true"></p>
     <h1>krank — prompt studio</h1>
 
     <div class="studio">
         <nav class="steps" aria-label="Steps">
-            <button type="button" data-step="prompt" class="active">1. Prompt</button>
-            <button type="button" data-step="objects">2. Objects</button>
-            <button type="button" data-step="candidates">3. Candidates</button>
-            <button type="button" data-step="rules">4. Rules</button>
-            <button type="button" data-step="check">5. Check</button>
-            <button type="button" data-step="approve">6. Approve</button>
-            <button type="button" data-step="build">7. Build</button>
+            <button type="button" data-step="prompt" class="active" aria-controls="step-prompt" aria-current="step">1. Prompt</button>
+            <button type="button" data-step="objects" aria-controls="step-objects">2. Objects</button>
+            <button type="button" data-step="candidates" aria-controls="step-candidates">3. Candidates</button>
+            <button type="button" data-step="rules" aria-controls="step-rules">4. Rules</button>
+            <button type="button" data-step="check" aria-controls="step-check">5. Check</button>
+            <button type="button" data-step="approve" aria-controls="step-approve">6. Approve</button>
+            <button type="button" data-step="build" aria-controls="step-build">7. Build</button>
         </nav>
 
-        <main>
-            <section class="panel" data-panel="prompt">
+        <main id="main" tabindex="-1">
+            <section class="panel" id="step-prompt" data-panel="prompt" aria-label="Step 1: Prompt">
                 <div class="tabs" role="tablist">
                     <button type="button" class="tab active" data-tab="prompt" role="tab"
                         aria-selected="true">Prompt</button>
@@ -1406,7 +1491,7 @@
                 </div>
             </section>
 
-            <section class="panel" data-panel="objects" hidden>
+            <section class="panel" id="step-objects" data-panel="objects" aria-label="Step 2: Objects" hidden>
                 <div class="tabs" role="tablist" id="object-tabs">
                     <button type="button" class="tab active" data-tab="object-status" role="tab"
                         aria-selected="true">Status</button>
@@ -1487,7 +1572,7 @@
                 </div>
             </section>
 
-            <section class="panel" data-panel="candidates" hidden>
+            <section class="panel" id="step-candidates" data-panel="candidates" aria-label="Step 3: Candidates" hidden>
                 <div class="tabs" role="tablist">
                     <button type="button" class="tab active" data-tab="candidates" role="tab"
                         aria-selected="true">Candidates</button>
@@ -1514,7 +1599,7 @@
                 </div>
             </section>
 
-            <section class="panel" data-panel="rules" hidden>
+            <section class="panel" id="step-rules" data-panel="rules" aria-label="Step 4: Rules" hidden>
                 <div class="tabs" role="tablist">
                     <button type="button" class="tab active" data-tab="rules" role="tab"
                         aria-selected="true">Rules</button>
@@ -1672,7 +1757,7 @@
                 </div>
             </section>
 
-            <section class="panel" data-panel="check" hidden>
+            <section class="panel" id="step-check" data-panel="check" aria-label="Step 5: Check" hidden>
                 <div class="step-head">
                     <div>
                         <h2>5. Check</h2>
@@ -1709,7 +1794,7 @@
                 </details>
             </section>
 
-            <section class="panel" data-panel="approve" hidden>
+            <section class="panel" id="step-approve" data-panel="approve" aria-label="Step 6: Approve" hidden>
                 <div class="step-head">
                     <div>
                         <h2>6. Approve</h2>
@@ -1742,7 +1827,7 @@
                 </section>
             </section>
 
-            <section class="panel" data-panel="build" hidden>
+            <section class="panel" id="step-build" data-panel="build" aria-label="Step 7: Build and use" hidden>
                 <div class="step-head">
                     <div>
                         <h2>7. Build and use</h2>
@@ -1765,7 +1850,7 @@
         </main>
     </div>
 
-    <div class="file-overlay" id="file-overlay" hidden>
+    <div class="file-overlay" id="file-overlay" role="dialog" aria-modal="true" aria-labelledby="file-overlay-title" hidden>
         <div class="file-overlay-bar">
             <span id="file-overlay-title"></span>
             <span class="note" id="file-overlay-note"></span>

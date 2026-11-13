@@ -98,6 +98,8 @@ const history_log = document.querySelector("#history-log");
 const file_history = document.querySelector("#file-history");
 const object_file = document.querySelector("#object-file");
 const file_overlay = document.querySelector("#file-overlay");
+const file_overlay_close = document.querySelector("#file-overlay-close");
+const step_announcement = document.querySelector("#step-announcement");
 const file_overlay_body = document.querySelector("#file-overlay-body");
 const file_overlay_note = document.querySelector("#file-overlay-note");
 const file_overlay_title = document.querySelector("#file-overlay-title");
@@ -137,6 +139,8 @@ let object_mode = "all";
 let review_query = "";
 let review_mode = "all";
 let current_review_report = null;
+let current_step = null;
+let file_overlay_return_focus = null;
 const review_card_elements = new Map();
 let review_cursor_term = null;
 let highlighted_term = "";
@@ -213,6 +217,7 @@ function ensure_kind_tab(kind) {
     table.append(head, body);
     panel.append(table);
     object_panel.insertBefore(panel, object_about_panel);
+    prepare_tab(tab);
 }
 
 function default_use(row) {
@@ -244,19 +249,29 @@ function file_viewer_url(path, section, term) {
 }
 
 function open_file_viewer(path, section, term) {
+    if (file_overlay.hidden) {
+        file_overlay_return_focus = document.activeElement;
+    }
     file_overlay_title.textContent = path;
     file_overlay_note.textContent = "";
     file_overlay.hidden = false;
+    file_overlay_close.focus();
     render_file(file_overlay_body, { path, section, term }, file_overlay_note).catch((error) => {
         file_overlay_note.textContent = error.message;
     });
 }
 
 function close_file_viewer() {
+    const restore = file_overlay_return_focus;
+    const was_open = !file_overlay.hidden;
     file_overlay.hidden = true;
     file_overlay_body.replaceChildren();
     file_overlay_note.textContent = "";
     file_overlay_title.textContent = "";
+    file_overlay_return_focus = null;
+    if (was_open && restore && restore.isConnected !== false && typeof restore.focus === "function") {
+        restore.focus();
+    }
 }
 
 function show_file_state(state) {
@@ -267,7 +282,7 @@ function show_file_state(state) {
     }
 }
 
-document.querySelector("#file-overlay-close").addEventListener("click", () => {
+file_overlay_close.addEventListener("click", () => {
     if (history.state && history.state.file) {
         history.back();
     } else {
@@ -281,7 +296,7 @@ window.addEventListener("popstate", (event) => {
 
 window.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !file_overlay.hidden) {
-        document.querySelector("#file-overlay-close").click();
+        file_overlay_close.click();
     }
 });
 
@@ -1993,12 +2008,100 @@ function reconcile_check() {
     }
 }
 
-function show(step) {
+const STEP_LABELS = {
+    prompt: "Step 1: Prompt",
+    objects: "Step 2: Objects",
+    candidates: "Step 3: Candidates",
+    rules: "Step 4: Rules",
+    check: "Step 5: Check",
+    approve: "Step 6: Approve",
+    build: "Step 7: Build and use",
+};
+
+function show(step, announce = true) {
     for (const button of document.querySelectorAll(".steps button")) {
-        button.classList.toggle("active", button.dataset.step === step);
+        const active = button.dataset.step === step;
+        button.classList.toggle("active", active);
+        if (active) {
+            button.setAttribute("aria-current", "step");
+        } else {
+            button.removeAttribute("aria-current");
+        }
     }
     for (const panel of document.querySelectorAll(".panel")) {
         panel.hidden = panel.dataset.panel !== step;
+    }
+    if (announce && step !== current_step) {
+        step_announcement.textContent = STEP_LABELS[step] ?? step;
+    }
+    current_step = step;
+}
+
+function tab_panel_of(tab) {
+    const tablist = tab.closest('[role="tablist"]');
+    if (!tablist) {
+        return null;
+    }
+    const scope = tab.closest(".panel") ?? document;
+    return scope.querySelector(`.tab-panel[data-tab="${tab.dataset.tab}"]`);
+}
+
+function prepare_tab(tab) {
+    const tablist = tab.closest('[role="tablist"]');
+    const panel = tab_panel_of(tab);
+    if (!tablist || !panel) {
+        return;
+    }
+    const panel_name = tablist.closest(".panel")?.dataset.panel ?? "page";
+    panel.id ||= `tab-panel-${panel_name}-${tab.dataset.tab}`;
+    tab.id ||= `${panel.id}-tab`;
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-controls", panel.id);
+    tab.tabIndex = tab.classList.contains("active") ? 0 : -1;
+    panel.setAttribute("role", "tabpanel");
+    panel.setAttribute("aria-labelledby", tab.id);
+}
+
+function tablist_keydown(event) {
+    const tab = event.target.closest?.(".tab");
+    const tablist = tab?.closest('[role="tablist"]');
+    if (!tab || !tablist) {
+        return;
+    }
+    const tabs = [...tablist.querySelectorAll('[role="tab"]')].filter((item) => !item.disabled);
+    const index = tabs.indexOf(tab);
+    let next = null;
+    if (event.key === "ArrowRight") {
+        next = tabs[(index + 1) % tabs.length];
+    } else if (event.key === "ArrowLeft") {
+        next = tabs[(index - 1 + tabs.length) % tabs.length];
+    } else if (event.key === "Home") {
+        next = tabs[0];
+    } else if (event.key === "End") {
+        next = tabs[tabs.length - 1];
+    }
+    if (!next) {
+        return;
+    }
+    event.preventDefault();
+    activate_tab(next.dataset.tab, next.closest(".panel"));
+    next.focus();
+}
+
+function prepare_tablist(tablist) {
+    tablist.setAttribute("role", "tablist");
+    for (const tab of tablist.querySelectorAll('[role="tab"]')) {
+        prepare_tab(tab);
+    }
+    if (!tablist.dataset.keyboardBound) {
+        tablist.dataset.keyboardBound = "true";
+        tablist.addEventListener("keydown", tablist_keydown);
+    }
+}
+
+function prepare_all_tabs() {
+    for (const tablist of document.querySelectorAll('[role="tablist"]')) {
+        prepare_tablist(tablist);
     }
 }
 
@@ -2093,6 +2196,7 @@ function activate_tab(name, scope) {
         const active = button.dataset.tab === name;
         button.classList.toggle("active", active);
         button.setAttribute("aria-selected", String(active));
+        button.tabIndex = active ? 0 : -1;
     }
     for (const panel of container.querySelectorAll(".tab-panel")) {
         panel.hidden = panel.dataset.tab !== name;
@@ -2399,4 +2503,6 @@ populate_prompts();
 populate_scopes();
 reconcile_check();
 render();
+prepare_all_tabs();
+show("prompt", false);
 load_build_state();

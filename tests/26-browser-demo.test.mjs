@@ -86,6 +86,33 @@ test("each page loads its module", () => {
     assert.match(read("sources/browser/playground.html"), /src="\.\/demo\.mjs"/);
 });
 
+test("the studio exposes skip, step, and tab navigation semantics", () => {
+    const html = read("sources/browser/index.html");
+    assert.match(html, /<a class="skip-link" href="#main">Skip to main content<\/a>/);
+    assert.match(html, /<main id="main" tabindex="-1">/);
+    assert.match(html, /id="step-announcement" role="status" aria-live="polite" aria-atomic="true"/);
+    for (const [step, label] of [["prompt", "Step 1: Prompt"], ["objects", "Step 2: Objects"],
+        ["candidates", "Step 3: Candidates"], ["rules", "Step 4: Rules"], ["check", "Step 5: Check"],
+        ["approve", "Step 6: Approve"], ["build", "Step 7: Build and use"]]) {
+        assert.ok(html.includes(`data-step="${step}"`), `no step button for ${step}`);
+        assert.ok(html.includes(`aria-controls="step-${step}"`), `no aria-controls for ${step}`);
+        assert.ok(html.includes(`id="step-${step}"`), `no panel id for ${step}`);
+        assert.ok(html.includes(`aria-label="${label}"`), `no panel label for ${step}`);
+    }
+    assert.match(html, /id="step-prompt"[^>]*aria-label="Step 1: Prompt"/);
+    assert.match(html, /id="file-overlay"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="file-overlay-title"/);
+    const source = read("sources/browser/studio.mjs");
+    for (const wiring of ["aria-current", "step_announcement.textContent", "function prepare_tab",
+        "aria-controls", "tabIndex = active ? 0 : -1", "ArrowRight", "ArrowLeft", "Home", "End",
+        "file_overlay_return_focus", "file_overlay_close.focus()", "restore.focus()"]) {
+        assert.ok(source.includes(wiring), `accessibility wiring is missing ${wiring}`);
+    }
+    assert.match(html, /:where\(a, button, input, select, textarea, summary\):focus-visible/);
+    assert.match(html, /@media \(max-width: 54rem\)[\s\S]*?align-content: start/);
+    assert.match(html, /body,[\s\S]*?\.tab-panel \{\s*min-width: 0;/);
+    assert.match(html, /table-layout: fixed/);
+});
+
 test("the studio page carries the step rail and its panels", () => {
     const html = read("sources/browser/index.html");
     for (const step of ["prompt", "objects", "candidates", "rules", "check", "approve", "build"]) {
