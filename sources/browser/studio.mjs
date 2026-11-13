@@ -21,6 +21,7 @@ import { candidate_stats, coverage_delta } from "./candidate-summary.mjs";
 import { review_progress, filter_requirements } from "./review-queue.mjs";
 import { reduction_summary, retained_reason } from "./reduction-summary.mjs";
 import { scope_stats, check_readiness, evaluation_summary } from "./check-summary.mjs";
+import { approval_checklist, artifact_state, build_freshness, build_totals } from "./approve-build-summary.mjs";
 
 const catalog = await load_json("./catalog.json");
 const bundle = await load_json("./files.json");
@@ -84,11 +85,15 @@ const check_next_action = document.querySelector("#check-next-action");
 const check_next_note = document.querySelector("#check-next-note");
 const run_button = document.querySelector("#run");
 const approve = document.querySelector("#approve");
+const approve_checklist = document.querySelector("#approve-checklist");
 const approve_warning = document.querySelector("#approve-warning");
+const approve_artifact_note = document.querySelector("#approve-artifact-note");
 const build_cycle = document.querySelector("#build-cycle");
+const build_totals_box = document.querySelector("#build-totals");
 const build_note = document.querySelector("#build-note");
 const build_entries = document.querySelector("#build-entries");
 const build_output = document.querySelector("#build-output");
+const build_button = document.querySelector("#build");
 const history_log = document.querySelector("#history-log");
 const file_history = document.querySelector("#file-history");
 const object_file = document.querySelector("#object-file");
@@ -1572,16 +1577,18 @@ function render_check_result() {
 }
 
 function render_approve() {
+    const report = review_status();
+    const legacy = !candidate.review || report.reasons.length > 0;
     approve.replaceChildren();
     const rows = [
         ["Prompt", entry.source],
         ["Candidate", `${candidate.title} (${candidate.id})`],
         ["Rules", String(candidate.rules.rules.length)],
-        ["Requirements", String(review_status().identified)],
-        ["Approved requirements", String(review_status().approved)],
-        ["Recorded check scope", review_status().check_scope ?? "none"],
+        ["Requirements", String(report.identified)],
+        ["Approved requirements", String(report.approved)],
+        ["Removable lines", String(report.removed.length)],
+        ["Recorded check scope", report.check_scope ?? "none"],
         ["Prompt edited", edited ? "yes" : "no"],
-        ["Check", last_check ? `run: ${last_check.firings} firing(s), ${last_check.emitted.length} emission(s)` : "not run (step 5)"],
     ];
     for (const [label, value] of rows) {
         const dt = document.createElement("dt");
@@ -1591,19 +1598,67 @@ function render_approve() {
         approve.append(dt, dd);
     }
 
+    approve_checklist.replaceChildren();
+    const items = approval_checklist(candidate, report, edited);
+    const targets = {
+        prompt: ["Revise prompt", revise_prompt],
+        candidates: ["Review candidates", () => show("candidates")],
+        rules: ["Review requirements", () => show("rules")],
+        check: ["Run check", () => show("check")],
+        build: ["Build prompts.out", () => show("build")],
+    };
+    for (const item of items) {
+        const row = document.createElement("div");
+        row.className = `approval-item ${item.state}`;
+        row.setAttribute("role", "listitem");
+        const state = document.createElement("span");
+        state.className = "approval-state";
+        state.textContent = item.state === "done" ? "Done" : item.state === "warning" ? "Note" : "Blocked";
+        const text = document.createElement("div");
+        const label = document.createElement("strong");
+        label.textContent = item.label;
+        const detail = document.createElement("p");
+        detail.className = "note";
+        detail.textContent = item.detail;
+        text.append(label, detail);
+        const action = document.createElement("button");
+        action.type = "button";
+        const [action_label, action_call] = targets[item.target] ?? ["Go", () => {}];
+        action.textContent = action_label;
+        action.disabled = item.state === "done";
+        action.addEventListener("click", action_call);
+        row.append(state, text, action);
+        approve_checklist.append(row);
+    }
+    const blocking = items.filter((item) => item.state === "blocked");
+    approve_warning.textContent = blocking.length
+        ? `${blocking.length} readiness item(s) blocked. Downloading artifacts does not remove these blockers.`
+        : "Review readiness is complete for the recorded evidence. Approval remains a human decision, not a property of a download.";
+
+    const artifact = artifact_state(report, legacy);
     const rules_link = document.querySelector("#approve-rules");
     rules_link.href = download_url(JSON.stringify(candidate.rules, null, 2), "application/json");
     rules_link.download = `${candidate.id}-rules.json`;
 
     const reduced_link = document.querySelector("#approve-reduced");
-    reduced_link.href = download_url(reduced_box.textContent, "text/markdown");
-    reduced_link.download = `${candidate.id}-reduced.md`;
+    if (artifact.reduced) {
+        reduced_link.href = download_url(reduced_box.textContent, "text/markdown");
+        reduced_link.download = `${candidate.id}-reduced.md`;
+        reduced_link.removeAttribute("aria-disabled");
+        reduced_link.textContent = "Download the reduced prompt (Markdown)";
+        reduced_link.removeAttribute("title");
+    } else {
+        reduced_link.removeAttribute("href");
+        reduced_link.removeAttribute("download");
+        reduced_link.setAttribute("aria-disabled", "true");
+        reduced_link.textContent = "Reduced prompt unavailable";
+        reduced_link.title = artifact.reduced_reason;
+    }
+    approve_artifact_note.textContent = `${artifact.reduced_reason} The complete review artifact is the record even when no prose can be removed.`;
 
     const compile_link = document.querySelector("#approve-compile");
     compile_link.href = download_url(JSON.stringify({ source: entry.source, approved: candidate.id, candidates: [candidate] }, null, 4), "application/json");
     compile_link.download = `${candidate.id}-compile.json`;
-    approve_warning.hidden = Boolean(review_status().check_scope);
-    approve_warning.textContent = "No current review check. Regenerate legacy candidates, run step 5, then approve individual requirements in step 4. Downloading is not approval.";
 }
 
 function local_time(iso) {
@@ -1644,16 +1699,40 @@ function build_slug(source) {
     return source.replace(/^prompts\//, "").replace(/\.md$/, "").replace(/[/_]/g, "-");
 }
 
+function build_catalog_entry(source) {
+    return catalog.entries.find((item) => item.source === source);
+}
+
+function build_totals_view() {
+    const totals = build_totals(build_state);
+    const entries = Array.isArray(build_state?.entries) ? build_state.entries : [];
+    const stale = entries.filter((item) => build_freshness(item, build_catalog_entry(item.source)).state !== "fresh").length;
+    return { totals, stale };
+}
+
+function review_count(label, value, tone = "") {
+    const item = document.createElement("div");
+    item.className = `review-count ${tone}`;
+    item.setAttribute("role", "listitem");
+    const strong = document.createElement("strong");
+    strong.textContent = String(value);
+    const span = document.createElement("span");
+    span.textContent = label;
+    item.append(strong, span);
+    return item;
+}
+
 function render_build_cycle() {
     build_cycle.replaceChildren();
     const counts = proposal_counts();
     const built_entry = build_state?.entries?.find((item) => item.source === entry.source);
+    const freshness = build_freshness(built_entry, build_catalog_entry(entry.source));
     const rows = [
         ["Objects", `${counts.reviewed} reviewed · ${counts.accepted} accepted · ${counts.ignored} ignored · ${counts.unreviewed} unreviewed`],
         ["Candidate", candidate ? candidate.id : "none"],
         ["This prompt", `${candidate ? candidate.id : "none"} on the page · ${built_entry ? built_entry.candidate : "not built"} in prompts.out`],
+        ["Freshness", freshness.state],
         ["prompts.out", build_state ? `built ${local_time(build_state.generated_at)}` : "not built"],
-        ["Entries", String(build_state?.entries?.length ?? 0)],
     ];
     for (const [label, value] of rows) {
         const dt = document.createElement("dt");
@@ -1662,6 +1741,17 @@ function render_build_cycle() {
         dd.textContent = value;
         build_cycle.append(dt, dd);
     }
+    build_totals_box.replaceChildren();
+    if (!build_state) {
+        return;
+    }
+    const { totals, stale } = build_totals_view();
+    build_totals_box.append(
+        review_count("entries", totals.entries),
+        review_count("with removable lines", totals.with_removable, totals.with_removable ? "good" : ""),
+        review_count("removable lines", totals.removable),
+        review_count("stale or missing", stale, stale ? "attention" : "good"),
+    );
 }
 
 function render_build() {
@@ -1671,17 +1761,39 @@ function render_build() {
         build_note.textContent = "prompts.out/ has not been built yet. Build it to produce the reduced prompts and rule sets.";
         return;
     }
-    build_note.textContent = `Built ${local_time(build_state.generated_at)}; ${build_state.entries.length} compiled prompt(s). The build reads the prompt files and the approved candidates recorded in dataflow.in/compile; it does not use the page's unsaved draft.`;
+    const totals = build_totals(build_state);
+    if (!Array.isArray(build_state.entries) || build_state.entries.length === 0) {
+        build_note.textContent = "The build manifest has no usable entries. Rebuild prompts.out/.";
+        return;
+    }
+    build_note.textContent = `Built ${local_time(totals.generated_at)}; ${totals.entries} compiled prompt(s), ${totals.removable} removable line(s). This build uses recorded compile entries, not the page draft.`;
     for (const item of build_state.entries) {
+        if (!item || typeof item.source !== "string") {
+            const invalid = document.createElement("p");
+            invalid.className = "note";
+            invalid.textContent = "Ignored a malformed manifest entry without a source.";
+            build_entries.append(invalid);
+            continue;
+        }
         const article = document.createElement("article");
-        article.className = "build-entry";
+        const freshness = build_freshness(item, build_catalog_entry(item.source));
+        article.className = `build-entry ${freshness.state}`;
 
         const title = document.createElement("h3");
         title.textContent = item.source;
 
-        const facts = document.createElement("p");
-        facts.className = "note";
-        facts.textContent = `Candidate ${item.candidate} · ${item.rules} rule(s) · ${item.cases} case(s) · ${item.markers_found} marker(s) found${item.markers_missing ? `, ${item.markers_missing} missing` : ""}.`;
+        const meta = document.createElement("p");
+        meta.className = "build-meta";
+        const status = document.createElement("span");
+        status.className = `status-label status-${freshness.state}`;
+        status.textContent = freshness.state;
+        const meta_text = document.createElement("span");
+        const removed = Array.isArray(item.coverage?.removed) ? item.coverage.removed.length : 0;
+        const coverage = item.coverage
+            ? ` · ${item.coverage.identified ?? 0} identified · ${item.coverage.approved ?? 0} approved · ${removed} removable line(s)`
+            : "";
+        meta_text.textContent = `Candidate ${item.candidate} · ${item.rules} rule(s)${coverage} · ${freshness.reason}`;
+        meta.append(status, meta_text);
 
         const links = document.createElement("p");
         const slug = build_slug(item.source);
@@ -1698,7 +1810,7 @@ function render_build() {
             links.append(link);
         });
 
-        article.append(title, facts, links);
+        article.append(title, meta, links);
         build_entries.append(article);
     }
 }
@@ -1724,10 +1836,11 @@ function revise_prompt() {
     textarea.scrollIntoView({ block: "center" });
 }
 
-document.querySelector("#build").addEventListener("click", async () => {
-    const button = document.querySelector("#build");
-    button.disabled = true;
-    build_note.textContent = "Building…";
+build_button.addEventListener("click", async () => {
+    build_button.disabled = true;
+    build_button.setAttribute("aria-busy", "true");
+    build_button.textContent = "Building…";
+    build_note.textContent = "Building prompts.out/ from the recorded compile entries…";
     try {
         const response = await fetch("/build", { method: "POST" });
         const data = await response.json();
@@ -1737,10 +1850,13 @@ document.querySelector("#build").addEventListener("click", async () => {
         build_state = data.manifest;
         build_output.textContent = data.output ?? "";
         render_build();
+        build_note.textContent = `Build complete. ${build_totals(build_state).entries} entry(ies) generated; review freshness and removable-line counts before relying on them.`;
     } catch (error) {
-        build_note.textContent = `Build failed: ${error.message}`;
+        build_note.textContent = `Build failed: ${error.message}. Previous output was left unchanged; correct the error and retry.`;
     } finally {
-        button.disabled = false;
+        build_button.disabled = false;
+        build_button.removeAttribute("aria-busy");
+        build_button.textContent = "Build prompts.out";
     }
 });
 

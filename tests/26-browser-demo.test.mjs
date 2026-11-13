@@ -20,6 +20,7 @@ import { filter_proposals, review_counts } from "../sources/browser/object-filte
 import { review_progress, filter_requirements } from "../sources/browser/review-queue.mjs";
 import { reduction_summary, retained_reason } from "../sources/browser/reduction-summary.mjs";
 import { scope_stats, required_fact_types, check_readiness, evaluation_summary } from "../sources/browser/check-summary.mjs";
+import { approval_checklist, artifact_state, build_freshness, build_totals } from "../sources/browser/approve-build-summary.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const read = (rel) => readFileSync(`${root}${rel}`, "utf8");
@@ -522,6 +523,7 @@ test("the catalog reports when each prompt file was edited and scanned", () => {
     for (const entry of catalog.entries) {
         assert.match(entry.edited_at, /^\d{4}-\d{2}-\d{2}T/, `${entry.source}: no edited_at`);
         assert.match(entry.scanned_at, /^\d{4}-\d{2}-\d{2}T/, `${entry.source}: no scanned_at`);
+        assert.match(entry.source_sha256, /^[0-9a-f]{64}$/, `${entry.source}: no source_sha256`);
     }
 });
 
@@ -758,6 +760,62 @@ test("the episode, document, page, version, and todo extractors", () => {
     assert.ok(version.entities.some((item) => item.type === "version" && item.value === "0.3.0"));
     const todo = facts.files.find((file) => file.path === "TODO.md");
     assert.ok(todo.entities.some((item) => item.type === "todo_item" && item.checked));
+});
+
+test("approval readiness separates evidence, warnings, and legacy review", () => {
+    const report = {
+        identified: 2, executable: 2, approved: 1, removed: [2], check_scope: "file:prompts/x.md",
+        requirements: [
+            { id: "a", decision: "approved", eligible: true, reason: "Approved." },
+            { id: "b", decision: "unreviewed", eligible: false, reason: "No decision." },
+        ],
+    };
+    const candidate = { id: "c", title: "Current", review: { requirements: [{ id: "a" }, { id: "b" }] } };
+    const before = JSON.stringify({ report, candidate });
+    const items = approval_checklist(candidate, report, false);
+    assert.equal(items.find((item) => item.id === "check").state, "done");
+    assert.equal(items.find((item) => item.id === "decisions").state, "warning");
+    assert.equal(items.find((item) => item.id === "reduction").state, "done");
+    const legacy = approval_checklist({ id: "old", title: "Old" }, { reasons: ["legacy"], requirements: [] }, true);
+    assert.equal(legacy.find((item) => item.id === "review").state, "blocked");
+    assert.equal(legacy.find((item) => item.id === "edit").state, "blocked");
+    assert.deepEqual(artifact_state(report, false), { complete: true, rules: true, reduced: true, reduced_reason: "1 approved line(s) are removable." });
+    assert.equal(artifact_state({ removed: [] }, true).reduced, false);
+    assert.equal(JSON.stringify({ report, candidate }), before);
+});
+
+test("build freshness and totals fail conservatively", () => {
+    const catalog = { source_sha256: "aa", approved: "chosen" };
+    assert.equal(build_freshness({ source_sha256: "aa", candidate: "chosen" }, catalog).state, "fresh");
+    assert.equal(build_freshness({ source_sha256: "aa", candidate: "first" }, {
+        source_sha256: "aa", candidates: [{ id: "first" }],
+    }).state, "fresh");
+    assert.equal(build_freshness({ source_sha256: "bb", candidate: "chosen" }, catalog).state, "stale");
+    assert.equal(build_freshness({ source_sha256: "aa", candidate: "other" }, catalog).state, "stale");
+    assert.equal(build_freshness({ candidate: "chosen" }, catalog).state, "missing");
+    assert.equal(build_freshness(null, catalog).state, "missing");
+    assert.deepEqual(build_totals({ entries: [
+        { coverage: { removed: [2, 3] } }, { coverage: { removed: [] } }, {}
+    ], generated_at: "today" }), { entries: 3, with_removable: 1, removable: 2, generated_at: "today" });
+    assert.deepEqual(build_totals(null), { entries: 0, with_removable: 0, removable: 0, generated_at: "" });
+});
+
+test("the Approve and Build panels expose readiness, artifacts, and freshness", () => {
+    const html = read("sources/browser/index.html");
+    for (const id of ["approve-checklist", "approve-artifact-note", "build-totals"]) {
+        assert.ok(html.includes(`id="${id}"`), `missing #${id}`);
+    }
+    assert.match(html, /id="approve-compile"[^>]*class="primary-action"/);
+    assert.match(html, /id="approve-rules"[^>]*>Download the rules only \(not approval\)/);
+    assert.match(html, /id="approve-reduced"[^>]*aria-disabled="true"/);
+    assert.match(html, /later work must supply facts and run the saved rules/);
+    assert.match(html, /@media \(max-width: 54rem\)[\s\S]*\.approval-item\s*\{\s*grid-template-columns:\s*1fr;/);
+    const source = read("sources/browser/studio.mjs");
+    assert.match(source, /approval_checklist\(/);
+    assert.match(source, /build_freshness\(/);
+    assert.match(source, /reduced_link\.removeAttribute\("href"\)/);
+    assert.match(source, /aria-busy/);
+    assert.match(source, /Approval remains a human decision/);
 });
 
 test("every emitted type is registered in the object model", () => {

@@ -105,6 +105,7 @@ const entries = files.sort().map((full) => {
         markdown,
         candidates,
         approved: approved.get(source),
+        source_sha256: createHash("sha256").update(markdown).digest("hex"),
         edited_at: statSync(full).mtime.toISOString(),
         scanned_at,
     };

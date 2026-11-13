@@ -860,6 +860,85 @@
             margin-top: 0;
         }
 
+        .artifact-card {
+            margin-top: 1rem;
+        }
+
+        .approval-checklist {
+            display: grid;
+            gap: 0.45rem;
+            margin: 0 0 0.75rem;
+        }
+
+        .approval-item {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            gap: 0.55rem;
+            align-items: start;
+            padding: 0.45rem 0.6rem;
+            border-left: 3px solid color-mix(in srgb, Canvas 62%, CanvasText 38%);
+            background: color-mix(in srgb, Canvas 96%, CanvasText 4%);
+        }
+
+        .approval-item.done {
+            border-left-color: #2e7d32;
+        }
+
+        .approval-item.warning {
+            border-left-color: #b26a00;
+        }
+
+        .approval-item.blocked {
+            border-left-color: #c62828;
+        }
+
+        .approval-state {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .approval-item strong {
+            display: block;
+        }
+
+        .approval-item .note {
+            margin: 0.15rem 0 0;
+        }
+
+        .build-entry.stale {
+            border-left: 4px solid #b26a00;
+        }
+
+        .build-entry.missing {
+            border-left: 4px solid #c62828;
+        }
+
+        .build-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem 0.75rem;
+            align-items: center;
+        }
+
+        .status-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-fresh {
+            color: #2e7d32;
+        }
+
+        .status-stale {
+            color: #b26a00;
+        }
+
+        .status-missing {
+            color: #c62828;
+        }
+
         .build-entry {
             padding: 0.75rem 1rem;
             margin: 0 0 0.75rem;
@@ -1150,6 +1229,18 @@
 
             .approve-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .step-head {
+                flex-wrap: wrap;
+            }
+
+            .approval-item {
+                grid-template-columns: 1fr;
+            }
+
+            .approval-item button {
+                justify-self: start;
             }
 
             .steps {
@@ -1629,19 +1720,26 @@
                 </div>
                 <div class="approve-grid">
                     <div class="approve-card">
-                        <h3>Choice</h3>
-                        <dl class="summary" id="approve"></dl>
-                        <p class="note edit-dirty" id="approve-warning" hidden></p>
+                        <h3>Readiness</h3>
+                        <div id="approve-checklist" class="approval-checklist" role="list"
+                            aria-label="Approval readiness checklist"></div>
+                        <p class="note edit-dirty" id="approve-warning" role="status" aria-live="polite"></p>
                     </div>
                     <div class="approve-card">
-                        <h3>Artifacts</h3>
-                        <p><a id="approve-rules" download="approved-rules.json">Download the rule set (JSON)</a></p>
-                        <p><a id="approve-reduced" download="approved-reduced.md">Download the reduced prompt
-                                (Markdown)</a></p>
-                        <p><a id="approve-compile" download="reviewed-compile.json">Download the complete compile and review artifact (JSON)</a></p>
-                        <p class="note">Save the complete artifact under <code>dataflow.in/compile/</code> yourself, then rebuild. It preserves source references, coverage, explanations, check evidence, and individual decisions. Saving the rule set alone does not preserve approval. Later iterations must actually run the saved rules with suitable facts.</p>
+                        <h3>Current choice</h3>
+                        <dl class="summary" id="approve"></dl>
                     </div>
                 </div>
+                <section class="approve-card artifact-card" aria-labelledby="approve-artifacts-title">
+                    <h3 id="approve-artifacts-title">Artifacts</h3>
+                    <p><a id="approve-compile" class="primary-action" download="reviewed-compile.json">Download the complete compile and review artifact (JSON)</a></p>
+                    <p class="note">This is the review record. Save it under <code>dataflow.in/compile/</code> yourself, then rebuild.
+                        It preserves source references, coverage, explanations, check evidence, and individual decisions.</p>
+                    <p><a id="approve-rules" download="approved-rules.json">Download the rules only (not approval)</a></p>
+                    <p><a id="approve-reduced" download="approved-reduced.md" aria-disabled="true">Reduced prompt unavailable</a></p>
+                    <p class="note" id="approve-artifact-note"></p>
+                    <p class="note">Downloading writes nothing and does not approve a requirement. A later iteration must load the saved rules and run them with suitable facts; saved prose or a historical check alone does not enforce anything.</p>
+                </section>
             </section>
 
             <section class="panel" data-panel="build" hidden>
@@ -1653,9 +1751,12 @@
                     </div>
                     <button id="build" type="button">Build prompts.out</button>
                 </div>
+                <div id="build-totals" class="review-counts" role="list" aria-label="Build totals"></div>
                 <dl class="summary" id="build-cycle"></dl>
-                <p class="note" id="build-note"></p>
+                <p class="note" id="build-note" role="status" aria-live="polite"></p>
                 <div id="build-entries"></div>
+                <p class="note">The build uses recorded compile entries, never the page draft. A fresh build does not prove conformance:
+                    later work must supply facts and run the saved rules. Reduced prose alone is not enforcement.</p>
                 <details class="raw">
                     <summary>Build output</summary>
                     <pre id="build-output"></pre>
