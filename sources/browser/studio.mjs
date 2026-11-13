@@ -2502,14 +2502,16 @@ const PIPELINE_NUMBER = { prompt: 1, objects: 2, candidates: 3, rules: 4, check:
 function update_step_status() {
     const built = build_state?.entries?.find((item) => item.source === entry?.source);
     const freshness = built ? build_freshness(built, build_catalog_entry(entry.source)).state : null;
+    const report = candidate ? review_status() : null;
     const rows = step_statuses({
         candidate,
-        report: candidate ? review_status() : null,
+        report,
         objects: proposal_counts(),
         edited,
         build: { present: Boolean(build_state && built), freshness },
     });
     const pipeline_context = {
+        report,
         source: entry.source,
         draft_state: textarea.value !== working ? "unsaved_edit" : edited ? "applied_draft" : "matches_file",
         candidate_count: entry.candidates.length,

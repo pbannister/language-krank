@@ -178,6 +178,30 @@ function candidates_detail(context) {
     };
 }
 
+function rules_detail(context) {
+    const base = PIPELINE_DETAILS.rules;
+    const report = context.report ?? {};
+    const identified = Number.isFinite(report.identified) ? report.identified : 0;
+    const approved = Number.isFinite(report.approved) ? report.approved : 0;
+    const unreviewed = Array.isArray(report.requirements)
+        ? report.requirements.filter((item) => (item.decision ?? "unreviewed") === "unreviewed").length : 0;
+    const removable = Array.isArray(report.removed) ? report.removed.length : 0;
+    const rules = Number.isFinite(context.current_rule_count) ? context.current_rule_count : 0;
+    return {
+        ...base,
+        produces: `${identified} requirement${identified === 1 ? "" : "s"}; ${approved} approved and ${unreviewed} unreviewed; ${removable} removable line${removable === 1 ? "" : "s"}`,
+        caution: unreviewed > 0
+            ? `${unreviewed} requirement decision${unreviewed === 1 ? "" : "s"} ${unreviewed === 1 ? "remains" : "remain"}. No prose is removed until every clause on a line is eligible.`
+            : base.caution,
+        flow: [
+            { label: "Rules", artifact: `${rules} formal checks` },
+            { label: "Requirements", artifact: `${identified} identified` },
+            { label: "Review + check", artifact: `${approved} approved, ${unreviewed} open` },
+            { label: "Eligibility", artifact: `${removable} removable line${removable === 1 ? "" : "s"}` },
+        ],
+    };
+}
+
 export function pipeline_detail(step, context = {}) {
     if (step === "prompt") {
         return prompt_detail(context ?? {});
@@ -187,6 +211,9 @@ export function pipeline_detail(step, context = {}) {
     }
     if (step === "candidates") {
         return candidates_detail(context ?? {});
+    }
+    if (step === "rules") {
+        return rules_detail(context ?? {});
     }
     return PIPELINE_DETAILS[step] ?? PIPELINE_DETAILS.prompt;
 }
