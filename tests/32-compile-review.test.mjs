@@ -508,6 +508,10 @@ test("studio distinguishes a removable reduction from a blocked one", async () =
         assert.equal(element("#diff-empty").hidden, true);
         assert.match(element("#line-status-body").textContent, /Needs a decision in Rules/);
         assert.match(element("#line-status-body").textContent, /Review in Rules/);
+        assert.match(element("#diff-count").textContent, /changed line/);
+        element("#diff-changes-only").checked = true;
+        await element("#diff-changes-only").fire("change");
+        assert.ok(element("#diff").textContent.length > 0);
         element("#line-status-filter").value = "context";
         await element("#line-status-filter").fire("change");
         assert.match(element("#line-status-body").textContent, /Context line: no extracted requirement/);

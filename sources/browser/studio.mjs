@@ -96,6 +96,8 @@ const reduced_download = document.querySelector("#reduced-download");
 const reduced_box = document.querySelector("#reduced");
 const diff_box = document.querySelector("#diff");
 const diff_empty = document.querySelector("#diff-empty");
+const diff_changes_only = document.querySelector("#diff-changes-only");
+const diff_count = document.querySelector("#diff-count");
 const check_output = document.querySelector("#check-output");
 const check_summary = document.querySelector("#check-summary");
 const scope_preview = document.querySelector("#scope-preview");
@@ -222,6 +224,7 @@ const scan_times = new Map();
 let build_state = null;
 let build_filter_mode = "all";
 let pipeline_collapsed = null;
+let diff_changes_only_checked = false;
 const urls = [];
 
 async function load_json(path) {
@@ -1950,9 +1953,17 @@ function render_reduced() {
     diff_empty.textContent = "No line is removed, so there is no difference yet.";
     diff_box.hidden = !can_download;
     if (!can_download) {
+        diff_changes_only.disabled = true;
+        diff_changes_only.checked = false;
+        diff_count.textContent = "";
         return;
     }
-    for (const row of diff_lines(working, reduction.text)) {
+    const rows = diff_lines(working, reduction.text);
+    const changed = rows.filter((row) => row.kind !== "same");
+    diff_count.textContent = `${changed.length} changed line${changed.length === 1 ? "" : "s"}`;
+    diff_changes_only.disabled = false;
+    diff_changes_only.checked = diff_changes_only_checked;
+    for (const row of diff_changes_only_checked ? changed : rows) {
         const line = document.createElement("div");
         line.className = `diff-line diff-${row.kind}`;
         line.textContent = `${row.kind === "remove" ? "- " : row.kind === "add" ? "+ " : "  "}${row.text}`;
@@ -2463,6 +2474,13 @@ artifact_file.addEventListener("change", async () => {
         artifact_load_status.textContent = `Could not load: ${error.message}`;
     } finally {
         artifact_file.value = "";
+    }
+});
+
+diff_changes_only.addEventListener("change", () => {
+    diff_changes_only_checked = diff_changes_only.checked;
+    if (candidate) {
+        render_reduced();
     }
 });
 

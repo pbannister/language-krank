@@ -1670,6 +1670,27 @@
             padding: 0 0.75rem;
         }
 
+        .diff-tools {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.5rem 0.75rem;
+        }
+
+        .diff-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin: 0;
+            font-weight: 400;
+            font-size: 0.85rem;
+        }
+
+        .diff-toggle input {
+            margin: 0;
+        }
+
         .diff-add {
             background: color-mix(in srgb, Canvas 78%, #2e7d32 22%);
         }
@@ -2416,10 +2437,17 @@
                             <h3>The difference</h3>
                             <p class="note" id="diff-empty" hidden>No line is removed, so there is no difference yet.</p>
                         </div>
-                        <div class="diff-legend" aria-label="Diff legend">
-                            <span class="legend-removed">Removed</span>
-                            <span class="legend-same">Unchanged</span>
-                            <span class="legend-added">Pointer added</span>
+                        <div class="diff-tools">
+                            <label class="diff-toggle" for="diff-changes-only">
+                                <input id="diff-changes-only" type="checkbox">
+                                Changes only
+                            </label>
+                            <span class="note" id="diff-count"></span>
+                            <div class="diff-legend" aria-label="Diff legend">
+                                <span class="legend-removed">Removed</span>
+                                <span class="legend-same">Unchanged</span>
+                                <span class="legend-added">Pointer added</span>
+                            </div>
                         </div>
                     </div>
                     <div id="diff" class="diff"></div>

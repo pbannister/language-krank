@@ -763,12 +763,13 @@ test("Comparison and Reduced explain readiness and never offer a vacuous reducti
     for (const id of ["compare-readiness", "compare-status", "compare-counts", "compare-blockers",
         "compare-action-note", "compare-actions", "compare-table-wrap", "reduced-readiness",
         "reduced-status", "reduced-counts", "reduced-blockers", "reduced-action-note",
-        "reduced-download", "diff-empty", "line-status", "line-status-filter", "line-status-summary",
-        "line-status-body", "line-status-empty"]) {
+        "reduced-download", "diff-empty", "diff-changes-only", "diff-count", "line-status",
+        "line-status-filter", "line-status-summary", "line-status-body", "line-status-empty"]) {
         assert.ok(html.includes(`id="${id}"`), `Reduction UI is missing #${id}`);
     }
     assert.match(html, /id="line-status-summary"[^>]*aria-live="polite"/);
     assert.match(html, /<option value="attention">Needs attention<\/option>/);
+    assert.match(html, /id="diff-changes-only"[^>]*type="checkbox"/);
     assert.match(html, /id="line-status-filter"[\s\S]*?<option value="removable">/);
     assert.match(read("sources/browser/studio.mjs"), /line_status_section\.hidden = !show_lines/);
     assert.match(read("sources/browser/studio.mjs"), /!summary\.legacy && summary\.available && summary\.identified > 0/);
@@ -786,7 +787,8 @@ test("Comparison and Reduced explain readiness and never offer a vacuous reducti
         "Reduced prompt download unavailable", "No extraction or approval blocker is recorded",
         "Resolve the retained reasons", "removeAttribute(\"href\")", "setAttribute(\"aria-disabled\", \"true\")",
         "setAttribute(\"aria-disabled\", \"false\")", "render_line_status(", "line_status_rows(",
-        "filter_line_status(", "Open line ", "Review in Rules", "review_requirement_focus("]) {
+        "filter_line_status(", "Open line ", "Review in Rules", "review_requirement_focus(",
+        "diff_changes_only_checked", "diff_changes_only.addEventListener"]) {
         assert.ok(source.includes(text), `Reduction UI is missing: ${text}`);
     }
     assert.match(source, /if \(can_download\)/);
