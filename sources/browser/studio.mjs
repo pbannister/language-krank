@@ -22,6 +22,7 @@ import { review_progress, filter_requirements } from "./review-queue.mjs";
 import { reduction_summary, retained_reason } from "./reduction-summary.mjs";
 import { scope_stats, check_readiness, evaluation_summary } from "./check-summary.mjs";
 import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals } from "./approve-build-summary.mjs";
+import { parse_outline, selection_for_line, outline_matches } from "./prompt-outline.mjs";
 
 const catalog = await load_json("./catalog.json");
 const bundle = await load_json("./files.json");
@@ -105,6 +106,11 @@ const file_overlay_note = document.querySelector("#file-overlay-note");
 const file_overlay_title = document.querySelector("#file-overlay-title");
 const prompt_panel = document.querySelector('.panel[data-panel="prompt"]');
 const prompt_context = document.querySelector("#prompt-context");
+const prompt_outline_select = document.querySelector("#prompt-outline-select");
+const prompt_outline_query = document.querySelector("#prompt-outline-query");
+const prompt_outline_count = document.querySelector("#prompt-outline-count");
+const prompt_outline_status = document.querySelector("#prompt-outline-status");
+const prompt_cursor_status = document.querySelector("#prompt-cursor-status");
 const prompt_next = document.querySelector("#prompt-next");
 const prompt_next_note = document.querySelector("#prompt-next-note");
 const apply_button = document.querySelector("#apply");
@@ -133,6 +139,9 @@ let edited = false;
 let last_check = null;
 let check_running = false;
 let draft_revision = 0;
+let outline_entries = [];
+let outline_selected_line = null;
+let outline_source = null;
 let proposals = proposal_rows(object_model);
 let object_query = "";
 let object_mode = "all";
@@ -1015,6 +1024,97 @@ function update_prompt_context() {
     prompt_context.textContent = `${lines} line${lines === 1 ? "" : "s"} · ${text.length} character${text.length === 1 ? "" : "s"} · ${count} candidate reading${count === 1 ? "" : "s"} · ${selected}.`;
 }
 
+function update_cursor_status() {
+    const text = textarea.value;
+    const total = text === "" ? 0 : text.split("\n").length;
+    if (total === 0) {
+        prompt_cursor_status.textContent = "Line 0 of 0";
+        return;
+    }
+    const raw_position = Number.isInteger(textarea.selectionStart) ? textarea.selectionStart : 0;
+    const position = Math.max(0, Math.min(raw_position, text.length));
+    const line = text.slice(0, position).split("\n").length;
+    prompt_cursor_status.textContent = `Line ${line} of ${total}`;
+}
+
+function outline_option(text, value) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = text;
+    return option;
+}
+
+// rebuild_outline changes only the controls. It never moves the textarea
+// cursor or scroll position, so typing and IME composition stay undisturbed.
+function rebuild_outline() {
+    const previous_line = outline_selected_line;
+    outline_entries = parse_outline(textarea.value);
+    const query = prompt_outline_query.value;
+    const filtered = outline_matches(outline_entries, query);
+    prompt_outline_select.replaceChildren();
+
+    if (outline_entries.length === 0) {
+        prompt_outline_select.append(outline_option("No headings in this prompt", ""));
+        prompt_outline_select.disabled = true;
+        prompt_outline_query.disabled = true;
+        prompt_outline_query.value = "";
+        prompt_outline_count.textContent = "No headings in this prompt.";
+        outline_selected_line = null;
+        prompt_outline_status.textContent = "";
+        return;
+    }
+
+    prompt_outline_query.disabled = false;
+    prompt_outline_select.disabled = filtered.length === 0;
+    prompt_outline_select.append(outline_option(
+        filtered.length === 0 ? "No matching headings" : "Choose a heading",
+        "",
+    ));
+    for (const heading of filtered) {
+        const indent = "\u00a0\u00a0".repeat(Math.max(0, heading.level - 1));
+        prompt_outline_select.append(outline_option(
+            `${indent}H${heading.level} · ${heading.line} · ${heading.title || "(untitled)"}`,
+            String(heading.line),
+        ));
+    }
+
+    const selected_exists = previous_line !== null && outline_entries.some((heading) => heading.line === previous_line);
+    const selected_visible = selected_exists && filtered.some((heading) => heading.line === previous_line);
+    if (selected_visible) {
+        prompt_outline_select.value = String(previous_line);
+    } else if (selected_exists) {
+        prompt_outline_select.value = "";
+        prompt_outline_status.textContent = "The selected heading is hidden by the filter.";
+    } else {
+        if (previous_line !== null) {
+            prompt_outline_status.textContent = "The selected heading is no longer available.";
+        }
+        outline_selected_line = null;
+        prompt_outline_select.value = "";
+    }
+
+    prompt_outline_count.textContent = query.trim() === ""
+        ? `${outline_entries.length} heading${outline_entries.length === 1 ? "" : "s"}.`
+        : `${filtered.length} of ${outline_entries.length} headings match.`;
+}
+
+function jump_to_outline_line(line_number) {
+    const line = Number(line_number);
+    const selection = selection_for_line(textarea.value, line);
+    if (!selection) {
+        return;
+    }
+    outline_selected_line = line;
+    textarea.focus();
+    textarea.setSelectionRange(selection.start, selection.end);
+    if (textarea.clientHeight > 0) {
+        textarea.scrollTop = Math.max(0, (line - 1) * 20 - textarea.clientHeight / 2);
+    }
+    const heading = outline_entries.find((item) => item.line === line);
+    prompt_outline_status.textContent = `Selected line ${line}${heading?.title ? `: ${heading.title}` : ""}.`;
+    update_cursor_status();
+}
+
 function update_prompt_actions() {
     const text = textarea.value;
     apply_button.disabled = text === working;
@@ -1042,6 +1142,8 @@ function update_prompt_state() {
     update_prompt_context();
     update_prompt_actions();
     update_prompt_next();
+    rebuild_outline();
+    update_cursor_status();
     update_prompt_download();
 }
 
@@ -1056,8 +1158,20 @@ function update_prompt_download() {
 }
 
 function render_prompt() {
+    const source_changed = outline_source !== entry.source;
+    if (source_changed) {
+        outline_source = entry.source;
+        outline_selected_line = null;
+        prompt_outline_query.value = "";
+        prompt_outline_status.textContent = "";
+    }
     select_prompt.value = entry.source;
+    const text_changed = textarea.value !== working;
     textarea.value = working;
+    if (source_changed || text_changed) {
+        textarea.setSelectionRange(0, 0);
+        textarea.scrollTop = 0;
+    }
     update_prompt_state();
 }
 
@@ -2140,6 +2254,18 @@ textarea.addEventListener("input", () => {
     }
     render_proposals();
     update_prompt_state();
+});
+
+for (const event_name of ["click", "keyup", "select"]) {
+    textarea.addEventListener(event_name, update_cursor_status);
+}
+
+prompt_outline_query.addEventListener("input", rebuild_outline);
+
+prompt_outline_select.addEventListener("change", () => {
+    if (prompt_outline_select.value !== "") {
+        jump_to_outline_line(prompt_outline_select.value);
+    }
 });
 
 document.querySelector("#apply").addEventListener("click", () => {

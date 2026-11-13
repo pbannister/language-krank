@@ -224,6 +224,11 @@ async function with_studio(run, prepare = null) {
                 contains: (name) => this.classes.has(name),
             };
             this.hidden = false;
+            this.selectionStart = 0;
+            this.selectionEnd = 0;
+            this.clientHeight = 0;
+            this.scrollTop = 0;
+            this.focused = false;
         }
         set textContent(value) { this.text = String(value); this.children = []; }
         get textContent() { return (this.text ?? "") + this.children.map((item) => item.textContent ?? String(item)).join(""); }
@@ -237,8 +242,12 @@ async function with_studio(run, prepare = null) {
         querySelectorAll() { return []; }
         addEventListener(type, listener) { (this.listeners[type] ??= []).push(listener); }
         async fire(type) { for (const listener of this.listeners[type] ?? []) await listener({ target: this }); }
-        focus() {}
+        focus() { this.focused = true; }
         scrollIntoView() {}
+        setSelectionRange(start, end) {
+            this.selectionStart = start;
+            this.selectionEnd = end;
+        }
     }
     const elements = new Map();
     function element(selector) {
@@ -300,6 +309,7 @@ test("studio reports draft state, action availability, context, and the next ste
     await with_studio(async ({ element }) => {
         assert.match(element("#edit-note").textContent, /Draft matches the file/);
         assert.match(element("#prompt-context").textContent, /line.*candidate reading/);
+        assert.equal(element("#prompt-cursor-status").textContent, "Line 1 of 5");
         assert.equal(element("#apply").disabled, true);
         assert.equal(element("#reset").disabled, true);
         assert.equal(element("#prompt-next").hidden, false);
@@ -322,6 +332,64 @@ test("studio reports draft state, action availability, context, and the next ste
         await element("#prompt-next").fire("click");
         assert.equal(element(".panel[data-panel=\"prompt\"]").hidden, true);
         assert.equal(element(".panel[data-panel=\"candidates\"]").hidden, false);
+    });
+});
+
+test("studio jumps to an outline heading without changing the draft", async () => {
+    await with_studio(async ({ element }) => {
+        const source = element("#source");
+        const outline = element("#prompt-outline-select");
+        assert.match(element("#prompt-outline-count").textContent, /1 heading/);
+        assert.equal(outline.children[1].textContent, "H1 · 1 · File policy");
+
+        source.value = "# File policy\nText\n## Other\nKeep this.";
+        source.selectionStart = 0;
+        await source.fire("input");
+        assert.match(element("#prompt-outline-count").textContent, /2 headings/);
+        assert.equal(outline.children[2].textContent, "\u00a0\u00a0H2 · 3 · Other");
+
+        outline.value = "3";
+        await outline.fire("change");
+        assert.equal(source.focused, true);
+        assert.equal(source.selectionStart, source.value.indexOf("## Other"));
+        assert.equal(source.selectionEnd, source.value.indexOf("## Other") + "## Other".length);
+        assert.match(element("#prompt-outline-status").textContent, /Selected line 3: Other/);
+        assert.match(element("#prompt-cursor-status").textContent, /Line 3 of 4/);
+        assert.equal(source.value, "# File policy\nText\n## Other\nKeep this.");
+
+        source.value = "# File policy\nText\n## Other changed\nKeep this.";
+        source.selectionStart = 0;
+        await source.fire("input");
+        assert.equal(outline.value, "3", "the selected line should survive an edit");
+        assert.equal(source.focused, true, "rebuilding the outline must not steal focus");
+
+        element("#prompt-outline-query").value = "file";
+        await element("#prompt-outline-query").fire("input");
+        assert.equal(outline.value, "");
+        assert.match(element("#prompt-outline-status").textContent, /hidden by the filter/);
+        element("#prompt-outline-query").value = "";
+        await element("#prompt-outline-query").fire("input");
+        assert.equal(outline.value, "3", "clearing the filter should restore the selected heading");
+
+        source.value = "# File policy\nText\nplain";
+        await source.fire("input");
+        assert.equal(outline.value, "");
+        assert.match(element("#prompt-outline-status").textContent, /no longer available/);
+
+        source.value = "";
+        await source.fire("input");
+        assert.equal(outline.disabled, true);
+        assert.equal(element("#prompt-outline-query").disabled, true);
+        assert.match(element("#prompt-outline-count").textContent, /No headings in this prompt/);
+        assert.equal(element("#prompt-cursor-status").textContent, "Line 0 of 0");
+
+        source.value = "# File policy\n## Other\n";
+        await source.fire("input");
+        element("#prompt-outline-query").value = "other";
+        await element("#prompt-outline-query").fire("input");
+        assert.match(element("#prompt-outline-count").textContent, /1 of 2 headings match/);
+        assert.equal(outline.children.length, 2);
+        assert.match(outline.children[1].textContent, /Other/);
     });
 });
 

@@ -477,6 +477,54 @@
             opacity: 0.8;
         }
 
+        .prompt-outline {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.45rem 0.75rem;
+            margin: 0.55rem 0 0.75rem;
+            padding: 0.45rem 0.6rem;
+            border: 1px solid color-mix(in srgb, Canvas 80%, CanvasText 20%);
+            border-radius: 0.3rem;
+            background: color-mix(in srgb, Canvas 96%, CanvasText 4%);
+        }
+
+        .prompt-outline label {
+            margin: 0;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        #prompt-outline-select {
+            flex: 1 1 19rem;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        #prompt-outline-query {
+            flex: 0 1 11rem;
+            min-width: 0;
+            max-width: 100%;
+            font: inherit;
+            padding: 0.35rem 0.5rem;
+            color: inherit;
+            background: Canvas;
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            border-radius: 0.2rem;
+        }
+
+        .prompt-outline .note {
+            margin: 0;
+        }
+
+        #prompt-cursor-status {
+            margin-left: auto;
+            font-size: 0.8rem;
+            font-variant-numeric: tabular-nums;
+            opacity: 0.75;
+            white-space: nowrap;
+        }
+
         .prompt-actions {
             display: flex;
             flex-wrap: wrap;
@@ -1339,6 +1387,15 @@
                 min-width: 0;
             }
 
+            #prompt-outline-select,
+            #prompt-outline-query {
+                flex: 1 1 100%;
+            }
+
+            #prompt-cursor-status {
+                margin-left: 0;
+            }
+
             .review-toolbar-actions button {
                 flex: 1 1 auto;
             }
@@ -1406,6 +1463,15 @@
                     </p>
                     <select id="prompt" aria-label="Prompt file"></select>
                     <p class="prompt-context" id="prompt-context" aria-live="polite"></p>
+                    <div class="prompt-outline" id="prompt-outline">
+                        <label for="prompt-outline-select">Jump to heading</label>
+                        <select id="prompt-outline-select" aria-describedby="prompt-outline-count"></select>
+                        <input id="prompt-outline-query" type="search" placeholder="Filter headings"
+                            aria-label="Filter outline headings">
+                        <span class="note" id="prompt-outline-count"></span>
+                        <span class="note" id="prompt-outline-status" role="status" aria-live="polite"></span>
+                        <span id="prompt-cursor-status"></span>
+                    </div>
                     <div class="prompt-actions">
                         <button id="generate" type="button" class="primary-action">Generate candidates</button>
                         <button id="apply" type="button">Apply the edit</button>

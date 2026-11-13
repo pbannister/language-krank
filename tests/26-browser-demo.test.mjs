@@ -21,6 +21,7 @@ import { review_progress, filter_requirements } from "../sources/browser/review-
 import { reduction_summary, retained_reason } from "../sources/browser/reduction-summary.mjs";
 import { scope_stats, required_fact_types, check_readiness, evaluation_summary } from "../sources/browser/check-summary.mjs";
 import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals } from "../sources/browser/approve-build-summary.mjs";
+import { parse_outline, selection_for_line, outline_matches } from "../sources/browser/prompt-outline.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const read = (rel) => readFileSync(`${root}${rel}`, "utf8");
@@ -239,6 +240,89 @@ test("Prompt introduces draft decisions, accessible state, and the next action",
     assert.match(html, /\.prompt-actions\s*\{[^}]*flex-wrap:\s*wrap/s);
     assert.match(html, /@media \(max-width: 54rem\)\s*\{\s*body\s*\{[^}]*padding-top:\s*3\.5rem/s);
     assert.match(html, /#tab-prompt #source\s*\{[^}]*box-sizing:\s*border-box/s);
+});
+
+test("prompt outline ignores fenced headings and preserves Markdown levels", () => {
+    const text = [
+        "# Top",
+        "## Work",
+        "```js",
+        "# hidden backtick",
+        "```",
+        "~~~",
+        "## hidden tilde",
+        "````",
+        "## still hidden",
+        "~~~~",
+        "### After",
+        "   ## Indented",
+        "    ## Too deep",
+        "## Closing ##",
+        "#NoSpace",
+        "## Dup",
+        "## Dup",
+    ].join("\r\n");
+    assert.deepEqual(parse_outline(text), [
+        { line: 1, level: 1, title: "Top" },
+        { line: 2, level: 2, title: "Work" },
+        { line: 11, level: 3, title: "After" },
+        { line: 12, level: 2, title: "Indented" },
+        { line: 14, level: 2, title: "Closing" },
+        { line: 16, level: 2, title: "Dup" },
+        { line: 17, level: 2, title: "Dup" },
+    ]);
+    assert.deepEqual(parse_outline("```\n# hidden\n```\n# open"), [
+        { line: 4, level: 1, title: "open" },
+    ]);
+    assert.deepEqual(parse_outline("````\n```\n# hidden\n`````\n# after"), [
+        { line: 5, level: 1, title: "after" },
+    ]);
+    assert.deepEqual(parse_outline("plain text"), []);
+});
+
+test("prompt outline selections use exact CRLF-aware line offsets", () => {
+    const text = "# A\r\nbody\r\n## B";
+    assert.deepEqual(selection_for_line(text, 2), { start: 5, end: 9, text: "body" });
+    assert.deepEqual(selection_for_line(text, 3), { start: 11, end: 15, text: "## B" });
+    assert.deepEqual(selection_for_line("last line", 1), { start: 0, end: 9, text: "last line" });
+    assert.deepEqual(selection_for_line("", 1), { start: 0, end: 0, text: "" });
+    for (const invalid of [0, 4, -1, 1.5, "2", null]) {
+        assert.equal(selection_for_line(text, invalid), null);
+    }
+});
+
+test("prompt outline filtering is case-insensitive, ordered, and immutable", () => {
+    const outline = parse_outline("# Alpha\n## Beta\n### alpha two\n");
+    const before = JSON.stringify(outline);
+    assert.deepEqual(outline_matches(outline, "ALPHA").map((item) => item.line), [1, 3]);
+    assert.deepEqual(outline_matches(outline, "  ").map((item) => item.line), [1, 2, 3]);
+    assert.deepEqual(outline_matches(outline, "missing"), []);
+    assert.equal(JSON.stringify(outline), before);
+    assert.notEqual(outline_matches(outline, ""), outline);
+    assert.deepEqual(outline_matches(null, "alpha"), []);
+});
+
+test("Prompt exposes a compact outline, jump status, and cursor line", () => {
+    const html = read("sources/browser/index.html");
+    const prompt = html.split('<div class="tab-panel" id="tab-prompt"')[1]
+        .split('<div class="tab-panel" id="tab-history"')[0];
+    for (const id of ["prompt-outline", "prompt-outline-select", "prompt-outline-query",
+        "prompt-outline-count", "prompt-outline-status", "prompt-cursor-status"]) {
+        assert.ok(prompt.includes(`id="${id}"`), `Prompt outline is missing #${id}`);
+    }
+    assert.match(prompt, /<label for="prompt-outline-select">/);
+    assert.match(prompt, /id="prompt-outline-status"[^>]*role="status"[^>]*aria-live="polite"/);
+    assert.match(prompt, /id="prompt-outline-query"[^>]*type="search"/);
+    assert.match(html, /\.prompt-outline\s*\{[^}]*flex-wrap:\s*wrap/s);
+    assert.match(html, /#prompt-outline-select\s*\{[^}]*max-width:\s*100%/s);
+    const source = read("sources/browser/studio.mjs");
+    assert.match(source, /parse_outline\(/);
+    assert.match(source, /outline_matches\(/);
+    assert.match(source, /selection_for_line\(/);
+    assert.match(source, /setSelectionRange\(/);
+    assert.match(source, /No headings in this prompt/);
+    assert.match(source, /prompt-outline-select/);
+    assert.match(source, /prompt-outline-query/);
 });
 
 test("review progress separates decisions, checks, and removable lines", () => {
