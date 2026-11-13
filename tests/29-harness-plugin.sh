@@ -38,5 +38,12 @@ grep -q '127.0.0.1:8090/browser/index.html' "$DIRECTORY_PLUGIN/lib/client.js" \
 grep -q '"Krank",' "$DIRECTORY_PLUGIN/lib/client.js" \
     || fail 'the action is not labelled Krank'
 
+for fragment in createPortal '"iframe"' aria-modal Escape allow-downloads 'Open in new tab' has_opened; do
+    grep -qF "$fragment" "$DIRECTORY_PLUGIN/lib/client.js" \
+        || fail "the embedded panel is missing: $fragment"
+done
+grep -q 'export const inject = \[\]' "$DIRECTORY_PLUGIN/lib/index.js" \
+    || fail 'the host half is not empty'
+
 echo '29-harness-plugin: ok'
 exit 0
