@@ -25,6 +25,7 @@ import { reduction_summary, retained_reason, line_status_rows, filter_line_statu
 import { scope_stats, check_readiness, evaluation_summary } from "./check-summary.mjs";
 import { scope_options, rank_scope_suggestions, suggestion_label } from "./scope-suggestions.mjs";
 import { step_statuses, next_recommended_step } from "./step-status.mjs";
+import { pipeline_track, pipeline_detail } from "./pipeline-model.mjs";
 import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals, build_rows, sort_build_rows, filter_build_rows, build_filter_counts } from "./approve-build-summary.mjs";
 import { parse_outline, selection_for_line, outline_matches } from "./prompt-outline.mjs";
 
@@ -127,6 +128,12 @@ const step_announcement = document.querySelector("#step-announcement");
 const step_next = document.querySelector("#step-next");
 const step_next_note = document.querySelector("#step-next-note");
 const step_next_action = document.querySelector("#step-next-action");
+const pipeline_track_list = document.querySelector("#pipeline-track");
+const pipeline_detail_title = document.querySelector("#pipeline-detail-title");
+const pipeline_consumes = document.querySelector("#pipeline-consumes");
+const pipeline_produces = document.querySelector("#pipeline-produces");
+const pipeline_caution = document.querySelector("#pipeline-caution");
+const pipeline_flow = document.querySelector("#pipeline-flow");
 const file_overlay_body = document.querySelector("#file-overlay-body");
 const file_overlay_note = document.querySelector("#file-overlay-note");
 const file_overlay_title = document.querySelector("#file-overlay-title");
@@ -2441,6 +2448,57 @@ const STEP_LABELS = {
     build: "Step 7: Build and use",
 };
 
+function render_pipeline(status_rows) {
+    const current = current_step ?? "prompt";
+    const stages = pipeline_track(status_rows, current);
+    pipeline_track_list.replaceChildren();
+    for (const stage of stages) {
+        const item = document.createElement("li");
+        item.className = "pipeline-stage";
+        item.dataset.current = String(stage.current);
+        item.dataset.step = stage.step;
+        if (stage.current) {
+            item.setAttribute("aria-current", "step");
+        }
+        const title = document.createElement("span");
+        title.className = "pipeline-stage-title";
+        title.textContent = `${PIPELINE_NUMBER[stage.step]}. ${stage.label}`;
+        const artifact = document.createElement("span");
+        artifact.className = "pipeline-stage-artifact";
+        artifact.textContent = `Artifact: ${stage.artifact}`;
+        const marker = document.createElement("span");
+        marker.className = `step-state ${stage.state}`;
+        marker.textContent = stage.state;
+        marker.setAttribute("aria-hidden", "true");
+        item.append(title, artifact, marker);
+        if (stage.current) {
+            const current_marker = document.createElement("span");
+            current_marker.className = "pipeline-current";
+            current_marker.textContent = "Current step";
+            item.append(current_marker);
+        }
+        item.title = stage.detail;
+        pipeline_track_list.append(item);
+    }
+    const detail = pipeline_detail(current);
+    pipeline_detail_title.textContent = detail.title;
+    pipeline_consumes.textContent = detail.consumes;
+    pipeline_produces.textContent = detail.produces;
+    pipeline_caution.textContent = detail.caution;
+    pipeline_flow.replaceChildren();
+    for (const item of detail.flow) {
+        const step = document.createElement("li");
+        const label = document.createElement("strong");
+        label.textContent = item.label;
+        const artifact = document.createElement("span");
+        artifact.textContent = item.artifact;
+        step.append(label, artifact);
+        pipeline_flow.append(step);
+    }
+}
+
+const PIPELINE_NUMBER = { prompt: 1, objects: 2, candidates: 3, rules: 4, check: 5, approve: 6, build: 7 };
+
 function update_step_status() {
     const built = build_state?.entries?.find((item) => item.source === entry?.source);
     const freshness = built ? build_freshness(built, build_catalog_entry(entry.source)).state : null;
@@ -2476,6 +2534,7 @@ function update_step_status() {
         step_next_action.textContent = `Go to ${next.title.replace(/^Step [0-9]+: /, "")}`;
         step_next_action.onclick = () => show(next.step);
     }
+    render_pipeline(rows);
 }
 
 function show(step, announce = true) {
@@ -2495,6 +2554,7 @@ function show(step, announce = true) {
         step_announcement.textContent = STEP_LABELS[step] ?? step;
     }
     current_step = step;
+    update_step_status();
 }
 
 function tab_panel_of(tab) {

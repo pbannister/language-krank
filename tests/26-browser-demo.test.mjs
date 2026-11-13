@@ -24,6 +24,7 @@ import { reduction_summary, retained_reason, line_status_rows, filter_line_statu
 import { scope_stats, required_fact_types, check_readiness, evaluation_summary } from "../sources/browser/check-summary.mjs";
 import { scope_options, rank_scope_suggestions, suggestion_label } from "../sources/browser/scope-suggestions.mjs";
 import { step_statuses, next_recommended_step } from "../sources/browser/step-status.mjs";
+import { PIPELINE_STAGES, PIPELINE_DETAILS, pipeline_stage, pipeline_detail, pipeline_track } from "../sources/browser/pipeline-model.mjs";
 import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals, build_rows, sort_build_rows, filter_build_rows, build_filter_counts } from "../sources/browser/approve-build-summary.mjs";
 import { parse_outline, selection_for_line, outline_matches } from "../sources/browser/prompt-outline.mjs";
 
@@ -121,6 +122,27 @@ test("the studio exposes skip, step, and tab navigation semantics", () => {
     assert.match(html, /@media \(max-width: 54rem\)[\s\S]*?align-content: start/);
     assert.match(html, /body,[\s\S]*?\.tab-panel \{\s*min-width: 0;/);
     assert.match(html, /table-layout: fixed/);
+});
+
+test("every step carries the processing-pipeline graphic", () => {
+    const html = read("sources/browser/index.html");
+    for (const id of ["pipeline-overview", "pipeline-title", "pipeline-track", "pipeline-detail-title",
+        "pipeline-consumes", "pipeline-produces", "pipeline-caution", "pipeline-flow"]) {
+        assert.ok(html.includes(`id="${id}"`), `pipeline is missing #${id}`);
+    }
+    assert.match(html, /<figure class="pipeline-overview"[\s\S]*?<figcaption id="pipeline-title">/);
+    const main = html.indexOf('<main id="main"');
+    const figure = html.indexOf('id="pipeline-overview"');
+    const first_panel = html.indexOf('id="step-prompt"');
+    assert.ok(main < figure && figure < first_panel);
+    assert.match(html, /\.pipeline-stage\[data-current="true"\]/);
+    assert.match(html, /\.pipeline-flow li:not\(:last-child\)::after/);
+    assert.match(html, /@media \(max-width: 54rem\)[\s\S]*?\.pipeline-detail\s*\{\s*grid-template-columns:\s*1fr/);
+    const source = read("sources/browser/studio.mjs");
+    for (const wiring of ["pipeline_track(", "pipeline_detail(", "render_pipeline(rows)",
+        "pipeline_track_list.replaceChildren", "aria-current", "Current step"]) {
+        assert.ok(source.includes(wiring), `pipeline wiring is missing ${wiring}`);
+    }
 });
 
 test("the studio page carries the step rail and its panels", () => {
@@ -1220,6 +1242,38 @@ test("build freshness and totals fail conservatively", () => {
         { coverage: { removed: [2, 3] } }, { coverage: { removed: [] } }, {}
     ], generated_at: "today" }), { entries: 3, with_removable: 1, removable: 2, generated_at: "today" });
     assert.deepEqual(build_totals(null), { entries: 0, with_removable: 0, removable: 0, generated_at: "" });
+});
+
+test("pipeline model has one accurate stage and flow per studio step", () => {
+    assert.deepEqual(PIPELINE_STAGES.map((stage) => stage.step), [
+        "prompt", "objects", "candidates", "rules", "check", "approve", "build",
+    ]);
+    for (const stage of PIPELINE_STAGES) {
+        const detail = PIPELINE_DETAILS[stage.step];
+        assert.ok(detail, `missing detail for ${stage.step}`);
+        assert.ok(detail.title.length > 0);
+        assert.ok(detail.consumes.length > 0);
+        assert.ok(detail.produces.length > 0);
+        assert.ok(detail.caution.length > 0);
+        assert.ok(detail.flow.length >= 3 && detail.flow.length <= 4, `${stage.step} flow length`);
+        assert.ok(detail.flow.every((item) => item.label && item.artifact));
+    }
+    assert.equal(pipeline_stage("nope").step, "prompt");
+    assert.equal(pipeline_detail("nope"), PIPELINE_DETAILS.prompt);
+    const statuses = [
+        { step: "prompt", state: "ready", detail: "draft" },
+        { step: "candidates", state: "blocked", detail: "none" },
+    ];
+    const before = JSON.stringify(statuses);
+    const track = pipeline_track(statuses, "rules");
+    assert.equal(track.length, 7);
+    assert.equal(track.find((stage) => stage.step === "candidates").state, "blocked");
+    assert.equal(track.find((stage) => stage.step === "objects").state, "optional");
+    assert.equal(track.find((stage) => stage.step === "rules").current, true);
+    assert.equal(track.filter((stage) => stage.current).length, 1);
+    assert.equal(track.find((stage) => stage.step === "objects").detail, "");
+    assert.equal(JSON.stringify(statuses), before);
+    assert.equal(pipeline_track(null, "bad").find((stage) => stage.step === "prompt").current, true);
 });
 
 test("step status summarizes readiness without claiming approval", () => {
