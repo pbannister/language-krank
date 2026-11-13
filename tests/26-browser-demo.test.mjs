@@ -91,6 +91,24 @@ test("the studio loads the object model and offers a proposal review", () => {
     assert.match(source, /Evidence \/ Rationale/, "the studio has no combined evidence column");
 });
 
+test("the Objects Status panel explains the scan beside its button", () => {
+    const html = read("sources/browser/index.html");
+    const status = html.split('<div class="tab-panel" data-tab="object-status">')[1]
+        .split('<div class="tab-panel" data-tab="object-about"')[0];
+    assert.match(status, /id="object-scan-help"/);
+    assert.match(status, /id="propose"[^>]*aria-describedby="object-scan-help"/);
+    const text = status.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
+    for (const explanation of [
+        "current text in 1. Prompt", "including unsaved edits", "language model through the Harness",
+        "Objects", "Operations", "Relations", "not a rule-generation or correctness check",
+        "combined review list", "not just this scan", "do not update the confirmed object registry",
+        "Download the reviewed proposals", "3. Candidates",
+    ]) {
+        assert.ok(text.includes(explanation), `Objects Status is missing: ${explanation}`);
+    }
+    assert.match(status, /id="propose-note"[^>]*aria-live="polite"/);
+});
+
 test("the studio links the evidence filename to a highlighting file viewer", () => {
     assert.match(read("sources/browser/studio.mjs"), /\.\/file\.html\?/, "the studio does not link to the file viewer");
     const viewer = read("sources/browser/file.html");

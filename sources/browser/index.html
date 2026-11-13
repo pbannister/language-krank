@@ -745,15 +745,33 @@
                 <div class="tab-panel" data-tab="object-status">
                     <h3>File</h3>
                     <dl class="file-history" id="object-file"></dl>
+                    <div id="object-scan-help">
+                        <h3>What does Scan file do?</h3>
+                        <p>It sends the current text in 1. Prompt, including unsaved edits, to a language model through the Harness and its configured provider.
+                            It asks for the vocabulary that formal rules could talk about:</p>
+                        <ul>
+                            <li><strong>Objects</strong> — things, such as a task or a file.</li>
+                            <li><strong>Operations</strong> — actions on things, such as creating a file.</li>
+                            <li><strong>Relations</strong> — connections, such as a task referencing a feature.</li>
+                        </ul>
+                        <p>The model suggests which terms to include or exclude, with evidence from the prompt and a reason.
+                            New terms are added to the review tabs; existing terms and your decisions are kept.</p>
+                        <p class="note">This is a vocabulary proposal, not a rule-generation or correctness check.
+                            It makes a model call and may take several minutes.
+                            To generate formal rules, use Generate candidates in 1. Prompt, then review 3. Candidates.</p>
+                    </div>
                     <div class="row">
-                        <button id="propose" type="button">Scan file</button>
-                        <span class="note" id="propose-note"></span>
+                        <button id="propose" type="button" aria-describedby="object-scan-help">Scan file</button>
+                        <span class="note" id="propose-note" role="status" aria-live="polite"></span>
                     </div>
                     <p class="scan-result" id="objects-count"></p>
+                    <p class="note">These counts cover the combined review list, including terms already loaded from the project, not just this scan.</p>
                     <h3>Review</h3>
-                    <p class="note">A checked box accepts the term and an unchecked box ignores it; a
-                        row stays unreviewed until you toggle it. The tables are split by kind. Nothing
-                        is written to the repository; the download is the review artifact.</p>
+                    <p class="note">Open the Objects, Operations, and Relations tabs to review the suggestions.
+                        A checked box accepts the term and an unchecked box ignores it; a row stays unreviewed until you toggle it.
+                        Your choices stay on this page and do not update the confirmed object registry or rewrite the prompt.
+                        Download the reviewed proposals to keep your decisions.
+                        Recording confirmed terms in the project's object model is a separate, explicit step before they can be used by the compiler.</p>
                     <p><a id="proposals-download" download="object-model-review.json">Download the reviewed
                             proposals</a></p>
                 </div>
