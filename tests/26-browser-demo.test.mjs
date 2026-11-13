@@ -19,6 +19,7 @@ import { candidate_stats, coverage_delta } from "../sources/browser/candidate-su
 import { filter_proposals, review_counts } from "../sources/browser/object-filter.mjs";
 import { review_progress, filter_requirements } from "../sources/browser/review-queue.mjs";
 import { reduction_summary, retained_reason } from "../sources/browser/reduction-summary.mjs";
+import { scope_stats, required_fact_types, check_readiness, evaluation_summary } from "../sources/browser/check-summary.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const read = (rel) => readFileSync(`${root}${rel}`, "utf8");
@@ -74,6 +75,9 @@ test("every demo module imports the barrel and no node: builtin", () => {
     const reduction = read("sources/browser/reduction-summary.mjs");
     assert.ok(!/from\s+["']node:/.test(reduction), "reduction-summary.mjs imports a node: builtin");
     assert.ok(!/\bdocument\b|\bwindow\b/.test(reduction), "reduction-summary.mjs depends on the DOM");
+    const check = read("sources/browser/check-summary.mjs");
+    assert.ok(!/from\s+["']node:/.test(check), "check-summary.mjs imports a node: builtin");
+    assert.ok(!/\bdocument\b|\bwindow\b/.test(check), "check-summary.mjs depends on the DOM");
 });
 
 test("each page loads its module", () => {
@@ -571,6 +575,90 @@ test("the line diff reports removals and additions", () => {
         diff_lines("a\nc", "a\nb\nc").map((row) => `${row.kind}:${row.text}`),
         ["same:a", "add:b", "same:c"],
     );
+});
+
+test("scope statistics count files, observations, and sorted types", () => {
+    const files = [
+        { path: "sources/a.mjs", entities: [{ type: "file", path: "sources/a.mjs" }, { type: "task", id: "t1" }] },
+        { path: "prompts/b.md", entities: [{ type: "file", path: "prompts/b.md" }, { type: "task", id: "t2" }] },
+        { path: "prompts/c.md", entities: [{ type: "feature", id: "f1" }] },
+    ];
+    const before = JSON.stringify(files);
+    assert.deepEqual(scope_stats(files), {
+        file_count: 3,
+        fact_count: 5,
+        types: ["feature", "file", "task"],
+        counts: { feature: 1, file: 2, task: 2 },
+    });
+    assert.equal(JSON.stringify(files), before, "scope_stats mutated its input");
+    assert.deepEqual(scope_stats([]), { file_count: 0, fact_count: 0, types: [], counts: {} });
+});
+
+test("required fact types separate positive observations from actions and variables", () => {
+    const rules = [
+        { id: "file-rule", when: [{ fact: { type: "file", path: "$p" } }], then: [{ emit: "x" }] },
+        { id: "task-rule", when: [{ count: { fact: { type: "task" }, at_least: 1 } }, { fact: { type: "task", id: "$t" }, not: true }], then: [{ assert: { type: "finding", task: "$t" } }] },
+        { id: "any-kind", when: [{ fact: { type: "$kind" } }], then: [{ emit: "x" }] },
+    ];
+    assert.deepEqual(required_fact_types(rules), [
+        { type: "file", rule_ids: ["file-rule"], observation_required: true },
+        { type: "finding", rule_ids: ["task-rule"], observation_required: false },
+        { type: "task", rule_ids: ["task-rule"], observation_required: false },
+    ]);
+    assert.deepEqual(required_fact_types([]), []);
+});
+
+test("check readiness mirrors conservative observation and field gates", () => {
+    const rules = [{ id: "files", when: [{ fact: { type: "file", path: "$p", has_tab: false } }], then: [{ emit: "x" }] }];
+    const empty = check_readiness(rules, []);
+    assert.equal(empty.ready, false);
+    assert.match(empty.reason, /no observations/);
+    const wrong = check_readiness(rules, [{ type: "task", id: "t" }]);
+    assert.equal(wrong.ready, false);
+    assert.deepEqual(wrong.missing_types, ["file"]);
+    assert.match(wrong.reason, /required fact types: file/);
+    const incomplete = check_readiness(rules, [{ type: "file" }]);
+    assert.equal(incomplete.ready, false);
+    assert.deepEqual(incomplete.missing_fields, ["file.path", "file.has_tab"]);
+    assert.match(incomplete.reason, /required fields/);
+    const ready = check_readiness(rules, [{ type: "file", path: "sources/a.mjs", has_tab: false }]);
+    assert.deepEqual(ready, { ready: true, blocked: false, reason: "", missing_types: [], missing_fields: [], fact_count: 1 });
+    const count_only = [{ id: "tasks", when: [{ count: { fact: { type: "task" }, at_least: 1 } }], then: [{ emit: "x" }] }];
+    assert.match(check_readiness(count_only, [{ type: "file", path: "x" }]).reason, /no observations relevant/);
+});
+
+test("check evaluation summary never turns no emissions into a pass", () => {
+    assert.deepEqual(evaluation_summary({ firings: 3, emitted: [] }), {
+        firings: 3, emission_count: 0, has_violations: false, completed: true,
+    });
+    assert.deepEqual(evaluation_summary({ firings: 1, emitted: [{ violation: "x" }] }), {
+        firings: 1, emission_count: 1, has_violations: true, completed: true,
+    });
+});
+
+test("Check explains scope, readiness, results, and the separate approval step", () => {
+    const html = read("sources/browser/index.html");
+    for (const id of ["scope-preview", "check-readiness", "check-status", "check-next",
+        "check-next-action", "run", "check-summary", "check-output"]) {
+        assert.ok(html.includes(`id="${id}"`), `Check is missing #${id}`);
+    }
+    assert.match(html, /id="scope"[^>]*aria-describedby="check-readiness"/);
+    assert.match(html, /id="run"[^>]*aria-describedby="check-readiness"/);
+    assert.match(html, /id="check-status"[^>]*aria-live="polite"/);
+    assert.match(html, /id="check-readiness"[^>]*aria-live="polite"/);
+    const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
+    for (const phrase of ["deterministic", "build-time snapshot", "only the selected scope",
+        "does not prove", "Continue to Approve"]) {
+        assert.ok(text.includes(phrase), `Check is missing: ${phrase}`);
+    }
+    const source = read("sources/browser/studio.mjs");
+    for (const text of ["scope_stats(", "check_readiness(", "evaluation_summary(",
+        "Evaluation completed", "no violation was emitted", "not a pass", "Cannot run:",
+        "No evaluation is recorded", "Running…", "review_check(candidate"]) {
+        assert.ok(source.includes(text), `Check controller is missing: ${text}`);
+    }
+    assert.match(source, /aria-busy/);
+    assert.match(source, /render_check_preview\(\)/);
 });
 
 test("the check command drives the engine", () => {

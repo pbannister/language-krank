@@ -761,8 +761,87 @@
             margin: 0.75rem 0;
         }
 
+        .check-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 0.75rem 0;
+        }
+
+        .check-controls label {
+            margin: 0;
+        }
+
         #scope {
             max-width: 32rem;
+        }
+
+        .check-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+            margin: 0.75rem 0;
+        }
+
+        .check-card {
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            border-radius: 0.35rem;
+            padding: 0.75rem 1rem;
+            min-width: 0;
+        }
+
+        .check-card h3 {
+            margin-top: 0;
+        }
+
+        .check-card p:last-child {
+            margin-bottom: 0;
+        }
+
+        .check-status-good {
+            border-left: 4px solid #2e7d32;
+        }
+
+        .check-status-blocked {
+            border-left: 4px solid #b26a00;
+        }
+
+        .check-types {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin: 0.5rem 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .check-types li {
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            border-radius: 0.25rem;
+            padding: 0.1rem 0.45rem;
+            font-size: 0.8rem;
+        }
+
+        #check-status {
+            min-height: 1.3em;
+            font-weight: 600;
+        }
+
+        .emission-item {
+            min-width: 0;
+        }
+
+        .emission-item pre {
+            margin: 0;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 54rem) {
+            .check-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .approve-grid {
@@ -1506,19 +1585,36 @@
                 <div class="step-head">
                     <div>
                         <h2>5. Check</h2>
-                        <p class="note">The selected candidate's rules run against facts extracted from the project's
-                            files at build time.</p>
+                        <p class="note">The selected reading's rules are deterministic. They run against facts extracted
+                            from a build-time snapshot of the project files, so a result describes only the selected scope.</p>
                     </div>
                 </div>
-                <div class="row">
+                <p class="lead">A check evaluates formal rules; it does not prove that the captured intent is complete,
+                    that the project conforms, or that anything is approved.</p>
+                <div class="check-controls">
                     <label for="scope">Scope</label>
-                    <select id="scope"></select>
-                    <button id="run" type="button">Run the rules</button>
+                    <select id="scope" aria-describedby="check-readiness"></select>
+                    <button id="run" type="button" aria-describedby="check-readiness">Run the rules</button>
                 </div>
+                <div class="check-grid">
+                    <section class="check-card" aria-labelledby="scope-preview-title">
+                        <h3 id="scope-preview-title">What this scope contains</h3>
+                        <div id="scope-preview" class="check-preview"></div>
+                    </section>
+                    <section class="check-card" id="check-readiness-card" aria-labelledby="check-readiness-title">
+                        <h3 id="check-readiness-title">Can these rules run?</h3>
+                        <div id="check-readiness" role="status" aria-live="polite"></div>
+                    </section>
+                </div>
+                <p id="check-status" class="note" role="status" aria-live="polite"></p>
+                <p id="check-next" hidden>
+                    <button id="check-next-action" type="button">Continue to Approve</button>
+                    <span class="note" id="check-next-note"></span>
+                </p>
                 <div id="check-summary" class="check-summary"></div>
                 <details class="raw">
                     <summary>Raw result (JSON)</summary>
-                    <pre id="check-output" aria-live="polite"></pre>
+                    <pre id="check-output"></pre>
                 </details>
             </section>
 

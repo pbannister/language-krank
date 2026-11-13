@@ -20,6 +20,7 @@ import { filter_proposals, review_counts } from "./object-filter.mjs";
 import { candidate_stats, coverage_delta } from "./candidate-summary.mjs";
 import { review_progress, filter_requirements } from "./review-queue.mjs";
 import { reduction_summary, retained_reason } from "./reduction-summary.mjs";
+import { scope_stats, check_readiness, evaluation_summary } from "./check-summary.mjs";
 
 const catalog = await load_json("./catalog.json");
 const bundle = await load_json("./files.json");
@@ -74,6 +75,14 @@ const diff_box = document.querySelector("#diff");
 const diff_empty = document.querySelector("#diff-empty");
 const check_output = document.querySelector("#check-output");
 const check_summary = document.querySelector("#check-summary");
+const scope_preview = document.querySelector("#scope-preview");
+const check_readiness_box = document.querySelector("#check-readiness");
+const check_readiness_card = document.querySelector("#check-readiness-card");
+const check_status = document.querySelector("#check-status");
+const check_next = document.querySelector("#check-next");
+const check_next_action = document.querySelector("#check-next-action");
+const check_next_note = document.querySelector("#check-next-note");
+const run_button = document.querySelector("#run");
 const approve = document.querySelector("#approve");
 const approve_warning = document.querySelector("#approve-warning");
 const build_cycle = document.querySelector("#build-cycle");
@@ -115,6 +124,7 @@ let candidate = entry.candidates.find((item) => item.id === entry.approved) ?? e
 let working = entry.markdown;
 let edited = false;
 let last_check = null;
+let check_running = false;
 let draft_revision = 0;
 let proposals = proposal_rows(object_model);
 let object_query = "";
@@ -1426,30 +1436,118 @@ function render_reduced() {
     }
 }
 
+function selected_scope_files() {
+    const separator = select_scope.value.indexOf(":");
+    const kind = select_scope.value.slice(0, separator);
+    const target = select_scope.value.slice(separator + 1);
+    return kind === "dir"
+        ? bundle.files.filter((file) => file.facts.directory === target)
+        : bundle.files.filter((file) => file.path === target);
+}
+
+function scope_label() {
+    const option = select_scope.options?.[select_scope.selectedIndex];
+    return option?.textContent ?? select_scope.value;
+}
+
+function render_check_preview() {
+    const files = selected_scope_files();
+    const facts = selected_facts();
+    const stats = scope_stats(files);
+    scope_preview.replaceChildren();
+    render_facts(scope_preview, [
+        ["Scope", scope_label()],
+        ["Files", String(stats.file_count)],
+        ["Observations", String(stats.fact_count)],
+        ["Reading", candidate ? `${candidate.title} (${candidate.id})` : "none"],
+        ["Rules", candidate ? String(candidate.rules.rules.length) : "0"],
+    ]);
+    if (stats.types.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "note";
+        empty.textContent = "No fact types are present in this scope.";
+        scope_preview.append(empty);
+    } else {
+        const list = document.createElement("ul");
+        list.className = "check-types";
+        list.setAttribute("aria-label", "Fact types and observation counts");
+        for (const type of stats.types) {
+            const item = document.createElement("li");
+            item.textContent = `${type} × ${stats.counts[type]}`;
+            list.append(item);
+        }
+        scope_preview.append(list);
+    }
+
+    check_readiness_box.replaceChildren();
+    check_readiness_card.classList.toggle("check-status-good", false);
+    check_readiness_card.classList.toggle("check-status-blocked", false);
+    let message;
+    let ready = false;
+    if (!candidate) {
+        message = "No reading is selected. Generate candidates in 1. Prompt before checking.";
+    } else if (textarea.value !== working) {
+        message = "Apply the edited prompt before running a check. The current rule set still describes the applied text.";
+    } else {
+        const readiness = check_readiness(candidate.rules.rules, facts);
+        ready = readiness.ready;
+        message = readiness.ready
+            ? `Ready to run. The scope has ${readiness.fact_count} observation(s), including every fact type these rules require.`
+            : `Cannot run: ${readiness.reason}`;
+    }
+    const status = document.createElement("p");
+    status.className = "note";
+    status.textContent = message;
+    check_readiness_box.append(status);
+    if (message.startsWith("Ready to run")) {
+        const detail = document.createElement("p");
+        detail.className = "note";
+        detail.textContent = "A successful evaluation records this fact scope. It does not approve a requirement or establish complete intent.";
+        check_readiness_box.append(detail);
+    }
+    check_readiness_card.classList.toggle("check-status-good", ready);
+    check_readiness_card.classList.toggle("check-status-blocked", !ready);
+    run_button.disabled = !ready || check_running;
+    run_button.setAttribute("aria-busy", String(check_running));
+    run_button.textContent = check_running ? "Running…" : "Run the rules";
+
+    const current_scope = review_status().check_scope;
+    check_next.hidden = !current_scope;
+    check_next_note.textContent = current_scope
+        ? `A current check is recorded for ${current_scope}. Approval is still a separate decision.`
+        : "";
+}
+
 function render_check_result() {
     check_summary.replaceChildren();
     if (!last_check) {
         const note = document.createElement("p");
         note.className = "note";
-        note.textContent = "Not run yet. Pick a scope and run the rules.";
+        note.textContent = "No evaluation is recorded for the current scope. Run the rules to supply check evidence; this alone approves nothing.";
         check_summary.append(note);
         return;
     }
+    const summary = evaluation_summary(last_check);
     const headline = document.createElement("p");
     headline.className = "scan-result";
-    headline.textContent = `${last_check.firings} rule firing(s); ${last_check.emitted.length} emission(s).`;
+    headline.textContent = summary.has_violations
+        ? `Evaluation completed — ${summary.emission_count} violation(s) emitted.`
+        : "Evaluation completed — no violation was emitted.";
     check_summary.append(headline);
-    if (last_check.emitted.length === 0) {
-        const ok = document.createElement("p");
-        ok.className = "note";
-        ok.textContent = "No violation was emitted for this scope.";
-        check_summary.append(ok);
+    const explanation = document.createElement("p");
+    explanation.className = "note";
+    explanation.textContent = `${summary.firings} rule firing(s) over the selected scope. `
+        + (summary.has_violations
+            ? "These are findings within this scope, not proof that the project fails elsewhere."
+            : "This is not a pass or an approval. Only the selected facts were checked, and absence of a finding does not prove conformance.");
+    check_summary.append(explanation);
+    if (!summary.has_violations) {
         return;
     }
     const table = document.createElement("table");
     const head = document.createElement("thead");
     const head_row = document.createElement("tr");
-    for (const label of ["#", "Emitted"]) {
+    for (const label of ["#", "Emitted finding"]) {
         const th = document.createElement("th");
         th.textContent = label;
         head_row.append(th);
@@ -1458,11 +1556,19 @@ function render_check_result() {
     const body = document.createElement("tbody");
     last_check.emitted.forEach((item, index) => {
         const row = document.createElement("tr");
-        row.append(cell(String(index + 1)), cell(JSON.stringify(item)));
+        const emitted = document.createElement("td");
+        emitted.className = "emission-item";
+        const pre = document.createElement("pre");
+        pre.textContent = JSON.stringify(item, null, 2);
+        emitted.append(pre);
+        row.append(cell(String(index + 1)), emitted);
         body.append(row);
     });
     table.append(head, body);
-    check_summary.append(table);
+    const wrap = document.createElement("div");
+    wrap.className = "table-scroll";
+    wrap.append(table);
+    check_summary.append(wrap);
 }
 
 function render_approve() {
@@ -1685,6 +1791,7 @@ function render() {
         no_check.className = "note";
         no_check.textContent = "No candidate rule set to check.";
         check_summary.append(no_check);
+        render_check_preview();
         approve.replaceChildren();
         const dt = document.createElement("dt");
         dt.textContent = "Note";
@@ -1705,6 +1812,7 @@ function render() {
     render_prose();
     render_compare();
     render_reduced();
+    render_check_preview();
     render_check_result();
     render_approve();
     render_build_cycle();
@@ -1749,13 +1857,7 @@ function populate_scopes() {
 }
 
 function selected_facts() {
-    const separator = select_scope.value.indexOf(":");
-    const kind = select_scope.value.slice(0, separator);
-    const target = select_scope.value.slice(separator + 1);
-    const files = kind === "dir"
-        ? bundle.files.filter((file) => file.facts.directory === target)
-        : bundle.files.filter((file) => file.path === target);
-    return files.flatMap((file) => file.entities ?? [{ type: "file", ...file.facts }]);
+    return selected_scope_files().flatMap((file) => file.entities ?? [{ type: "file", ...file.facts }]);
 }
 
 function reconcile_check() {
@@ -1810,6 +1912,7 @@ textarea.addEventListener("input", () => {
         render_compare();
         render_reduced();
         render_approve();
+        render_check_preview();
         render_check_result();
     }
     if (textarea.value !== working) {
@@ -2100,40 +2203,72 @@ select_scope.addEventListener("change", () => {
         candidate.review.approvals = {};
     }
     if (textarea.value !== working) {
+        render_check_preview();
         render_check_result();
         return;
     }
     render();
 });
 
-document.querySelector("#run").addEventListener("click", () => {
+check_next_action.addEventListener("click", () => show("approve"));
+
+document.querySelector("#run").addEventListener("click", async () => {
+    if (check_running) {
+        return;
+    }
     if (!candidate) {
+        check_status.textContent = "No candidate rule set to run.";
         check_output.textContent = "No candidate rule set to run.";
         return;
     }
     if (textarea.value !== working) {
+        check_status.textContent = "Apply the edited prompt before running a check.";
         check_output.textContent = "Apply the edited prompt before running a check.";
+        render_check_preview();
         return;
     }
+    const facts = selected_facts();
+    const readiness = check_readiness(candidate.rules.rules, facts);
+    if (!readiness.ready) {
+        check_status.textContent = `Cannot run: ${readiness.reason}`;
+        check_output.textContent = `Cannot run: ${readiness.reason}`;
+        render_check_preview();
+        return;
+    }
+    check_running = true;
+    check_status.textContent = `Running the rules against ${facts.length} observation(s)…`;
+    render_check_preview();
+    await new Promise((resolve) => {
+        if (typeof requestAnimationFrame === "function") {
+            requestAnimationFrame(resolve);
+        } else {
+            setTimeout(resolve, 0);
+        }
+    });
     try {
         const result = candidate.review
-            ? review_check(candidate, entry.source, working, catalog.fact_contract, select_scope.value, selected_facts())
-            : ruleset_run({ facts: selected_facts(), rules: candidate.rules.rules });
+            ? review_check(candidate, entry.source, working, catalog.fact_contract, select_scope.value, facts)
+            : ruleset_run({ facts, rules: candidate.rules.rules });
         last_check = result;
         check_output.textContent = JSON.stringify(
-            { rule_set: candidate.id, firings: result.firings, emitted: result.emitted },
+            { rule_set: candidate.id, scope: select_scope.value, firings: result.firings, emitted: result.emitted },
             null,
             2,
         );
+        check_status.textContent = `Evaluation completed for ${scope_label()}. No approval was recorded.`;
     } catch (error) {
         last_check = null;
         check_output.textContent = `error: ${error.message}`;
+        check_status.textContent = `Check refused: ${error.message}`;
+    } finally {
+        check_running = false;
+        render_rules();
+        render_compare();
+        render_reduced();
+        render_check_preview();
+        render_check_result();
+        render_approve();
     }
-    render_rules();
-    render_compare();
-    render_reduced();
-    render_check_result();
-    render_approve();
 });
 
 for (const button of document.querySelectorAll(".steps button")) {
