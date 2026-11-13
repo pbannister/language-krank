@@ -716,6 +716,30 @@ function review_go_check() {
     document.querySelector("#scope").focus();
 }
 
+function review_requirement_focus(id) {
+    if (!candidate?.review || typeof id !== "string" || id === "") {
+        return;
+    }
+    const requirement = candidate.review.requirements.find((item) => item.id === id);
+    if (!requirement) {
+        return;
+    }
+    const report = review_status();
+    review_query = "";
+    review_search.value = "";
+    review_mode = "all";
+    review_filter.value = "all";
+    review_focused = true;
+    review_focus_id = id;
+    review_focus_toggle.checked = true;
+    show("rules");
+    render_review_queue(report, review_progress(report));
+    review_focus_status.textContent = `Opened ${id} from the comparison.`;
+    const card = review_card_elements.get(id);
+    card?.focus({ preventScroll: true });
+    card?.scrollIntoView?.({ block: "center" });
+}
+
 function review_continue_approve() {
     show("approve");
 }
@@ -1804,6 +1828,14 @@ function render_line_status(report) {
             jump_to_outline_line(row.line);
         });
         action.append(button);
+        if (row.requirement_ids.length > 0 && candidate.review) {
+            const review = document.createElement("button");
+            review.type = "button";
+            review.textContent = "Review in Rules";
+            review.title = `Open requirement ${row.requirement_ids[0]} in Rules.`;
+            review.addEventListener("click", () => review_requirement_focus(row.requirement_ids[0]));
+            action.append(review);
+        }
         tr.append(action);
         line_status_body.append(tr);
     }

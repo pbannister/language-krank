@@ -732,7 +732,7 @@ test("Comparison and Reduced explain readiness and never offer a vacuous reducti
         "Reduced prompt download unavailable", "No extraction or approval blocker is recorded",
         "Resolve the retained reasons", "removeAttribute(\"href\")", "setAttribute(\"aria-disabled\", \"true\")",
         "setAttribute(\"aria-disabled\", \"false\")", "render_line_status(", "line_status_rows(",
-        "filter_line_status(", "Open line "]) {
+        "filter_line_status(", "Open line ", "Review in Rules", "review_requirement_focus("]) {
         assert.ok(source.includes(text), `Reduction UI is missing: ${text}`);
     }
     assert.match(source, /if \(can_download\)/);
