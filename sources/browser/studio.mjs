@@ -24,7 +24,7 @@ import { review_progress, filter_requirements } from "./review-queue.mjs";
 import { resolve_focus_index, move_focus_index, focus_position, focus_item } from "./review-focus.mjs";
 import { reduction_summary, retained_reason, line_status_rows, filter_line_status, line_status_counts } from "./reduction-summary.mjs";
 import { scope_stats, check_readiness, evaluation_summary } from "./check-summary.mjs";
-import { scope_options, rank_scope_suggestions, suggestion_label } from "./scope-suggestions.mjs";
+import { scope_options, rank_scope_suggestions, suggestion_label, scope_comparison } from "./scope-suggestions.mjs";
 import { step_statuses, next_recommended_step } from "./step-status.mjs";
 import { pipeline_track, pipeline_detail } from "./pipeline-model.mjs";
 import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals, build_rows, sort_build_rows, filter_build_rows, build_filter_counts } from "./approve-build-summary.mjs";
@@ -99,6 +99,9 @@ const scope_suggestions = document.querySelector("#scope-suggestions");
 const scope_suggestion_note = document.querySelector("#scope-suggestion-note");
 const scope_suggestion_list = document.querySelector("#scope-suggestion-list");
 const scope_use_best = document.querySelector("#scope-use-best");
+const scope_compare = document.querySelector("#scope-compare");
+const scope_compare_list = document.querySelector("#scope-compare-list");
+const scope_compare_note = document.querySelector("#scope-compare-note");
 const check_readiness_box = document.querySelector("#check-readiness");
 const check_readiness_card = document.querySelector("#check-readiness-card");
 const check_status = document.querySelector("#check-status");
@@ -1927,6 +1930,8 @@ function scope_label() {
 function render_scope_suggestions() {
     scope_suggestion_list.replaceChildren();
     scope_use_best.hidden = true;
+    scope_compare.hidden = true;
+    scope_compare_list.replaceChildren();
     if (!candidate || !Array.isArray(candidate.rules?.rules) || candidate.rules.rules.length === 0) {
         scope_suggestions.hidden = true;
         return;
@@ -1961,6 +1966,19 @@ function render_scope_suggestions() {
         scope_use_best.hidden = false;
         scope_use_best.textContent = `Use best suggested scope: ${best.label}`;
         scope_use_best.onclick = () => choose_scope(best.value);
+    }
+    const closest = suggestions.find((option) => option.value !== select_scope.value) ?? null;
+    const comparison = scope_comparison(current, closest);
+    if (comparison) {
+        scope_compare.hidden = false;
+        render_facts(scope_compare_list, [
+            ["Current", `${current.label} — ${current.ready ? "ready" : "blocked"}`],
+            ["Suggested", `${closest.label} — ${closest.ready ? "ready" : "blocked"}`],
+            ["Added types", comparison.added_types.join(", ") || "none"],
+            ["Missing in suggestion", comparison.best_missing_types.join(", ") || "none"],
+            ["Observation change", `${comparison.fact_delta >= 0 ? "+" : ""}${comparison.fact_delta}`],
+        ]);
+        scope_compare_note.textContent = comparison.recommendation;
     }
 }
 

@@ -23,7 +23,7 @@ import { review_progress, filter_requirements } from "../sources/browser/review-
 import { resolve_focus_index, move_focus_index, focus_position, focus_item } from "../sources/browser/review-focus.mjs";
 import { reduction_summary, retained_reason, line_status_rows, filter_line_status, line_status_counts } from "../sources/browser/reduction-summary.mjs";
 import { scope_stats, required_fact_types, check_readiness, evaluation_summary } from "../sources/browser/check-summary.mjs";
-import { scope_options, rank_scope_suggestions, suggestion_label } from "../sources/browser/scope-suggestions.mjs";
+import { scope_options, rank_scope_suggestions, suggestion_label, scope_comparison } from "../sources/browser/scope-suggestions.mjs";
 import { step_statuses, next_recommended_step } from "../sources/browser/step-status.mjs";
 import { PIPELINE_STAGES, PIPELINE_DETAILS, pipeline_stage, pipeline_detail, pipeline_track } from "../sources/browser/pipeline-model.mjs";
 import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals, build_rows, sort_build_rows, filter_build_rows, build_filter_counts } from "../sources/browser/approve-build-summary.mjs";
@@ -1097,13 +1097,25 @@ test("scope suggestions find viable evidence and rank ready scopes first", () =>
     assert.equal(rank_scope_suggestions(null).length, 0);
     assert.equal(rank_scope_suggestions([{ value: "x" }, { value: "x" }]).length, 1);
     assert.equal(scope_options([{ path: "bad" }, null], rules).length, 0);
+    const comparison = scope_comparison(
+        { types: ["file"], fact_count: 2, ready: false, missing_types: ["task"] },
+        { types: ["file", "task"], fact_count: 5, ready: true, missing_types: [] },
+    );
+    assert.equal(comparison.current_ready, false);
+    assert.equal(comparison.best_ready, true);
+    assert.deepEqual(comparison.added_types, ["task"]);
+    assert.deepEqual(comparison.absent_types, []);
+    assert.equal(comparison.fact_delta, 3);
+    assert.match(comparison.recommendation, /can run/);
+    assert.equal(scope_comparison(null, null), null);
 });
 
 test("Check explains scope, readiness, results, and the separate approval step", () => {
     const html = read("sources/browser/index.html");
     for (const id of ["scope-preview", "check-readiness", "check-status", "check-next",
         "check-next-action", "run", "check-summary", "check-output", "scope-suggestions",
-        "scope-suggestion-note", "scope-suggestion-list", "scope-use-best"]) {
+        "scope-suggestion-note", "scope-suggestion-list", "scope-use-best", "scope-compare",
+        "scope-compare-list", "scope-compare-note"]) {
         assert.ok(html.includes(`id="${id}"`), `Check is missing #${id}`);
     }
     assert.match(html, /id="scope-suggestion-list"/);
@@ -1121,7 +1133,8 @@ test("Check explains scope, readiness, results, and the separate approval step",
     for (const text of ["scope_stats(", "check_readiness(", "evaluation_summary(",
         "Evaluation completed", "no violation was emitted", "not a pass", "Cannot run:",
         "No evaluation is recorded", "Running…", "review_check(candidate", "scope_options(",
-        "rank_scope_suggestions(", "render_scope_suggestions(", "choose_scope(", "scope_changed("]) {
+        "rank_scope_suggestions(", "render_scope_suggestions(", "choose_scope(", "scope_changed(",
+        "scope_comparison(", "scope_compare.hidden"]) {
         assert.ok(source.includes(text), `Check controller is missing: ${text}`);
     }
     assert.match(source, /aria-busy/);

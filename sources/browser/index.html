@@ -1220,6 +1220,17 @@
             margin-top: 0;
         }
 
+        #scope-compare {
+            margin-top: 0.75rem;
+            padding-top: 0.65rem;
+            border-top: 1px solid color-mix(in srgb, Canvas 84%, CanvasText 16%);
+        }
+
+        #scope-compare h4 {
+            margin: 0 0 0.35rem;
+            font-size: 0.9rem;
+        }
+
         #scope-suggestion-list {
             display: flex;
             flex-wrap: wrap;
@@ -2394,6 +2405,11 @@
                         fact snapshot. Choosing one does not run the check or approve anything.</p>
                     <div class="review-actions" id="scope-suggestion-list"></div>
                     <p><button id="scope-use-best" type="button" hidden>Use the best suggested scope</button></p>
+                    <div id="scope-compare" hidden>
+                        <h4>Current scope vs suggested scope</h4>
+                        <dl class="summary" id="scope-compare-list"></dl>
+                        <p class="note" id="scope-compare-note"></p>
+                    </div>
                 </section>
                 <div class="check-grid">
                     <section class="check-card" aria-labelledby="scope-preview-title">

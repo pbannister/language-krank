@@ -88,3 +88,26 @@ export function suggestion_label(option) {
     const shown = missing.slice(0, 3).join(", ");
     return `${option.label} — missing ${shown}${missing.length > 3 ? ` +${missing.length - 3}` : ""}`;
 }
+
+export function scope_comparison(current, best) {
+    if (!current || !best) {
+        return null;
+    }
+    const current_types = new Set(Array.isArray(current.types) ? current.types : []);
+    const best_types = new Set(Array.isArray(best.types) ? best.types : []);
+    const added = [...best_types].filter((type) => !current_types.has(type)).sort();
+    const absent = [...current_types].filter((type) => !best_types.has(type)).sort();
+    const best_missing = Array.isArray(best.missing_types) ? best.missing_types : [];
+    return {
+        current_ready: current.ready === true,
+        best_ready: best.ready === true,
+        added_types: added,
+        absent_types: absent,
+        best_missing_types: best_missing,
+        fact_delta: (Number.isFinite(best.fact_count) ? best.fact_count : 0)
+            - (Number.isFinite(current.fact_count) ? current.fact_count : 0),
+        recommendation: best.ready
+            ? "The suggested scope can run; the current scope may not."
+            : "Neither scope can run completely; the suggestion has fewer missing fact types.",
+    };
+}
