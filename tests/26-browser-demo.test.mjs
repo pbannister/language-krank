@@ -837,6 +837,11 @@ test("the Approve and Build panels expose readiness, artifacts, and freshness", 
     assert.match(html, /id="approve-reduced"[^>]*aria-disabled="true"/);
     assert.match(html, /later work must supply facts and run the saved rules/);
     assert.match(html, /@media \(max-width: 54rem\)[\s\S]*\.approval-item\s*\{\s*grid-template-columns:\s*1fr;/);
+    const build_panel = html.split('id="step-build"')[1].split("</section>")[0];
+    assert.ok(!/approved candidates/i.test(build_panel), "Build claims candidates are approved");
+    assert.match(build_panel, /recorded candidate selections/i);
+    assert.match(build_panel, /selection is not requirement approval/i);
+    assert.match(build_panel, /supply facts and run the saved rules/i);
     const source = read("sources/browser/studio.mjs");
     assert.match(source, /approval_checklist\(/);
     assert.match(source, /build_freshness\(/);
