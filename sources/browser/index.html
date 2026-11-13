@@ -372,6 +372,44 @@
             margin: 0.6rem 0 0;
         }
 
+        .object-entry {
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            border-radius: 0.35rem;
+            padding: 0.75rem 1rem;
+            margin: 0 0 1.25rem;
+        }
+
+        .object-entry h3 {
+            margin-top: 0;
+        }
+
+        #object-progress {
+            display: block;
+            width: 100%;
+            max-width: 28rem;
+            height: 0.75rem;
+            margin: 0.5rem 0;
+            accent-color: #2e7d32;
+        }
+
+        .object-kind-jumps {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 0.75rem 0;
+        }
+
+        .object-kind-jumps button {
+            flex: 1 1 9rem;
+            text-align: left;
+        }
+
+        .object-kind-jumps .jump-count {
+            display: block;
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
         .object-empty[hidden] {
             display: none;
         }
@@ -1564,8 +1602,8 @@
                     <button type="button" class="tab" data-tab="object-about" role="tab"
                         aria-selected="false">About</button>
                 </div>
-                <section class="review-toolbar" id="object-review-toolbar" aria-label="Object review queue">
-                    <h3>Review queue</h3>
+                <section class="review-toolbar" id="object-review-toolbar" aria-label="Object review filters">
+                    <h3>Filter review queue</h3>
                     <p class="note">Filter the suggestions across every kind tab. Filtering changes what is shown, not
                         your decisions. A model suggestion is not a review decision until you toggle its checkbox.</p>
                     <div class="review-toolbar-controls">
@@ -1581,6 +1619,13 @@
                                 <option value="ignored">Ignored by me</option>
                             </select>
                         </label>
+                        <label class="review-field" for="object-origin">Origin
+                            <select id="object-origin">
+                                <option value="all">All origins</option>
+                                <option value="registry">Registry terms</option>
+                                <option value="scan">Scan proposals</option>
+                            </select>
+                        </label>
                         <div class="review-toolbar-actions">
                             <button id="object-clear-filters" type="button">Clear filters</button>
                             <button id="object-next-unreviewed" type="button">Next unreviewed</button>
@@ -1593,6 +1638,21 @@
                     </div>
                 </section>
                 <div class="tab-panel" data-tab="object-status">
+                    <section class="object-entry" id="object-review-entry" aria-labelledby="object-entry-title">
+                        <h3 id="object-entry-title">Review queue</h3>
+                        <p class="note">Registry terms are already confirmed project vocabulary. Scan proposals are
+                            new model suggestions; neither becomes a decision until you toggle its checkbox, and a
+                            decision here does not update the registry.</p>
+                        <p id="object-entry-progress" role="status" aria-live="polite"></p>
+                        <progress id="object-progress" max="1" value="0" aria-label="Object review progress">0%</progress>
+                        <div class="object-kind-jumps" id="object-kind-jumps" aria-label="Review a kind"></div>
+                        <div class="row">
+                            <button id="object-review-unreviewed" class="primary-action" type="button">Review unreviewed</button>
+                            <span class="note">Resets filters and opens the first kind with unreviewed terms. Use
+                                <strong>Next unreviewed</strong> above to advance within the current filters.</span>
+                        </div>
+                        <p class="note" id="object-origin-summary"></p>
+                    </section>
                     <h3>File</h3>
                     <dl class="file-history" id="object-file"></dl>
                     <div id="object-scan-help">

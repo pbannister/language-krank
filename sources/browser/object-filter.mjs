@@ -8,9 +8,20 @@ function is_reviewed(row) {
     return row.reviewed === true;
 }
 
-export function filter_proposals(rows, query, mode) {
+export function filter_proposals(rows, query, mode, origin = "all") {
     const needle = String(query ?? "").trim().toLowerCase();
+    const wanted_origin = origin ?? "all";
     return rows.filter((row) => {
+        if (wanted_origin !== "all") {
+            // A missing or unknown origin is not guessed. Only an explicit match
+            // appears when the user narrows to registry or scan terms.
+            if (wanted_origin !== "registry" && wanted_origin !== "scan") {
+                return false;
+            }
+            if (row.origin !== wanted_origin) {
+                return false;
+            }
+        }
         if (mode === "unreviewed" && is_reviewed(row)) {
             return false;
         }
@@ -29,6 +40,30 @@ export function filter_proposals(rows, query, mode) {
             .toLowerCase();
         return haystack.includes(needle);
     });
+}
+
+export function review_breakdown(rows) {
+    const breakdown = {
+        registry: 0,
+        scan: 0,
+        unknown_origin: 0,
+        by_kind: {},
+    };
+    for (const row of rows) {
+        if (row.origin === "registry" || row.origin === "scan") {
+            breakdown[row.origin] += 1;
+        } else {
+            breakdown.unknown_origin += 1;
+        }
+        const kind = String(row.kind ?? "unknown");
+        const counts = breakdown.by_kind[kind] ?? { total: 0, unreviewed: 0 };
+        counts.total += 1;
+        if (!is_reviewed(row)) {
+            counts.unreviewed += 1;
+        }
+        breakdown.by_kind[kind] = counts;
+    }
+    return breakdown;
 }
 
 export function review_counts(rows) {

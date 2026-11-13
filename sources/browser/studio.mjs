@@ -16,7 +16,7 @@ import { ruleset_render, ruleset_run } from "../krank.mjs";
 import { diff_lines } from "./prompt-diff.mjs";
 import { render_file } from "./file-view.mjs";
 import { review_report, review_reduce, review_check, review_decide, review_observations_match, explanation_current } from "../compile-review.mjs";
-import { filter_proposals, review_counts } from "./object-filter.mjs";
+import { filter_proposals, review_counts, review_breakdown } from "./object-filter.mjs";
 import { candidate_stats, coverage_delta } from "./candidate-summary.mjs";
 import { review_progress, filter_requirements } from "./review-queue.mjs";
 import { reduction_summary, retained_reason } from "./reduction-summary.mjs";
@@ -124,6 +124,12 @@ const object_tabs = document.querySelector("#object-tabs");
 const object_review_toolbar = document.querySelector("#object-review-toolbar");
 const object_search = document.querySelector("#object-search");
 const object_filter = document.querySelector("#object-filter");
+const object_origin_select = document.querySelector("#object-origin");
+const object_progress = document.querySelector("#object-progress");
+const object_entry_progress = document.querySelector("#object-entry-progress");
+const object_kind_jumps = document.querySelector("#object-kind-jumps");
+const object_review_unreviewed = document.querySelector("#object-review-unreviewed");
+const object_origin_summary = document.querySelector("#object-origin-summary");
 const object_clear_filters = document.querySelector("#object-clear-filters");
 const object_empty_clear = document.querySelector("#object-empty-clear");
 const object_empty = document.querySelector("#object-empty");
@@ -145,6 +151,7 @@ let outline_source = null;
 let proposals = proposal_rows(object_model);
 let object_query = "";
 let object_mode = "all";
+let object_origin = "all";
 let review_query = "";
 let review_mode = "all";
 let current_review_report = null;
@@ -367,12 +374,13 @@ function review_state(row) {
     return row.use === "accept" ? "accepted" : "ignored";
 }
 
-function object_summary(counts, shown) {
-    const filters = object_query !== "" || object_mode !== "all";
+function object_summary(counts, shown, breakdown) {
+    const filters = object_query !== "" || object_mode !== "all" || object_origin !== "all";
     const visible = filters ? ` Showing ${shown} matching term${shown === 1 ? "" : "s"}.` : "";
+    const unknown = breakdown.unknown_origin ? `, ${breakdown.unknown_origin} unknown origin` : "";
     return `${counts.reviewed} of ${counts.total} reviewed `
         + `(${counts.accepted} accepted, ${counts.ignored} ignored); `
-        + `${counts.unreviewed} unreviewed.${visible}`;
+        + `${counts.unreviewed} unreviewed. ${breakdown.registry} registry, ${breakdown.scan} scan${unknown}.${visible}`;
 }
 
 function sync_object_toolbar(tab) {
@@ -382,9 +390,44 @@ function sync_object_toolbar(tab) {
 function clear_object_filters() {
     object_query = "";
     object_mode = "all";
+    object_origin = "all";
     object_search.value = "";
     object_filter.value = "all";
+    object_origin_select.value = "all";
     render_proposals();
+}
+
+function focus_object_row(row) {
+    highlighted_term = row.term;
+    activate_tab(kind_tab_id(row.kind), object_panel);
+    render_proposals();
+    const boxes = object_panel.querySelectorAll("input[data-review-term]");
+    const box = [...boxes].find((input) => input.dataset.reviewTerm === row.term);
+    if (box) {
+        box.focus();
+        box.scrollIntoView({ block: "center" });
+    }
+}
+
+function review_unreviewed() {
+    const breakdown = review_breakdown(proposals);
+    const kind = ["object", "operation", "relation"]
+        .find((candidate_kind) => (breakdown.by_kind[candidate_kind]?.unreviewed ?? 0) > 0);
+    if (!kind) {
+        object_review_summary.textContent = "Every term has a review decision.";
+        return;
+    }
+    object_query = "";
+    object_mode = "unreviewed";
+    object_origin = "all";
+    object_search.value = "";
+    object_filter.value = "unreviewed";
+    object_origin_select.value = "all";
+    const next = proposals.find((row) => row.kind === kind && !row.reviewed);
+    review_cursor_term = next.term;
+    focus_object_row(next);
+    object_review_summary.textContent = `Review queue opened at ${next.term} (${kind_label(next.kind)}). `
+        + "Toggle terms to record decisions; use Next unreviewed to continue.";
 }
 
 function next_unreviewed() {
@@ -393,25 +436,56 @@ function next_unreviewed() {
         object_review_summary.textContent = "Every term has a review decision.";
         return;
     }
-    const unreviewed = proposals.filter((row) => !row.reviewed);
+    const visible = filter_proposals(proposals, object_query, object_mode, object_origin);
+    const unreviewed = visible.filter((row) => !row.reviewed);
+    if (unreviewed.length === 0) {
+        object_review_summary.textContent = "No unreviewed term matches the current filters. "
+            + "Use Review unreviewed to reset the filters and enter the queue.";
+        return;
+    }
     const cursor = proposals.findIndex((row) => row.term === review_cursor_term);
     const next = unreviewed.find((row) => proposals.indexOf(row) > cursor) ?? unreviewed[0];
     review_cursor_term = next.term;
-    highlighted_term = next.term;
-    object_query = "";
-    object_mode = "all";
-    object_search.value = "";
-    object_filter.value = "all";
-    activate_tab(kind_tab_id(next.kind), object_panel);
-    render_proposals();
-    const boxes = object_panel.querySelectorAll("input[data-review-term]");
-    const box = [...boxes].find((input) => input.dataset.reviewTerm === next.term);
-    if (box) {
-        box.focus();
-        box.scrollIntoView({ block: "center" });
-    }
-    object_review_summary.textContent = `Next unreviewed: ${next.term} (${kind_label(next.kind)}). `
+    focus_object_row(next);
+    object_review_summary.textContent = `Next unreviewed within current filters: ${next.term} (${kind_label(next.kind)}). `
         + "Toggle it to record a decision.";
+}
+
+function render_object_entry(counts, breakdown) {
+    const percent = counts.total === 0 ? 0 : Math.round((100 * counts.reviewed) / counts.total);
+    object_progress.max = Math.max(1, counts.total);
+    object_progress.value = counts.reviewed;
+    object_progress.setAttribute("aria-valuetext", `${counts.reviewed} of ${counts.total} reviewed`);
+    object_progress.textContent = `${percent}%`;
+    object_entry_progress.textContent = `${counts.reviewed} of ${counts.total} reviewed (${percent}%); `
+        + `${counts.unreviewed} still need a decision. ${counts.default_include} include and `
+        + `${counts.default_exclude} exclude are unreviewed model defaults, not decisions.`;
+    object_kind_jumps.replaceChildren();
+    for (const kind of ["object", "operation", "relation"]) {
+        const kind_counts = breakdown.by_kind[kind] ?? { total: 0, unreviewed: 0 };
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.kind = kind;
+        button.disabled = kind_counts.total === 0;
+        button.textContent = kind_label(kind);
+        const count = document.createElement("span");
+        count.className = "jump-count";
+        count.textContent = `${kind_counts.unreviewed} unreviewed of ${kind_counts.total}`;
+        button.append(count);
+        button.addEventListener("click", () => {
+            activate_tab(kind_tab_id(kind), object_panel);
+            const shown = filter_proposals(proposals, object_query, object_mode, object_origin)
+                .filter((row) => row.kind === kind).length;
+            object_review_summary.textContent = shown === 0
+                ? `No ${kind_label(kind).toLowerCase()} match the current filters. Clear or change the filters to review this kind.`
+                : `${kind_label(kind)}: showing ${shown} term${shown === 1 ? "" : "s"} under the current filters.`;
+        });
+        object_kind_jumps.append(button);
+    }
+    object_origin_summary.textContent = `${breakdown.registry} registry term${breakdown.registry === 1 ? "" : "s"} · `
+        + `${breakdown.scan} scan proposal${breakdown.scan === 1 ? "" : "s"}`
+        + (breakdown.unknown_origin ? ` · ${breakdown.unknown_origin} with unknown origin` : "");
+    object_review_unreviewed.disabled = counts.unreviewed === 0;
 }
 
 let proposals_url = null;
@@ -421,7 +495,8 @@ function render_proposals() {
         ensure_kind_tab(row.kind);
     }
     const counts = proposal_counts();
-    const visible = filter_proposals(proposals, object_query, object_mode);
+    const breakdown = review_breakdown(proposals);
+    const visible = filter_proposals(proposals, object_query, object_mode, object_origin);
     const visible_by_kind = new Map();
     for (const row of visible) {
         const list = visible_by_kind.get(row.kind) ?? [];
@@ -519,7 +594,8 @@ function render_proposals() {
     objects_count.textContent = `Review progress: ${counts.reviewed} reviewed of ${counts.total}; `
         + `${counts.unreviewed} unreviewed suggestions (${counts.default_include} include, `
         + `${counts.default_exclude} exclude defaults).`;
-    object_review_summary.textContent = object_summary(counts, visible.length);
+    object_review_summary.textContent = object_summary(counts, visible.length, breakdown);
+    render_object_entry(counts, breakdown);
 
     if (proposals_url !== null) {
         URL.revokeObjectURL(proposals_url);
@@ -2409,9 +2485,15 @@ object_filter.addEventListener("change", () => {
     render_proposals();
 });
 
+object_origin_select.addEventListener("change", () => {
+    object_origin = object_origin_select.value;
+    render_proposals();
+});
+
 object_clear_filters.addEventListener("click", clear_object_filters);
 object_empty_clear.addEventListener("click", clear_object_filters);
 object_next_unreviewed.addEventListener("click", next_unreviewed);
+object_review_unreviewed.addEventListener("click", review_unreviewed);
 
 function clear_review_filters() {
     reset_review_filters();

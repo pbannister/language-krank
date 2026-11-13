@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 import { ruleset_render, ruleset_run } from "../sources/krank.mjs";
 import { diff_lines } from "../sources/browser/prompt-diff.mjs";
 import { candidate_stats, coverage_delta } from "../sources/browser/candidate-summary.mjs";
-import { filter_proposals, review_counts } from "../sources/browser/object-filter.mjs";
+import { filter_proposals, review_counts, review_breakdown } from "../sources/browser/object-filter.mjs";
 import { review_progress, filter_requirements } from "../sources/browser/review-queue.mjs";
 import { reduction_summary, retained_reason } from "../sources/browser/reduction-summary.mjs";
 import { scope_stats, required_fact_types, check_readiness, evaluation_summary } from "../sources/browser/check-summary.mjs";
@@ -161,18 +161,49 @@ test("object filtering is immutable and separates human decisions from defaults"
     });
 });
 
-test("Objects review toolbar filters across tabs and exposes progress", () => {
+test("object origin filters and review breakdown stay conservative", () => {
+    const rows = [
+        { term: "alpha", kind: "object", origin: "registry", use: "accept", reviewed: false },
+        { term: "beta", kind: "operation", origin: "scan", use: "ignore", reviewed: true },
+        { term: "gamma", kind: "object", origin: "scan", use: "accept", reviewed: true },
+        { term: "delta", kind: "relation", use: "accept", reviewed: false },
+    ];
+    const before = JSON.stringify(rows);
+    assert.deepEqual(filter_proposals(rows, "", "all").map((row) => row.term), ["alpha", "beta", "gamma", "delta"]);
+    assert.deepEqual(filter_proposals(rows, "", "all", "registry").map((row) => row.term), ["alpha"]);
+    assert.deepEqual(filter_proposals(rows, "", "all", "scan").map((row) => row.term), ["beta", "gamma"]);
+    assert.deepEqual(filter_proposals(rows, "a", "unreviewed", "scan"), []);
+    assert.deepEqual(filter_proposals(rows, "", "all", "bogus"), [], "unknown origin must not fall back to all");
+    assert.deepEqual(filter_proposals([], "", "all", "registry"), []);
+    assert.deepEqual(review_breakdown(rows), {
+        registry: 1, scan: 2, unknown_origin: 1,
+        by_kind: {
+            object: { total: 2, unreviewed: 1 },
+            operation: { total: 1, unreviewed: 0 },
+            relation: { total: 1, unreviewed: 1 },
+        },
+    });
+    assert.equal(JSON.stringify(rows), before, "origin filtering mutated its input");
+});
+
+test("Objects review toolbar filters across tabs and exposes a review entry", () => {
     const html = read("sources/browser/index.html");
-    for (const id of ["object-review-toolbar", "object-search", "object-filter", "object-clear-filters",
-        "object-next-unreviewed", "object-review-summary", "object-empty", "object-empty-clear"]) {
+    for (const id of ["object-review-toolbar", "object-search", "object-filter", "object-origin",
+        "object-clear-filters", "object-next-unreviewed", "object-review-summary", "object-empty",
+        "object-empty-clear", "object-review-entry", "object-entry-progress", "object-progress",
+        "object-kind-jumps", "object-review-unreviewed", "object-origin-summary"]) {
         assert.ok(html.includes(`id="${id}"`), `the review toolbar has no #${id}`);
     }
     assert.match(html, /id="object-search"[^>]*type="search"/);
     assert.match(html, /id="object-review-summary"[^>]*aria-live="polite"/);
     assert.match(html, /id="object-next-unreviewed"[^>]*type="button"/);
+    assert.match(html, /id="object-review-unreviewed"[^>]*class="primary-action"/);
+    assert.match(html, /id="object-progress"[^>]*aria-label="Object review progress"/);
     const source = read("sources/browser/studio.mjs");
-    for (const wiring of ["filter_proposals(", 'origin-${row.origin === "registry" ? "registry" : "scan"}',
-        "object_empty.hidden", "next_unreviewed", "aria-busy", "new_count", "known_count"]) {
+    for (const wiring of ["filter_proposals(", "review_breakdown(", "render_object_entry(",
+        "review_unreviewed", "next_unreviewed", "object_origin", "within current filters",
+        'origin-${row.origin === "registry" ? "registry" : "scan"}', "object_empty.hidden", "aria-busy",
+        "new_count", "known_count"]) {
         assert.ok(source.includes(wiring), `the Objects step is missing ${wiring}`);
     }
 });
