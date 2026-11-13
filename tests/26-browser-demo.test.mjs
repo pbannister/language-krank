@@ -140,7 +140,7 @@ test("every step carries the processing-pipeline graphic", () => {
     assert.match(html, /@media \(max-width: 54rem\)[\s\S]*?\.pipeline-detail\s*\{\s*grid-template-columns:\s*1fr/);
     const source = read("sources/browser/studio.mjs");
     for (const wiring of ["pipeline_track(", "pipeline_detail(current, context)", "render_pipeline(rows, pipeline_context)",
-        "pipeline_track_list.replaceChildren", "aria-current", "Current step", "draft_state", "candidate_count"]) {
+        "pipeline_track_list.replaceChildren", "aria-current", "Current step", "draft_state", "candidate_count", "object_origins"]) {
         assert.ok(source.includes(wiring), `pipeline wiring is missing ${wiring}`);
     }
 });
@@ -1287,6 +1287,15 @@ test("pipeline model has one accurate stage and flow per studio step", () => {
     assert.match(applied.caution, /page-local/);
     assert.equal(applied.flow[2].artifact, "0 readings");
     assert.equal(pipeline_detail("rules", { source: "ignored" }), PIPELINE_DETAILS.rules);
+    const objects = pipeline_detail("objects", {
+        objects: { total: 10, reviewed: 3, unreviewed: 7 },
+        object_origins: { registry: 4, scan: 6 },
+    });
+    assert.match(objects.produces, /10 proposals; 3 reviewed and 7 unreviewed/);
+    assert.match(objects.caution, /7 suggestions remain unreviewed/);
+    assert.equal(objects.flow[1].artifact, "6 new proposals");
+    assert.equal(objects.flow[2].artifact, "3 of 10 reviewed");
+    assert.match(objects.flow[3].artifact, /4 registry terms/);
 });
 
 test("step status summarizes readiness without claiming approval", () => {

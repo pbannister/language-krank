@@ -132,9 +132,36 @@ function prompt_detail(context) {
     };
 }
 
+function objects_detail(context) {
+    const base = PIPELINE_DETAILS.objects;
+    const counts = context.objects ?? {};
+    const total = Number.isFinite(counts.total) ? counts.total : 0;
+    const reviewed = Number.isFinite(counts.reviewed) ? counts.reviewed : 0;
+    const unreviewed = Number.isFinite(counts.unreviewed) ? counts.unreviewed : 0;
+    const origins = context.object_origins ?? {};
+    const registry = Number.isFinite(origins.registry) ? origins.registry : 0;
+    const scan = Number.isFinite(origins.scan) ? origins.scan : 0;
+    return {
+        ...base,
+        produces: `${total} proposal${total === 1 ? "" : "s"}; ${reviewed} reviewed and ${unreviewed} unreviewed`,
+        caution: unreviewed > 0
+            ? `${unreviewed} suggestion${unreviewed === 1 ? "" : "s"} remain unreviewed. Scan proposals do not update the confirmed registry.`
+            : base.caution,
+        flow: [
+            { label: "Prompt", artifact: "prose" },
+            { label: "Scan", artifact: `${scan} new proposals` },
+            { label: "Human review", artifact: `${reviewed} of ${total} reviewed` },
+            { label: "Registry", artifact: `${registry} registry terms; separate update` },
+        ],
+    };
+}
+
 export function pipeline_detail(step, context = {}) {
     if (step === "prompt") {
         return prompt_detail(context ?? {});
+    }
+    if (step === "objects") {
+        return objects_detail(context ?? {});
     }
     return PIPELINE_DETAILS[step] ?? PIPELINE_DETAILS.prompt;
 }
