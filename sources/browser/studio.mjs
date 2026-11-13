@@ -23,6 +23,7 @@ import { review_progress, filter_requirements } from "./review-queue.mjs";
 import { resolve_focus_index, move_focus_index, focus_position, focus_item } from "./review-focus.mjs";
 import { reduction_summary, retained_reason, line_status_rows, filter_line_status, line_status_counts } from "./reduction-summary.mjs";
 import { scope_stats, check_readiness, evaluation_summary } from "./check-summary.mjs";
+import { scope_options, rank_scope_suggestions, suggestion_label } from "./scope-suggestions.mjs";
 import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals } from "./approve-build-summary.mjs";
 import { parse_outline, selection_for_line, outline_matches } from "./prompt-outline.mjs";
 
@@ -90,6 +91,10 @@ const diff_empty = document.querySelector("#diff-empty");
 const check_output = document.querySelector("#check-output");
 const check_summary = document.querySelector("#check-summary");
 const scope_preview = document.querySelector("#scope-preview");
+const scope_suggestions = document.querySelector("#scope-suggestions");
+const scope_suggestion_note = document.querySelector("#scope-suggestion-note");
+const scope_suggestion_list = document.querySelector("#scope-suggestion-list");
+const scope_use_best = document.querySelector("#scope-use-best");
 const check_readiness_box = document.querySelector("#check-readiness");
 const check_readiness_card = document.querySelector("#check-readiness-card");
 const check_status = document.querySelector("#check-status");
@@ -1798,6 +1803,46 @@ function scope_label() {
     return option?.textContent ?? select_scope.value;
 }
 
+function render_scope_suggestions() {
+    scope_suggestion_list.replaceChildren();
+    scope_use_best.hidden = true;
+    if (!candidate || !Array.isArray(candidate.rules?.rules) || candidate.rules.rules.length === 0) {
+        scope_suggestions.hidden = true;
+        return;
+    }
+    scope_suggestions.hidden = false;
+    const options = scope_options(bundle.files, candidate.rules.rules);
+    const suggestions = rank_scope_suggestions(options, 5);
+    const current = options.find((option) => option.value === select_scope.value);
+    scope_suggestion_note.textContent = current?.ready
+        ? "The current scope can run. These alternatives may provide broader or narrower evidence; choosing one does not run it."
+        : "The current scope cannot supply everything these rules need. These alternatives show the closest available evidence.";
+    if (suggestions.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "note";
+        empty.textContent = "No file or directory scope is available in the build-time snapshot.";
+        scope_suggestion_list.append(empty);
+        return;
+    }
+    for (const option of suggestions) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = suggestion_label(option);
+        button.setAttribute("aria-pressed", String(option.value === select_scope.value));
+        button.title = option.ready
+            ? `${option.fact_count} observations across ${option.file_count} file(s). Choosing this scope does not run the check.`
+            : `Missing types: ${option.missing_types.join(", ")}. Choosing this scope does not run the check.`;
+        button.addEventListener("click", () => choose_scope(option.value));
+        scope_suggestion_list.append(button);
+    }
+    const best = suggestions.find((option) => option.ready && option.value !== select_scope.value);
+    if (best) {
+        scope_use_best.hidden = false;
+        scope_use_best.textContent = `Use best suggested scope: ${best.label}`;
+        scope_use_best.onclick = () => choose_scope(best.value);
+    }
+}
+
 function render_check_preview() {
     const files = selected_scope_files();
     const facts = selected_facts();
@@ -1864,6 +1909,7 @@ function render_check_preview() {
     check_next_note.textContent = current_scope
         ? `A current check is recorded for ${current_scope}. Approval is still a separate decision.`
         : "";
+    render_scope_suggestions();
 }
 
 function render_check_result() {
@@ -2834,7 +2880,7 @@ document.querySelector("#generate").addEventListener("click", async () => {
     }
 });
 
-select_scope.addEventListener("change", () => {
+function scope_changed() {
     last_check = null;
     if (candidate?.review) {
         candidate.review.check = null;
@@ -2842,11 +2888,22 @@ select_scope.addEventListener("change", () => {
     }
     if (textarea.value !== working) {
         render_check_preview();
+        render_scope_suggestions();
         render_check_result();
         return;
     }
     render();
-});
+}
+
+function choose_scope(value) {
+    if (typeof value !== "string" || value === "") {
+        return;
+    }
+    select_scope.value = value;
+    scope_changed();
+}
+
+select_scope.addEventListener("change", scope_changed);
 
 check_next_action.addEventListener("click", () => show("approve"));
 

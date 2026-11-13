@@ -973,6 +973,32 @@
             max-width: 32rem;
         }
 
+        .scope-suggestions {
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            border-radius: 0.35rem;
+            padding: 0.75rem 1rem;
+            margin: 0.75rem 0;
+        }
+
+        .scope-suggestions h3 {
+            margin-top: 0;
+        }
+
+        #scope-suggestion-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        #scope-suggestion-list button {
+            text-align: left;
+        }
+
+        #scope-suggestion-list button[aria-pressed="true"] {
+            border-width: 2px;
+            font-weight: 600;
+        }
+
         .check-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2013,6 +2039,13 @@
                     <select id="scope" aria-describedby="check-readiness"></select>
                     <button id="run" type="button" aria-describedby="check-readiness">Run the rules</button>
                 </div>
+                <section class="scope-suggestions" id="scope-suggestions" aria-labelledby="scope-suggestions-title">
+                    <h3 id="scope-suggestions-title">Scopes that can supply these facts</h3>
+                    <p class="note" id="scope-suggestion-note">Suggestions are derived from the current build-time
+                        fact snapshot. Choosing one does not run the check or approve anything.</p>
+                    <div class="review-actions" id="scope-suggestion-list"></div>
+                    <p><button id="scope-use-best" type="button" hidden>Use the best suggested scope</button></p>
+                </section>
                 <div class="check-grid">
                     <section class="check-card" aria-labelledby="scope-preview-title">
                         <h3 id="scope-preview-title">What this scope contains</h3>

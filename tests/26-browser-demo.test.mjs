@@ -22,6 +22,7 @@ import { review_progress, filter_requirements } from "../sources/browser/review-
 import { resolve_focus_index, move_focus_index, focus_position, focus_item } from "../sources/browser/review-focus.mjs";
 import { reduction_summary, retained_reason, line_status_rows, filter_line_status, line_status_counts } from "../sources/browser/reduction-summary.mjs";
 import { scope_stats, required_fact_types, check_readiness, evaluation_summary } from "../sources/browser/check-summary.mjs";
+import { scope_options, rank_scope_suggestions, suggestion_label } from "../sources/browser/scope-suggestions.mjs";
 import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals } from "../sources/browser/approve-build-summary.mjs";
 import { parse_outline, selection_for_line, outline_matches } from "../sources/browser/prompt-outline.mjs";
 
@@ -951,12 +952,58 @@ test("check evaluation summary never turns no emissions into a pass", () => {
     });
 });
 
+test("scope suggestions find viable evidence and rank ready scopes first", () => {
+    const files = [
+        {
+            path: "sources/a.mjs", facts: { directory: "sources" },
+            entities: [{ type: "file", path: "sources/a.mjs", indent_unit: 4 }],
+        },
+        {
+            path: "sources/b.md", facts: { directory: "sources" },
+            entities: [{ type: "task", id: "b", path: "sources/b.md" }],
+        },
+        {
+            path: "prompts/a.md", facts: { directory: "prompts" },
+            entities: [{ type: "task", id: "a", path: "prompts/a.md" }],
+        },
+    ];
+    const rules = [
+        { id: "needs-file", when: [{ fact: { type: "file", indent_unit: 4 } }], then: [{ emit: "x" }] },
+        { id: "needs-task", when: [{ fact: { type: "task", id: "$t" } }], then: [{ emit: "$t" }] },
+    ];
+    const before = JSON.stringify(files);
+    const options = scope_options(files, rules);
+    const by_value = new Map(options.map((option) => [option.value, option]));
+    assert.equal(by_value.get("file:sources/a.mjs").ready, false);
+    assert.equal(by_value.get("file:sources/b.md").ready, false);
+    assert.equal(by_value.get("file:prompts/a.md").ready, false);
+    assert.equal(by_value.get("dir:sources").ready, true);
+    assert.equal(by_value.get("dir:prompts").ready, false);
+    assert.ok(by_value.get("dir:sources").types.includes("file"));
+    assert.equal(JSON.stringify(files), before);
+
+    const ranked = rank_scope_suggestions(options, 3);
+    assert.equal(ranked[0].value, "dir:sources");
+    assert.equal(ranked.length, 3);
+    const first_blocked = ranked.findIndex((option) => !option.ready);
+    assert.ok(first_blocked > 0);
+    assert.ok(ranked.slice(first_blocked).every((option) => !option.ready));
+    assert.match(suggestion_label(by_value.get("dir:sources")), /ready$/);
+    assert.match(suggestion_label(by_value.get("file:prompts/a.md")), /missing file/);
+    assert.equal(rank_scope_suggestions(null).length, 0);
+    assert.equal(rank_scope_suggestions([{ value: "x" }, { value: "x" }]).length, 1);
+    assert.equal(scope_options([{ path: "bad" }, null], rules).length, 0);
+});
+
 test("Check explains scope, readiness, results, and the separate approval step", () => {
     const html = read("sources/browser/index.html");
     for (const id of ["scope-preview", "check-readiness", "check-status", "check-next",
-        "check-next-action", "run", "check-summary", "check-output"]) {
+        "check-next-action", "run", "check-summary", "check-output", "scope-suggestions",
+        "scope-suggestion-note", "scope-suggestion-list", "scope-use-best"]) {
         assert.ok(html.includes(`id="${id}"`), `Check is missing #${id}`);
     }
+    assert.match(html, /id="scope-suggestion-list"/);
+    assert.match(html, /Choosing one does not run the check or approve anything/);
     assert.match(html, /id="scope"[^>]*aria-describedby="check-readiness"/);
     assert.match(html, /id="run"[^>]*aria-describedby="check-readiness"/);
     assert.match(html, /id="check-status"[^>]*aria-live="polite"/);
@@ -969,7 +1016,8 @@ test("Check explains scope, readiness, results, and the separate approval step",
     const source = read("sources/browser/studio.mjs");
     for (const text of ["scope_stats(", "check_readiness(", "evaluation_summary(",
         "Evaluation completed", "no violation was emitted", "not a pass", "Cannot run:",
-        "No evaluation is recorded", "Running…", "review_check(candidate"]) {
+        "No evaluation is recorded", "Running…", "review_check(candidate", "scope_options(",
+        "rank_scope_suggestions(", "render_scope_suggestions(", "choose_scope(", "scope_changed("]) {
         assert.ok(source.includes(text), `Check controller is missing: ${text}`);
     }
     assert.match(source, /aria-busy/);
