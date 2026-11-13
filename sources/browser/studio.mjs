@@ -2521,6 +2521,10 @@ function update_step_status() {
         scope_fact_count: selected_facts().length,
         scope_ready: candidate ? check_readiness(candidate.rules.rules, selected_facts()).ready : false,
         check_scope: report?.check_scope ?? null,
+        build_present: Boolean(build_state && built),
+        build_freshness: freshness,
+        build_entries: build_totals(build_state).entries,
+        build_removable: build_totals(build_state).removable,
         object_origins: review_breakdown(proposals),
         edited,
     };

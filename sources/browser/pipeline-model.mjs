@@ -224,6 +224,52 @@ function check_detail(context) {
     };
 }
 
+function approve_detail(context) {
+    const base = PIPELINE_DETAILS.approve;
+    const report = context.report ?? {};
+    const approved = Number.isFinite(report.approved) ? report.approved : 0;
+    const identified = Number.isFinite(report.identified) ? report.identified : 0;
+    const check = typeof report.check_scope === "string" && report.check_scope !== "";
+    return {
+        ...base,
+        produces: check
+            ? `A complete review artifact for ${report.check_scope}`
+            : "A review artifact; a current check is still missing",
+        caution: check
+            ? "Downloading writes nothing into the repository. Later work must load the rules and supply facts."
+            : "The artifact can record decisions, but no current check is recorded. Downloading does not complete the review.",
+        flow: [
+            { label: "Decisions", artifact: `${approved} of ${identified} approved` },
+            { label: "Check", artifact: check ? "current" : "missing" },
+            { label: "Artifact", artifact: "complete record" },
+            { label: "Repository", artifact: "you save it" },
+        ],
+    };
+}
+
+function build_detail(context) {
+    const base = PIPELINE_DETAILS.build;
+    const present = context.build_present === true;
+    const freshness = typeof context.build_freshness === "string" ? context.build_freshness : "missing";
+    const entries = Number.isFinite(context.build_entries) ? context.build_entries : 0;
+    const removable = Number.isFinite(context.build_removable) ? context.build_removable : 0;
+    return {
+        ...base,
+        produces: present
+            ? `${entries} generated entr${entries === 1 ? "y" : "ies"}; ${freshness}`
+            : "No prompts.out/ output is built yet",
+        caution: present && freshness === "fresh"
+            ? "Fresh output is not enforcement. Later work must supply facts and run the saved rules."
+            : "Build output is missing or stale. Rebuild from recorded selections before relying on it.",
+        flow: [
+            { label: "Artifact", artifact: "recorded" },
+            { label: "Build", artifact: present ? "prompts.out" : "not built" },
+            { label: "Generated", artifact: `${entries} entries, ${removable} removable` },
+            { label: "Later run", artifact: "facts + rules" },
+        ],
+    };
+}
+
 export function pipeline_detail(step, context = {}) {
     if (step === "prompt") {
         return prompt_detail(context ?? {});
@@ -239,6 +285,12 @@ export function pipeline_detail(step, context = {}) {
     }
     if (step === "check") {
         return check_detail(context ?? {});
+    }
+    if (step === "approve") {
+        return approve_detail(context ?? {});
+    }
+    if (step === "build") {
+        return build_detail(context ?? {});
     }
     return PIPELINE_DETAILS[step] ?? PIPELINE_DETAILS.prompt;
 }
