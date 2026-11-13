@@ -101,7 +101,41 @@ export function pipeline_stage(step) {
     return PIPELINE_STAGES.find((stage) => stage.step === step) ?? PIPELINE_STAGES[0];
 }
 
-export function pipeline_detail(step) {
+function prompt_detail(context) {
+    const base = PIPELINE_DETAILS.prompt;
+    const source = typeof context.source === "string" && context.source !== "" ? context.source : "prompt file";
+    const count = Number.isFinite(context.candidate_count) ? context.candidate_count : 0;
+    const current = typeof context.current_candidate === "string" && context.current_candidate !== ""
+        ? context.current_candidate
+        : null;
+    const draft_state = ["matches_file", "applied_draft", "unsaved_edit"].includes(context.draft_state)
+        ? context.draft_state
+        : "matches_file";
+    const draft_label = draft_state === "unsaved_edit"
+        ? "unsaved edit"
+        : draft_state === "applied_draft" ? "applied draft" : "matches file";
+    const caution = draft_state === "unsaved_edit"
+        ? "Generate uses the unsaved text, but the prompt file is unchanged. Nothing is saved or approved."
+        : draft_state === "applied_draft"
+            ? "The applied draft is page-local. It is used for generation, but it is not written to the file or approved."
+            : base.caution;
+    return {
+        ...base,
+        consumes: `A human-authored prompt file: ${source}`,
+        produces: `${count} candidate reading${count === 1 ? "" : "s"}${current ? `; current choice ${current}` : ""}`,
+        caution,
+        flow: [
+            { label: source, artifact: "source" },
+            { label: "Draft", artifact: draft_label },
+            { label: "Generate", artifact: `${count} reading${count === 1 ? "" : "s"}` },
+        ],
+    };
+}
+
+export function pipeline_detail(step, context = {}) {
+    if (step === "prompt") {
+        return prompt_detail(context ?? {});
+    }
     return PIPELINE_DETAILS[step] ?? PIPELINE_DETAILS.prompt;
 }
 

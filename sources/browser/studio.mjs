@@ -2448,7 +2448,7 @@ const STEP_LABELS = {
     build: "Step 7: Build and use",
 };
 
-function render_pipeline(status_rows) {
+function render_pipeline(status_rows, context = {}) {
     const current = current_step ?? "prompt";
     const stages = pipeline_track(status_rows, current);
     pipeline_track_list.replaceChildren();
@@ -2480,7 +2480,7 @@ function render_pipeline(status_rows) {
         item.title = stage.detail;
         pipeline_track_list.append(item);
     }
-    const detail = pipeline_detail(current);
+    const detail = pipeline_detail(current, context);
     pipeline_detail_title.textContent = detail.title;
     pipeline_consumes.textContent = detail.consumes;
     pipeline_produces.textContent = detail.produces;
@@ -2509,6 +2509,13 @@ function update_step_status() {
         edited,
         build: { present: Boolean(build_state && built), freshness },
     });
+    const pipeline_context = {
+        source: entry.source,
+        draft_state: textarea.value !== working ? "unsaved_edit" : edited ? "applied_draft" : "matches_file",
+        candidate_count: entry.candidates.length,
+        current_candidate: candidate?.id,
+        edited,
+    };
     const by_step = new Map(rows.map((row) => [row.step, row]));
     for (const button of document.querySelectorAll(".steps button")) {
         const row = by_step.get(button.dataset.step);
@@ -2534,7 +2541,7 @@ function update_step_status() {
         step_next_action.textContent = `Go to ${next.title.replace(/^Step [0-9]+: /, "")}`;
         step_next_action.onclick = () => show(next.step);
     }
-    render_pipeline(rows);
+    render_pipeline(rows, pipeline_context);
 }
 
 function show(step, announce = true) {

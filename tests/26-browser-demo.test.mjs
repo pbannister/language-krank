@@ -139,8 +139,8 @@ test("every step carries the processing-pipeline graphic", () => {
     assert.match(html, /\.pipeline-flow li:not\(:last-child\)::after/);
     assert.match(html, /@media \(max-width: 54rem\)[\s\S]*?\.pipeline-detail\s*\{\s*grid-template-columns:\s*1fr/);
     const source = read("sources/browser/studio.mjs");
-    for (const wiring of ["pipeline_track(", "pipeline_detail(", "render_pipeline(rows)",
-        "pipeline_track_list.replaceChildren", "aria-current", "Current step"]) {
+    for (const wiring of ["pipeline_track(", "pipeline_detail(current, context)", "render_pipeline(rows, pipeline_context)",
+        "pipeline_track_list.replaceChildren", "aria-current", "Current step", "draft_state", "candidate_count"]) {
         assert.ok(source.includes(wiring), `pipeline wiring is missing ${wiring}`);
     }
 });
@@ -1274,6 +1274,19 @@ test("pipeline model has one accurate stage and flow per studio step", () => {
     assert.equal(track.find((stage) => stage.step === "objects").detail, "");
     assert.equal(JSON.stringify(statuses), before);
     assert.equal(pipeline_track(null, "bad").find((stage) => stage.step === "prompt").current, true);
+
+    const unsaved = pipeline_detail("prompt", {
+        source: "prompts/x.md", draft_state: "unsaved_edit", candidate_count: 2, current_candidate: "chosen", edited: true,
+    });
+    assert.match(unsaved.consumes, /prompts\/x\.md/);
+    assert.match(unsaved.produces, /2 candidate readings.*chosen/);
+    assert.match(unsaved.caution, /unsaved text.*file is unchanged/i);
+    assert.equal(unsaved.flow[1].artifact, "unsaved edit");
+    assert.equal(unsaved.flow[2].artifact, "2 readings");
+    const applied = pipeline_detail("prompt", { source: "prompts/y.md", draft_state: "applied_draft", candidate_count: 0 });
+    assert.match(applied.caution, /page-local/);
+    assert.equal(applied.flow[2].artifact, "0 readings");
+    assert.equal(pipeline_detail("rules", { source: "ignored" }), PIPELINE_DETAILS.rules);
 });
 
 test("step status summarizes readiness without claiming approval", () => {
