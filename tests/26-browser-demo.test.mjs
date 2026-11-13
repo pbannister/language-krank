@@ -140,7 +140,7 @@ test("every step carries the processing-pipeline graphic", () => {
     assert.match(html, /@media \(max-width: 54rem\)[\s\S]*?\.pipeline-detail\s*\{\s*grid-template-columns:\s*1fr/);
     const source = read("sources/browser/studio.mjs");
     for (const wiring of ["pipeline_track(", "pipeline_detail(current, context)", "render_pipeline(rows, pipeline_context)",
-        "pipeline_track_list.replaceChildren", "aria-current", "Current step", "draft_state", "candidate_count", "object_origins"]) {
+        "pipeline_track_list.replaceChildren", "aria-current", "Current step", "draft_state", "candidate_count", "object_origins", "current_rule_count"]) {
         assert.ok(source.includes(wiring), `pipeline wiring is missing ${wiring}`);
     }
 });
@@ -1296,6 +1296,14 @@ test("pipeline model has one accurate stage and flow per studio step", () => {
     assert.equal(objects.flow[1].artifact, "6 new proposals");
     assert.equal(objects.flow[2].artifact, "3 of 10 reviewed");
     assert.match(objects.flow[3].artifact, /4 registry terms/);
+    const candidates = pipeline_detail("candidates", {
+        candidate_count: 2, current_candidate: "contract", current_rule_count: 5,
+    });
+    assert.match(candidates.produces, /2 candidate readings; current choice contract with 5 rules/);
+    assert.match(candidates.caution, /current choice.*not requirement approval/);
+    assert.equal(candidates.flow[1].artifact, "2 readings");
+    assert.equal(candidates.flow[2].artifact, "contract");
+    assert.equal(candidates.flow[3].artifact, "5 formal checks");
 });
 
 test("step status summarizes readiness without claiming approval", () => {

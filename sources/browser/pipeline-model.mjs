@@ -156,12 +156,37 @@ function objects_detail(context) {
     };
 }
 
+function candidates_detail(context) {
+    const base = PIPELINE_DETAILS.candidates;
+    const count = Number.isFinite(context.candidate_count) ? context.candidate_count : 0;
+    const rules = Number.isFinite(context.current_rule_count) ? context.current_rule_count : 0;
+    const current = typeof context.current_candidate === "string" && context.current_candidate !== ""
+        ? context.current_candidate
+        : null;
+    return {
+        ...base,
+        produces: `${count} candidate reading${count === 1 ? "" : "s"}${current ? `; current choice ${current} with ${rules} rule${rules === 1 ? "" : "s"}` : ""}`,
+        caution: current
+            ? "The current choice determines what Rules and Check evaluate. Choosing a reading is still not requirement approval."
+            : base.caution,
+        flow: [
+            { label: "Prompt", artifact: "prose" },
+            { label: "Compiler", artifact: `${count} reading${count === 1 ? "" : "s"}` },
+            { label: "Current choice", artifact: current ?? "none" },
+            { label: "Rules review", artifact: `${rules} formal checks` },
+        ],
+    };
+}
+
 export function pipeline_detail(step, context = {}) {
     if (step === "prompt") {
         return prompt_detail(context ?? {});
     }
     if (step === "objects") {
         return objects_detail(context ?? {});
+    }
+    if (step === "candidates") {
+        return candidates_detail(context ?? {});
     }
     return PIPELINE_DETAILS[step] ?? PIPELINE_DETAILS.prompt;
 }

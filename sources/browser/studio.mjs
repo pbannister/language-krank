@@ -2514,6 +2514,7 @@ function update_step_status() {
         draft_state: textarea.value !== working ? "unsaved_edit" : edited ? "applied_draft" : "matches_file",
         candidate_count: entry.candidates.length,
         current_candidate: candidate?.id,
+        current_rule_count: Array.isArray(candidate?.rules?.rules) ? candidate.rules.rules.length : 0,
         object_origins: review_breakdown(proposals),
         edited,
     };
