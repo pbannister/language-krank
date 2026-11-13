@@ -3027,6 +3027,20 @@ review_focus_prev.addEventListener("click", () => focus_visible_review(-1));
 review_focus_next.addEventListener("click", () => focus_visible_review(1));
 review_focus_exit.addEventListener("click", () => set_review_focus(false));
 
+window.addEventListener("keydown", (event) => {
+    if (!review_focused || current_step !== "rules" || event.defaultPrevented
+        || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+    }
+    if (event.target?.closest?.("input, textarea, select, [contenteditable='true'], [role='tablist']")) {
+        return;
+    }
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        focus_visible_review(event.key === "ArrowLeft" ? -1 : 1);
+    }
+});
+
 line_status_filter.addEventListener("change", () => {
     line_status_mode = line_status_filter.value;
     if (candidate) {

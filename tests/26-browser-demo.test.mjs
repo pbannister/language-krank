@@ -607,11 +607,14 @@ test("focused review navigation is pure, bounded, and immutable", () => {
 test("Rules exposes a bounded one-at-a-time review mode", () => {
     const html = read("sources/browser/index.html");
     for (const id of ["review-focus-toggle", "review-focus-nav", "review-focus-prev", "review-focus-next",
-        "review-focus-position", "review-focus-exit", "review-focus-status"]) {
+        "review-focus-position", "review-focus-exit", "review-focus-status", "review-focus-help"]) {
         assert.ok(html.includes(`id="${id}"`), `Rules focus mode is missing #${id}`);
     }
     assert.match(html, /id="review-focus-nav"[^>]*hidden/);
     assert.match(html, /id="review-focus-status"[^>]*aria-live="polite"/);
+    assert.match(html, /aria-keyshortcuts="ArrowLeft"/);
+    assert.match(html, /aria-keyshortcuts="ArrowRight"/);
+    assert.match(html, /Left and Right arrows/);
     assert.match(html, /One at a time/);
     const source = read("sources/browser/studio.mjs");
     for (const text of ["review_focused", "review_focus_id", "set_review_focus(", "focus_visible_review(",
@@ -625,6 +628,8 @@ test("Rules exposes a bounded one-at-a-time review mode", () => {
     assert.match(source, /review_focus_toggle\.addEventListener/);
     assert.match(source, /review_focus_prev\.addEventListener/);
     assert.match(source, /review_focus_next\.addEventListener/);
+    assert.match(source, /current_step !== "rules"/);
+    assert.match(source, /event\.key === "ArrowLeft"/);
     assert.match(html, /\.review-focus-nav\[hidden\]\s*\{\s*display:\s*none/);
 });
 

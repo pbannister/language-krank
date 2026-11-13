@@ -2227,10 +2227,12 @@
                         </div>
                         <p class="review-progress" id="review-queue-summary" role="status" aria-live="polite"></p>
                         <div class="review-focus-nav" id="review-focus-nav" hidden>
-                            <button id="review-focus-prev" type="button">Previous</button>
+                            <button id="review-focus-prev" type="button" aria-keyshortcuts="ArrowLeft">Previous</button>
                             <span id="review-focus-position" role="status" aria-live="polite">No requirement in focus</span>
-                            <button id="review-focus-next" type="button">Next</button>
+                            <button id="review-focus-next" type="button" aria-keyshortcuts="ArrowRight">Next</button>
                             <button id="review-focus-exit" type="button">Show all requirements</button>
+                            <p class="note" id="review-focus-help">Keyboard: Left and Right arrows move between
+                                focused requirements when focus is outside a field.</p>
                             <p class="note" id="review-focus-status" role="status" aria-live="polite"></p>
                         </div>
                         <div class="review-empty" id="review-empty" hidden>
