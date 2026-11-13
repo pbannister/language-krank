@@ -319,6 +319,9 @@ test("studio reports draft state, action availability, context, and the next ste
         assert.match(element("#edit-note").textContent, /Unsaved edit/);
         assert.equal(element("#apply").disabled, false);
         assert.equal(element("#reset").disabled, false);
+        assert.equal(element("#draft-diff-section").hidden, false);
+        assert.match(element("#draft-diff-summary").textContent, /1 line added/);
+        assert.match(element("#draft-diff").textContent, /\+ Changed\./);
 
         await element("#apply").fire("click");
         assert.match(element("#edit-note").textContent, /Applied draft/);
@@ -328,6 +331,7 @@ test("studio reports draft state, action availability, context, and the next ste
         assert.match(element("#edit-note").textContent, /Draft matches the file/);
         assert.equal(element("#source").value, fixture.text);
         assert.equal(element("#reset").disabled, true);
+        assert.equal(element("#draft-diff-section").hidden, true);
 
         await element("#prompt-next").fire("click");
         assert.equal(element(".panel[data-panel=\"prompt\"]").hidden, true);

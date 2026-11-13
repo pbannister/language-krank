@@ -310,6 +310,13 @@ test("Prompt introduces draft decisions, accessible state, and the next action",
     assert.ok(prompt.indexOf('id="generate"') < prompt.indexOf('id="apply"'));
     assert.match(prompt, /id="prompt-next"[^>]*hidden/);
     assert.match(prompt, /id="prompt-next-note"/);
+    assert.match(prompt, /id="draft-diff-section"/);
+    assert.match(prompt, /id="draft-diff-summary"[^>]*aria-live="polite"/);
+    assert.match(prompt, /id="draft-diff"/);
+    const source = read("sources/browser/studio.mjs");
+    assert.match(source, /function render_draft_diff\(\)/);
+    assert.match(source, /diff_lines\(entry\.markdown, textarea\.value\)/);
+    assert.match(source, /render_draft_diff\(\);/);
     assert.match(html, /\.prompt-actions\s*\{[^}]*flex-wrap:\s*wrap/s);
     assert.match(html, /@media \(max-width: 54rem\)\s*\{\s*body\s*\{[^}]*padding-top:\s*3\.5rem/s);
     assert.match(html, /#tab-prompt #source\s*\{[^}]*box-sizing:\s*border-box/s);

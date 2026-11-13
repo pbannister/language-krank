@@ -146,6 +146,9 @@ const prompt_outline_query = document.querySelector("#prompt-outline-query");
 const prompt_outline_count = document.querySelector("#prompt-outline-count");
 const prompt_outline_status = document.querySelector("#prompt-outline-status");
 const prompt_cursor_status = document.querySelector("#prompt-cursor-status");
+const draft_diff_summary = document.querySelector("#draft-diff-summary");
+const draft_diff_box = document.querySelector("#draft-diff");
+const draft_diff_section = document.querySelector("#draft-diff-section");
 const prompt_next = document.querySelector("#prompt-next");
 const prompt_next_note = document.querySelector("#prompt-next-note");
 const apply_button = document.querySelector("#apply");
@@ -1299,6 +1302,26 @@ function update_prompt_next() {
     prompt_next_note.textContent = `Next: review ${count} candidate reading${count === 1 ? "" : "s"} in Candidates. Choosing a reading is not approval.`;
 }
 
+function render_draft_diff() {
+    const rows = diff_lines(entry.markdown, textarea.value);
+    const added = rows.filter((row) => row.kind === "add").length;
+    const removed = rows.filter((row) => row.kind === "remove").length;
+    draft_diff_summary.textContent = added === 0 && removed === 0
+        ? "The draft matches the file exactly."
+        : `${added} line${added === 1 ? "" : "s"} added and ${removed} line${removed === 1 ? "" : "s"} removed versus the file. The file itself is unchanged.`;
+    draft_diff_section.hidden = added === 0 && removed === 0;
+    draft_diff_box.replaceChildren();
+    if (added === 0 && removed === 0) {
+        return;
+    }
+    for (const row of rows) {
+        const line = document.createElement("div");
+        line.className = `diff-line diff-${row.kind}`;
+        line.textContent = `${row.kind === "remove" ? "- " : row.kind === "add" ? "+ " : "  "}${row.text}`;
+        draft_diff_box.append(line);
+    }
+}
+
 function update_prompt_state() {
     update_edit_note();
     update_prompt_context();
@@ -1306,6 +1329,7 @@ function update_prompt_state() {
     update_prompt_next();
     rebuild_outline();
     update_cursor_status();
+    render_draft_diff();
     update_prompt_download();
 }
 

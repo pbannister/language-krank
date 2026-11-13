@@ -1181,6 +1181,14 @@
             margin-top: 0.5rem;
         }
 
+        .draft-diff .diff {
+            max-height: 18rem;
+        }
+
+        #draft-diff-summary {
+            margin: 0 0 0.5rem;
+        }
+
         .check-summary {
             margin: 0.75rem 0;
         }
@@ -1953,6 +1961,11 @@
                     </div>
                     <textarea id="source" spellcheck="false"></textarea>
                     <p class="note" id="generate-note"></p>
+                    <details class="raw draft-diff" id="draft-diff-section">
+                        <summary id="draft-diff-toggle">Draft differences from the file</summary>
+                        <p class="note" id="draft-diff-summary" role="status" aria-live="polite"></p>
+                        <div id="draft-diff" class="diff"></div>
+                    </details>
                     <div class="prompt-next">
                         <p class="note" id="prompt-next-note"></p>
                         <button id="prompt-next" type="button" hidden>Go to Candidates</button>
