@@ -21,7 +21,7 @@ import { candidate_stats, coverage_delta } from "./candidate-summary.mjs";
 import { review_progress, filter_requirements } from "./review-queue.mjs";
 import { reduction_summary, retained_reason } from "./reduction-summary.mjs";
 import { scope_stats, check_readiness, evaluation_summary } from "./check-summary.mjs";
-import { approval_checklist, artifact_state, build_freshness, build_totals } from "./approve-build-summary.mjs";
+import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals } from "./approve-build-summary.mjs";
 
 const catalog = await load_json("./catalog.json");
 const bundle = await load_json("./files.json");
@@ -1803,11 +1803,7 @@ function render_build() {
         status.className = `status-label status-${freshness.state}`;
         status.textContent = freshness.state;
         const meta_text = document.createElement("span");
-        const removed = Array.isArray(item.coverage?.removed) ? item.coverage.removed.length : 0;
-        const coverage = item.coverage
-            ? ` · ${item.coverage.identified ?? 0} identified · ${item.coverage.approved ?? 0} approved · ${removed} removable line(s)`
-            : "";
-        meta_text.textContent = `Candidate ${item.candidate} · ${item.rules} rule(s)${coverage} · ${freshness.reason}`;
+        meta_text.textContent = `Candidate ${item.candidate} · ${item.rules} rule(s) · ${build_coverage_text(item.coverage)} · ${freshness.reason}`;
         meta.append(status, meta_text);
 
         const links = document.createElement("p");

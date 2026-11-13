@@ -20,7 +20,7 @@ import { filter_proposals, review_counts } from "../sources/browser/object-filte
 import { review_progress, filter_requirements } from "../sources/browser/review-queue.mjs";
 import { reduction_summary, retained_reason } from "../sources/browser/reduction-summary.mjs";
 import { scope_stats, required_fact_types, check_readiness, evaluation_summary } from "../sources/browser/check-summary.mjs";
-import { approval_checklist, artifact_state, build_freshness, build_totals } from "../sources/browser/approve-build-summary.mjs";
+import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals } from "../sources/browser/approve-build-summary.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const read = (rel) => readFileSync(`${root}${rel}`, "utf8");
@@ -811,6 +811,25 @@ test("approval readiness separates evidence, warnings, and legacy review", () =>
     assert.equal(JSON.stringify({ report, candidate }), before);
 });
 
+test("build coverage wording distinguishes unavailable review from reviewed zero", () => {
+    assert.equal(build_coverage_text({
+        identified: 4, approved: 2, removed: [2, 3], reasons: [],
+    }), "4 identified · 2 approved · 2 removable line(s)");
+    assert.equal(build_coverage_text({
+        identified: 0, approved: 0, removed: [], reasons: [],
+    }), "0 identified · 0 approved · 0 removable line(s)");
+    assert.equal(build_coverage_text({
+        identified: 0, approved: 0, removed: [], reasons: ["legacy or stale review"],
+    }), "Requirement review unavailable (legacy or stale)");
+    assert.match(build_coverage_text({
+        identified: 0, approved: 0, removed: [2, 3], reasons: ["legacy"],
+    }), /Requirement review unavailable \(legacy or stale\).*2 removable line\(s\)/);
+    assert.match(build_coverage_text(null), /Coverage unavailable/);
+    assert.match(build_coverage_text({ removed: [] }), /Requirement review unavailable/);
+    assert.match(build_coverage_text({ identified: "4", approved: 2, removed: [], reasons: [] }), /Coverage unavailable/);
+    assert.match(build_coverage_text({ identified: 3, approved: 1, removed: [], reasons: "bad" }), /Requirement review unavailable/);
+});
+
 test("build freshness and totals fail conservatively", () => {
     const catalog = { source_sha256: "aa", approved: "chosen" };
     assert.equal(build_freshness({ source_sha256: "aa", candidate: "chosen" }, catalog).state, "fresh");
@@ -845,6 +864,7 @@ test("the Approve and Build panels expose readiness, artifacts, and freshness", 
     const source = read("sources/browser/studio.mjs");
     assert.match(source, /approval_checklist\(/);
     assert.match(source, /build_freshness\(/);
+    assert.match(source, /build_coverage_text\(item\.coverage\)/);
     assert.match(source, /reduced_link\.removeAttribute\("href"\)/);
     assert.match(source, /aria-busy/);
     assert.match(source, /Approval remains a human decision/);

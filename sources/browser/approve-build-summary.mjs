@@ -98,6 +98,24 @@ export function build_freshness(manifest_entry, catalog_entry) {
     return { state: "fresh", reason: "Built from the current source and selected reading." };
 }
 
+export function build_coverage_text(coverage) {
+    if (!coverage || typeof coverage !== "object" || Array.isArray(coverage)) {
+        return "Coverage unavailable (no build metadata)";
+    }
+    const removed = Array.isArray(coverage.removed) ? coverage.removed.length : 0;
+    const removable = `${removed} removable line(s)`;
+    if (!Array.isArray(coverage.reasons)) {
+        return `Requirement review unavailable (missing or invalid coverage metadata)${removed ? ` · ${removable}` : ""}`;
+    }
+    if (coverage.reasons.length > 0) {
+        return `Requirement review unavailable (legacy or stale)${removed ? ` · ${removable}` : ""}`;
+    }
+    if (!Number.isInteger(coverage.identified) || !Number.isInteger(coverage.approved)) {
+        return `Coverage unavailable (invalid requirement counts)${removed ? ` · ${removable}` : ""}`;
+    }
+    return `${coverage.identified} identified · ${coverage.approved} approved · ${removable}`;
+}
+
 export function build_totals(manifest) {
     const entries = Array.isArray(manifest?.entries) ? manifest.entries : [];
     let with_removable = 0;
