@@ -1193,6 +1193,14 @@
             margin: 0.75rem 0;
         }
 
+        #check-history {
+            margin: 1rem 0;
+        }
+
+        #check-history h3 {
+            margin-top: 0;
+        }
+
         .check-controls {
             display: flex;
             flex-wrap: wrap;
@@ -2507,6 +2515,23 @@
                     <span class="note" id="check-next-note"></span>
                 </p>
                 <div id="check-summary" class="check-summary"></div>
+                <section class="check-history" id="check-history" aria-labelledby="check-history-title">
+                    <div class="step-head">
+                        <div>
+                            <h3 id="check-history-title">Run history</h3>
+                            <p class="note">Page-local record of completed evaluations. Selecting a historical
+                                result cannot restore approval or replace the current check.</p>
+                        </div>
+                        <button id="check-history-clear" type="button">Clear history</button>
+                    </div>
+                    <div class="table-scroll">
+                        <table>
+                            <thead><tr><th>Time</th><th>Scope</th><th>Firings</th><th>Violations</th></tr></thead>
+                            <tbody id="check-history-body"></tbody>
+                        </table>
+                    </div>
+                    <p class="note" id="check-history-empty" hidden>No completed checks in this page session.</p>
+                </section>
                 <details class="raw">
                     <summary>Raw result (JSON)</summary>
                     <pre id="check-output"></pre>

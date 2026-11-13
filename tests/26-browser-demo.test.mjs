@@ -1175,7 +1175,8 @@ test("Check explains scope, readiness, results, and the separate approval step",
     for (const id of ["scope-preview", "check-readiness", "check-status", "check-next",
         "check-next-action", "run", "check-summary", "check-output", "scope-suggestions",
         "scope-suggestion-note", "scope-suggestion-list", "scope-use-best", "scope-compare",
-        "scope-compare-list", "scope-compare-note"]) {
+        "scope-compare-list", "scope-compare-note", "check-history", "check-history-body",
+        "check-history-empty", "check-history-clear"]) {
         assert.ok(html.includes(`id="${id}"`), `Check is missing #${id}`);
     }
     assert.match(html, /id="scope-suggestion-list"/);
@@ -1194,7 +1195,8 @@ test("Check explains scope, readiness, results, and the separate approval step",
         "Evaluation completed", "no violation was emitted", "not a pass", "Cannot run:",
         "No evaluation is recorded", "Running…", "review_check(candidate", "scope_options(",
         "rank_scope_suggestions(", "render_scope_suggestions(", "choose_scope(", "scope_changed(",
-        "scope_comparison(", "scope_compare.hidden"]) {
+        "scope_comparison(", "scope_compare.hidden", "check_history.unshift", "render_check_history(",
+        "reset_check_history("]) {
         assert.ok(source.includes(text), `Check controller is missing: ${text}`);
     }
     assert.match(source, /aria-busy/);

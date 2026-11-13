@@ -100,6 +100,9 @@ const diff_changes_only = document.querySelector("#diff-changes-only");
 const diff_count = document.querySelector("#diff-count");
 const check_output = document.querySelector("#check-output");
 const check_summary = document.querySelector("#check-summary");
+const check_history_body = document.querySelector("#check-history-body");
+const check_history_empty = document.querySelector("#check-history-empty");
+const check_history_clear = document.querySelector("#check-history-clear");
 const scope_preview = document.querySelector("#scope-preview");
 const scope_suggestions = document.querySelector("#scope-suggestions");
 const scope_suggestion_note = document.querySelector("#scope-suggestion-note");
@@ -199,6 +202,7 @@ let working = entry.markdown;
 let edited = false;
 let last_check = null;
 let check_running = false;
+let check_history = [];
 let draft_revision = 0;
 let draft_history_state = empty_draft_history();
 let outline_entries = [];
@@ -1751,6 +1755,7 @@ function render_candidates() {
                 reset_review_filters();
                 reset_review_focus();
                 reset_line_status();
+                reset_check_history();
                 last_check = null;
                 reconcile_check();
                 check_output.textContent = "";
@@ -2109,7 +2114,24 @@ function render_check_preview() {
     render_scope_suggestions();
 }
 
+function render_check_history() {
+    check_history_body.replaceChildren();
+    check_history_empty.hidden = check_history.length > 0;
+    check_history_clear.disabled = check_history.length === 0;
+    for (const run of check_history) {
+        const row = document.createElement("tr");
+        row.append(cell(local_time(run.at)), cell(run.scope), cell(String(run.firings)), cell(String(run.emitted)));
+        check_history_body.append(row);
+    }
+}
+
+function reset_check_history() {
+    check_history = [];
+    render_check_history();
+}
+
 function render_check_result() {
+    render_check_history();
     check_summary.replaceChildren();
     if (!last_check) {
         const note = document.createElement("p");
@@ -2898,6 +2920,7 @@ select_prompt.addEventListener("change", () => {
     reset_review_filters();
     reset_review_focus();
     reset_line_status();
+    reset_check_history();
     reconcile_check();
     render();
 });
@@ -3351,6 +3374,7 @@ document.querySelector("#generate").addEventListener("click", async () => {
         reset_review_filters();
         reset_review_focus();
         reset_line_status();
+        reset_check_history();
         working = request_text;
         edited = working !== entry.markdown;
         last_check = null;
@@ -3399,6 +3423,7 @@ function choose_scope(value) {
 select_scope.addEventListener("change", scope_changed);
 
 check_next_action.addEventListener("click", () => show("approve"));
+check_history_clear.addEventListener("click", reset_check_history);
 
 document.querySelector("#run").addEventListener("click", async () => {
     if (check_running) {
@@ -3438,6 +3463,9 @@ document.querySelector("#run").addEventListener("click", async () => {
             ? review_check(candidate, entry.source, working, catalog.fact_contract, select_scope.value, facts)
             : ruleset_run({ facts, rules: candidate.rules.rules });
         last_check = result;
+        check_history.unshift({ at: new Date().toISOString(), scope: scope_label(), firings: result.firings, emitted: result.emitted.length });
+        check_history = check_history.slice(0, 6);
+        render_check_history();
         check_output.textContent = JSON.stringify(
             { rule_set: candidate.id, scope: select_scope.value, firings: result.firings, emitted: result.emitted },
             null,
