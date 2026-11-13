@@ -16,6 +16,7 @@ import { ruleset_render, ruleset_run } from "../krank.mjs";
 import { diff_lines } from "./prompt-diff.mjs";
 import { render_file } from "./file-view.mjs";
 import { review_report, review_reduce, review_check, review_decide, review_observations_match, explanation_current } from "../compile-review.mjs";
+import { filter_proposals, review_counts } from "./object-filter.mjs";
 
 const catalog = await load_json("./catalog.json");
 const bundle = await load_json("./files.json");
@@ -61,8 +62,17 @@ const reset_button = document.querySelector("#reset");
 const generate_button = document.querySelector("#generate");
 const objects_count = document.querySelector("#objects-count");
 const propose_note = document.querySelector("#propose-note");
+const propose_button = document.querySelector("#propose");
 const object_panel = document.querySelector('.panel[data-panel="objects"]');
 const object_tabs = document.querySelector("#object-tabs");
+const object_review_toolbar = document.querySelector("#object-review-toolbar");
+const object_search = document.querySelector("#object-search");
+const object_filter = document.querySelector("#object-filter");
+const object_clear_filters = document.querySelector("#object-clear-filters");
+const object_empty_clear = document.querySelector("#object-empty-clear");
+const object_empty = document.querySelector("#object-empty");
+const object_review_summary = document.querySelector("#object-review-summary");
+const object_next_unreviewed = document.querySelector("#object-next-unreviewed");
 const object_about_tab = object_tabs.querySelector('[data-tab="object-about"]');
 const object_about_panel = object_panel.querySelector('.tab-panel[data-tab="object-about"]');
 
@@ -73,6 +83,10 @@ let edited = false;
 let last_check = null;
 let draft_revision = 0;
 let proposals = proposal_rows(object_model);
+let object_query = "";
+let object_mode = "all";
+let review_cursor_term = null;
+let highlighted_term = "";
 const scan_times = new Map();
 let build_state = null;
 const urls = [];
@@ -231,6 +245,7 @@ function proposal_rows(model) {
             evidence: object.evidence,
             rationale: object.rationale,
             source: object.source,
+            origin: "registry",
         });
     }
     for (const operation of model.operations) {
@@ -243,6 +258,7 @@ function proposal_rows(model) {
             evidence: operation.evidence,
             rationale: operation.rationale,
             source: operation.source,
+            origin: "registry",
         });
     }
     for (const relation of model.relations) {
@@ -254,23 +270,71 @@ function proposal_rows(model) {
             evidence: relation.evidence,
             rationale: relation.rationale,
             source: relation.source,
+            origin: "registry",
         });
     }
     for (const proposal of model.proposals ?? []) {
-        rows.push({ ...proposal });
+        rows.push({ ...proposal, origin: "scan" });
     }
     return rows.map((row) => ({ ...row, use: default_use(row), reviewed: false }));
 }
 
 function proposal_counts() {
-    const counts = { accept: 0, ignore: 0, unreviewed: 0 };
-    for (const row of proposals) {
-        counts[row.use] += 1;
-        if (!row.reviewed) {
-            counts.unreviewed += 1;
-        }
+    return review_counts(proposals);
+}
+
+function review_state(row) {
+    if (!row.reviewed) {
+        return "unreviewed";
     }
-    return counts;
+    return row.use === "accept" ? "accepted" : "ignored";
+}
+
+function object_summary(counts, shown) {
+    const filters = object_query !== "" || object_mode !== "all";
+    const visible = filters ? ` Showing ${shown} matching term${shown === 1 ? "" : "s"}.` : "";
+    return `${counts.reviewed} of ${counts.total} reviewed `
+        + `(${counts.accepted} accepted, ${counts.ignored} ignored); `
+        + `${counts.unreviewed} unreviewed.${visible}`;
+}
+
+function sync_object_toolbar(tab) {
+    object_review_toolbar.hidden = tab === "object-about";
+}
+
+function clear_object_filters() {
+    object_query = "";
+    object_mode = "all";
+    object_search.value = "";
+    object_filter.value = "all";
+    render_proposals();
+}
+
+function next_unreviewed() {
+    const counts = proposal_counts();
+    if (counts.unreviewed === 0) {
+        object_review_summary.textContent = "Every term has a review decision.";
+        return;
+    }
+    const unreviewed = proposals.filter((row) => !row.reviewed);
+    const cursor = proposals.findIndex((row) => row.term === review_cursor_term);
+    const next = unreviewed.find((row) => proposals.indexOf(row) > cursor) ?? unreviewed[0];
+    review_cursor_term = next.term;
+    highlighted_term = next.term;
+    object_query = "";
+    object_mode = "all";
+    object_search.value = "";
+    object_filter.value = "all";
+    activate_tab(kind_tab_id(next.kind), object_panel);
+    render_proposals();
+    const boxes = object_panel.querySelectorAll("input[data-review-term]");
+    const box = [...boxes].find((input) => input.dataset.reviewTerm === next.term);
+    if (box) {
+        box.focus();
+        box.scrollIntoView({ block: "center" });
+    }
+    object_review_summary.textContent = `Next unreviewed: ${next.term} (${kind_label(next.kind)}). `
+        + "Toggle it to record a decision.";
 }
 
 let proposals_url = null;
@@ -279,14 +343,24 @@ function render_proposals() {
     for (const row of proposals) {
         ensure_kind_tab(row.kind);
     }
+    const counts = proposal_counts();
+    const visible = filter_proposals(proposals, object_query, object_mode);
+    const visible_by_kind = new Map();
+    for (const row of visible) {
+        const list = visible_by_kind.get(row.kind) ?? [];
+        list.push(row);
+        visible_by_kind.set(row.kind, list);
+    }
     const bodies = new Map();
     for (const body of object_panel.querySelectorAll("tbody[data-kind]")) {
         body.replaceChildren();
         bodies.set(body.dataset.kind, body);
     }
-    for (const row of proposals) {
+    for (const row of visible) {
         const tr = document.createElement("tr");
-        tr.className = `use-${row.use}${row.reviewed ? "" : " unreviewed"}`;
+        tr.className = `use-${row.use}${row.reviewed ? "" : " unreviewed"}`
+            + `${row.term === highlighted_term ? " next-highlight" : ""}`;
+        tr.dataset.term = row.term;
 
         const term = document.createElement("td");
         const term_line = document.createElement("div");
@@ -295,20 +369,29 @@ function render_proposals() {
         box.type = "checkbox";
         box.checked = row.use === "accept";
         box.indeterminate = !row.reviewed;
+        box.dataset.reviewTerm = row.term;
         box.setAttribute("aria-label", `accept ${row.term}`);
         box.addEventListener("change", () => {
             row.use = box.checked ? "accept" : "ignore";
             row.reviewed = true;
+            review_cursor_term = row.term;
             render_proposals();
         });
         term_line.append(box, document.createTextNode(row.term));
         term.append(term_line);
-        if (!row.reviewed) {
-            const hint = document.createElement("div");
-            hint.className = "review-hint";
-            hint.textContent = "unreviewed";
-            term.append(hint);
-        }
+        const meta = document.createElement("div");
+        meta.className = "review-meta";
+        const origin = document.createElement("span");
+        origin.className = `review-badge origin-${row.origin === "registry" ? "registry" : "scan"}`;
+        origin.textContent = row.origin === "registry" ? "registry" : "scan";
+        const kind = document.createElement("span");
+        kind.className = "review-badge";
+        kind.textContent = row.kind;
+        const state = document.createElement("span");
+        state.className = "review-badge";
+        state.textContent = review_state(row);
+        meta.append(origin, kind, state);
+        term.append(meta);
 
         const evidence = document.createElement("td");
         evidence.className = "evidence";
@@ -342,9 +425,24 @@ function render_proposals() {
         tr.append(term, evidence);
         bodies.get(row.kind).append(tr);
     }
+    for (const [kind, body] of bodies) {
+        if ((visible_by_kind.get(kind) ?? []).length === 0) {
+            const tr = document.createElement("tr");
+            tr.className = "empty-row";
+            const td = document.createElement("td");
+            td.colSpan = 2;
+            td.textContent = "No terms in this kind match the current filters.";
+            tr.append(td);
+            body.append(tr);
+        }
+    }
 
-    const counts = proposal_counts();
-    objects_count.textContent = `Scan result: ${counts.accept} accept · ${counts.ignore} ignore · ${counts.unreviewed} unreviewed (of ${proposals.length})`;
+    object_empty.hidden = visible.length !== 0;
+    object_next_unreviewed.disabled = counts.unreviewed === 0;
+    objects_count.textContent = `Review progress: ${counts.reviewed} reviewed of ${counts.total}; `
+        + `${counts.unreviewed} unreviewed suggestions (${counts.default_include} include, `
+        + `${counts.default_exclude} exclude defaults).`;
+    object_review_summary.textContent = object_summary(counts, visible.length);
 
     if (proposals_url !== null) {
         URL.revokeObjectURL(proposals_url);
@@ -835,7 +933,7 @@ function render_build_cycle() {
     const counts = proposal_counts();
     const built_entry = build_state?.entries?.find((item) => item.source === entry.source);
     const rows = [
-        ["Objects", `${counts.accept} accept · ${counts.ignore} ignore · ${counts.unreviewed} unreviewed`],
+        ["Objects", `${counts.reviewed} reviewed · ${counts.accepted} accepted · ${counts.ignored} ignored · ${counts.unreviewed} unreviewed`],
         ["Candidate", candidate ? candidate.id : "none"],
         ["This prompt", `${candidate ? candidate.id : "none"} on the page · ${built_entry ? built_entry.candidate : "not built"} in prompts.out`],
         ["prompts.out", build_state ? `built ${local_time(build_state.generated_at)}` : "not built"],
@@ -1148,6 +1246,9 @@ function activate_tab(name, scope) {
     for (const panel of container.querySelectorAll(".tab-panel")) {
         panel.hidden = panel.dataset.tab !== name;
     }
+    if (scope === object_panel) {
+        sync_object_toolbar(name);
+    }
 }
 
 let history_entries = [];
@@ -1221,10 +1322,25 @@ async function post_sse(path, body, on_event) {
     return result;
 }
 
-document.querySelector("#propose").addEventListener("click", async () => {
-    const button = document.querySelector("#propose");
+object_search.addEventListener("input", () => {
+    object_query = object_search.value;
+    render_proposals();
+});
+
+object_filter.addEventListener("change", () => {
+    object_mode = object_filter.value;
+    render_proposals();
+});
+
+object_clear_filters.addEventListener("click", clear_object_filters);
+object_empty_clear.addEventListener("click", clear_object_filters);
+object_next_unreviewed.addEventListener("click", next_unreviewed);
+
+propose_button.addEventListener("click", async () => {
     const source_scan = entry.source;
-    button.disabled = true;
+    propose_button.disabled = true;
+    propose_button.setAttribute("aria-busy", "true");
+    propose_button.textContent = "Scanning…";
     propose_note.textContent = "Scanning…";
     try {
         const result = await post_sse("/propose", { source: source_scan, text: textarea.value }, (event) => {
@@ -1235,20 +1351,28 @@ document.querySelector("#propose").addEventListener("click", async () => {
             }
         });
         const known = new Set(proposals.map((row) => row.term));
+        let new_count = 0;
+        let known_count = 0;
         for (const proposal of result.proposals) {
             if (!known.has(proposal.term)) {
-                proposals.push(proposal);
+                proposals.push({ ...proposal, origin: "scan", use: default_use(proposal), reviewed: false });
                 known.add(proposal.term);
+                new_count += 1;
+            } else {
+                known_count += 1;
             }
         }
         render_proposals();
         scan_times.set(source_scan, new Date().toISOString());
         render_object_file();
-        propose_note.textContent = `${result.proposals.length} proposal(s) read from the scan; new terms are pending.`;
+        propose_note.textContent = `${result.proposals.length} proposal(s) read; `
+            + `${new_count} new and ${known_count} already present. New terms are unreviewed.`;
     } catch (error) {
         propose_note.textContent = `Scan failed: ${error.message}`;
     } finally {
-        button.disabled = false;
+        propose_button.disabled = false;
+        propose_button.setAttribute("aria-busy", "false");
+        propose_button.textContent = "Scan file";
     }
 });
 

@@ -250,6 +250,96 @@
             opacity: 0.7;
         }
 
+        .review-toolbar {
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            border-radius: 0.35rem;
+            padding: 0.75rem 1rem;
+            margin: 0.75rem 0;
+        }
+
+        .review-toolbar h3 {
+            margin: 0 0 0.35rem;
+        }
+
+        .review-toolbar-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem 0.9rem;
+            align-items: end;
+            margin: 0.6rem 0;
+        }
+
+        .review-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            margin: 0;
+            font-size: 0.8rem;
+        }
+
+        .review-field input,
+        .review-field select {
+            font: inherit;
+            font-size: 0.875rem;
+            padding: 0.35rem 0.45rem;
+            max-width: 100%;
+        }
+
+        #object-search {
+            min-width: 16rem;
+        }
+
+        .review-toolbar-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .review-progress {
+            margin: 0.4rem 0 0;
+            font-size: 0.875rem;
+        }
+
+        .object-empty {
+            border-left: 3px solid color-mix(in srgb, Canvas 60%, CanvasText 40%);
+            padding: 0.5rem 0.75rem;
+            margin: 0.6rem 0 0;
+        }
+
+        .object-empty[hidden] {
+            display: none;
+        }
+
+        .review-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            margin-top: 0.3rem;
+        }
+
+        .review-badge {
+            border: 1px solid color-mix(in srgb, Canvas 72%, CanvasText 28%);
+            border-radius: 999px;
+            padding: 0 0.4rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .review-badge.origin-scan {
+            border-style: dashed;
+        }
+
+        .next-highlight td {
+            background: color-mix(in srgb, Canvas 80%, #f9a825 20%);
+        }
+
+        .empty-row td {
+            font-style: italic;
+            opacity: 0.75;
+        }
+
         .term-line {
             display: flex;
             align-items: center;
@@ -692,6 +782,17 @@
                 flex-direction: row;
                 flex-wrap: wrap;
             }
+
+            .review-field,
+            #object-search,
+            .review-field select {
+                width: 100%;
+                min-width: 0;
+            }
+
+            .review-toolbar-actions button {
+                flex: 1 1 auto;
+            }
         }
     </style>
 </head>
@@ -820,6 +921,34 @@
                     <button type="button" class="tab" data-tab="object-about" role="tab"
                         aria-selected="false">About</button>
                 </div>
+                <section class="review-toolbar" id="object-review-toolbar" aria-label="Object review queue">
+                    <h3>Review queue</h3>
+                    <p class="note">Filter the suggestions across every kind tab. Filtering changes what is shown, not
+                        your decisions. A model suggestion is not a review decision until you toggle its checkbox.</p>
+                    <div class="review-toolbar-controls">
+                        <label class="review-field" for="object-search">Find a term
+                            <input id="object-search" type="search" placeholder="term, kind, evidence, or reason"
+                                autocomplete="off">
+                        </label>
+                        <label class="review-field" for="object-filter">Show
+                            <select id="object-filter">
+                                <option value="all">All terms</option>
+                                <option value="unreviewed">Unreviewed only</option>
+                                <option value="accepted">Accepted by me</option>
+                                <option value="ignored">Ignored by me</option>
+                            </select>
+                        </label>
+                        <div class="review-toolbar-actions">
+                            <button id="object-clear-filters" type="button">Clear filters</button>
+                            <button id="object-next-unreviewed" type="button">Next unreviewed</button>
+                        </div>
+                    </div>
+                    <p class="review-progress" id="object-review-summary" role="status" aria-live="polite"></p>
+                    <div class="object-empty" id="object-empty" hidden>
+                        <p>No terms match these filters.</p>
+                        <button id="object-empty-clear" type="button">Clear filters</button>
+                    </div>
+                </section>
                 <div class="tab-panel" data-tab="object-status">
                     <h3>File</h3>
                     <dl class="file-history" id="object-file"></dl>
@@ -843,10 +972,12 @@
                         <span class="note" id="propose-note" role="status" aria-live="polite"></span>
                     </div>
                     <p class="scan-result" id="objects-count"></p>
-                    <p class="note">These counts cover the combined review list, including terms already loaded from the project, not just this scan.</p>
+                    <p class="note">These counts cover the combined review list, including terms already loaded from the project, not just this scan.
+                        The checkbox positions are model suggestions, not human decisions. Unreviewed defaults are still guesses;
+                        zero reviewed does not mean approved.</p>
                     <h3>Review</h3>
                     <p class="note">Open the Objects, Operations, and Relations tabs to review the suggestions.
-                        A checked box accepts the term and an unchecked box ignores it; a row stays unreviewed until you toggle it.
+                        A checked box accepts the term and an unchecked box ignores it, but only after you toggle it.
                         Your choices stay on this page and do not update the confirmed object registry or rewrite the prompt.
                         Download the reviewed proposals to keep your decisions.
                         Recording confirmed terms in the project's object model is a separate, explicit step before they can be used by the compiler.</p>

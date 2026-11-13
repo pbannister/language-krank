@@ -15,6 +15,7 @@ import { relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ruleset_render, ruleset_run } from "../sources/krank.mjs";
 import { diff_lines } from "../sources/browser/prompt-diff.mjs";
+import { filter_proposals, review_counts } from "../sources/browser/object-filter.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const read = (rel) => readFileSync(`${root}${rel}`, "utf8");
@@ -61,6 +62,9 @@ test("every demo module imports the barrel and no node: builtin", () => {
         assert.match(text, /from "\.\.\/krank\.mjs"/, `${rel} does not import the barrel`);
         assert.ok(!/from\s+["']node:/.test(text), `${rel} imports a node: builtin`);
     }
+    const filter = read("sources/browser/object-filter.mjs");
+    assert.ok(!/from\s+["']node:/.test(filter), "object-filter.mjs imports a node: builtin");
+    assert.ok(!/\bdocument\b|\bwindow\b/.test(filter), "object-filter.mjs depends on the DOM");
 });
 
 test("each page loads its module", () => {
@@ -86,9 +90,49 @@ test("the studio loads the object model and offers a proposal review", () => {
     const source = read("sources/browser/studio.mjs");
     assert.match(source, /load_json\("\.\/object-model\.json"\)/, "the studio does not load the object model");
     assert.match(source, /\/propose/, "the studio has no propose call");
-    assert.match(source, /Scan result: .* accept · .* ignore · .* unreviewed/, "the studio has no scan result");
+    assert.match(source, /Review progress:/, "the studio has no review progress");
+    assert.match(source, /reviewed of/, "the studio does not report reviewed progress");
+    assert.match(source, /unreviewed suggestions/, "the studio does not report unreviewed defaults");
+    assert.match(source, /review_counts\(proposals\)/, "the studio does not separate reviewed decisions");
     assert.match(source, /render_object_file/, "the studio does not render the objects file status");
     assert.match(source, /Evidence \/ Rationale/, "the studio has no combined evidence column");
+});
+
+test("object filtering is immutable and separates human decisions from defaults", () => {
+    const rows = [
+        { term: "alpha", kind: "object", evidence: "The Alpha term.", rationale: "A thing.", use: "accept", reviewed: false },
+        { term: "beta", kind: "operation", evidence: "Creates Beta.", rationale: "An action.", use: "ignore", reviewed: true },
+        { term: "gamma", kind: "relation", evidence: "Gamma links them.", rationale: "A connection.", use: "accept", reviewed: true },
+    ];
+    const before = JSON.stringify(rows);
+    assert.deepEqual(filter_proposals(rows, "BETA", "all").map((row) => row.term), ["beta"]);
+    assert.deepEqual(filter_proposals(rows, "action", "all").map((row) => row.term), ["beta"]);
+    assert.deepEqual(filter_proposals(rows, "connection", "all").map((row) => row.term), ["gamma"]);
+    assert.deepEqual(filter_proposals(rows, "", "unreviewed").map((row) => row.term), ["alpha"]);
+    assert.deepEqual(filter_proposals(rows, "", "accepted").map((row) => row.term), ["gamma"]);
+    assert.deepEqual(filter_proposals(rows, "", "ignored").map((row) => row.term), ["beta"]);
+    assert.equal(JSON.stringify(rows), before, "filtering mutated its input");
+
+    assert.deepEqual(review_counts(rows), {
+        total: 3, reviewed: 2, unreviewed: 1, accepted: 1, ignored: 1,
+        default_include: 1, default_exclude: 0,
+    });
+});
+
+test("Objects review toolbar filters across tabs and exposes progress", () => {
+    const html = read("sources/browser/index.html");
+    for (const id of ["object-review-toolbar", "object-search", "object-filter", "object-clear-filters",
+        "object-next-unreviewed", "object-review-summary", "object-empty", "object-empty-clear"]) {
+        assert.ok(html.includes(`id="${id}"`), `the review toolbar has no #${id}`);
+    }
+    assert.match(html, /id="object-search"[^>]*type="search"/);
+    assert.match(html, /id="object-review-summary"[^>]*aria-live="polite"/);
+    assert.match(html, /id="object-next-unreviewed"[^>]*type="button"/);
+    const source = read("sources/browser/studio.mjs");
+    for (const wiring of ["filter_proposals(", 'origin-${row.origin === "registry" ? "registry" : "scan"}',
+        "object_empty.hidden", "next_unreviewed", "aria-busy", "new_count", "known_count"]) {
+        assert.ok(source.includes(wiring), `the Objects step is missing ${wiring}`);
+    }
 });
 
 test("the Objects Status panel explains the scan beside its button", () => {
