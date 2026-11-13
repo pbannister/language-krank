@@ -134,6 +134,7 @@ const build_output = document.querySelector("#build-output");
 const build_button = document.querySelector("#build");
 const artifact_file = document.querySelector("#artifact-file");
 const artifact_load_status = document.querySelector("#artifact-load-status");
+const artifact_restore = document.querySelector("#artifact-restore");
 const history_log = document.querySelector("#history-log");
 const file_history = document.querySelector("#file-history");
 const object_file = document.querySelector("#object-file");
@@ -203,6 +204,7 @@ let edited = false;
 let last_check = null;
 let check_running = false;
 let check_history = [];
+let artifact_previous = null;
 let draft_revision = 0;
 let draft_history_state = empty_draft_history();
 let outline_entries = [];
@@ -2477,6 +2479,11 @@ artifact_file.addEventListener("change", async () => {
         if (report.reasons.length > 0) {
             throw new Error(`The artifact cannot be loaded: ${report.reasons.join(" ")}`);
         }
+        artifact_previous = {
+            entry,
+            candidate,
+            catalog_entries: catalog.entries,
+        };
         const updated = {
             ...entry,
             candidates: merge_candidate(entry.candidates, imported),
@@ -2491,6 +2498,7 @@ artifact_file.addEventListener("change", async () => {
         last_check = null;
         reconcile_check();
         artifact_load_status.textContent = `Loaded ${imported.id}; ${report.approved} of ${report.identified} requirements are approved. This page changed only.`;
+        artifact_restore.hidden = false;
         render();
     } catch (error) {
         artifact_load_status.textContent = `Could not load: ${error.message}`;
@@ -2504,6 +2512,25 @@ diff_changes_only.addEventListener("change", () => {
     if (candidate) {
         render_reduced();
     }
+});
+
+artifact_restore.addEventListener("click", () => {
+    if (!artifact_previous) {
+        return;
+    }
+    entry = artifact_previous.entry;
+    candidate = artifact_previous.candidate;
+    catalog.entries = artifact_previous.catalog_entries;
+    artifact_previous = null;
+    artifact_restore.hidden = true;
+    reset_review_filters();
+    reset_review_focus();
+    reset_line_status();
+    reset_check_history();
+    last_check = null;
+    reconcile_check();
+    artifact_load_status.textContent = "Restored the candidates recorded before the artifact was loaded.";
+    render();
 });
 
 build_filter.addEventListener("change", () => {
@@ -2921,6 +2948,8 @@ select_prompt.addEventListener("change", () => {
     reset_review_focus();
     reset_line_status();
     reset_check_history();
+    artifact_previous = null;
+    artifact_restore.hidden = true;
     reconcile_check();
     render();
 });
@@ -3375,6 +3404,8 @@ document.querySelector("#generate").addEventListener("click", async () => {
         reset_review_focus();
         reset_line_status();
         reset_check_history();
+        artifact_previous = null;
+        artifact_restore.hidden = true;
         working = request_text;
         edited = working !== entry.markdown;
         last_check = null;

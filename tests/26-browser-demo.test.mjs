@@ -1563,7 +1563,8 @@ test("saved artifacts parse and merge without replacing unrelated readings", () 
 test("the Approve and Build panels expose readiness, artifacts, and freshness", () => {
     const html = read("sources/browser/index.html");
     for (const id of ["approve-checklist", "approve-artifact-note", "build-totals", "build-filter",
-        "build-filter-summary", "build-empty", "build-filter-reset", "artifact-file", "artifact-load-status"]) {
+        "build-filter-summary", "build-empty", "build-filter-reset", "artifact-file", "artifact-load-status",
+        "artifact-restore"]) {
         assert.ok(html.includes(`id="${id}"`), `missing #${id}`);
     }
     assert.match(html, /id="build-filter"[\s\S]*?<option value="stale">/);
@@ -1585,6 +1586,8 @@ test("the Approve and Build panels expose readiness, artifacts, and freshness", 
     assert.match(source, /parse_artifact\(await file\.text\(\)\)/);
     assert.match(source, /select_artifact_candidate\(parsed\.artifact, entry\.source\)/);
     assert.match(source, /catalog\.entries = catalog\.entries\.map/);
+    assert.match(source, /artifact_previous = \{/);
+    assert.match(source, /catalog\.entries = artifact_previous\.catalog_entries/);
     assert.match(source, /build_rows\(build_state\.entries, catalog\.entries\)/);
     assert.match(source, /filter_build_rows\(rows, build_filter_mode\)/);
     assert.match(source, /build_filter\.addEventListener/);
