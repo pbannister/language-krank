@@ -202,6 +202,28 @@ function rules_detail(context) {
     };
 }
 
+function check_detail(context) {
+    const base = PIPELINE_DETAILS.check;
+    const facts = Number.isFinite(context.scope_fact_count) ? context.scope_fact_count : 0;
+    const scope = typeof context.scope_label === "string" && context.scope_label !== "" ? context.scope_label : "selected scope";
+    const ready = context.scope_ready === true;
+    const recorded = typeof context.check_scope === "string" && context.check_scope !== "";
+    return {
+        ...base,
+        consumes: `The selected rules and ${facts} observation${facts === 1 ? "" : "s"} from ${scope}`,
+        produces: recorded ? `Recorded evidence for ${context.check_scope}` : "A scoped evaluation, or an explicit reason it cannot run",
+        caution: ready
+            ? "This check covers only the selected facts. It is not a pass, conformance proof, or approval."
+            : "The selected scope cannot currently supply everything these rules need. Choosing another scope does not approve anything.",
+        flow: [
+            { label: "Rules", artifact: "deterministic" },
+            { label: "Fact scope", artifact: `${facts} observations` },
+            { label: "Evaluate", artifact: ready ? "ready" : "blocked" },
+            { label: "Evidence", artifact: recorded ? "recorded" : "not yet" },
+        ],
+    };
+}
+
 export function pipeline_detail(step, context = {}) {
     if (step === "prompt") {
         return prompt_detail(context ?? {});
@@ -214,6 +236,9 @@ export function pipeline_detail(step, context = {}) {
     }
     if (step === "rules") {
         return rules_detail(context ?? {});
+    }
+    if (step === "check") {
+        return check_detail(context ?? {});
     }
     return PIPELINE_DETAILS[step] ?? PIPELINE_DETAILS.prompt;
 }

@@ -140,7 +140,7 @@ test("every step carries the processing-pipeline graphic", () => {
     assert.match(html, /@media \(max-width: 54rem\)[\s\S]*?\.pipeline-detail\s*\{\s*grid-template-columns:\s*1fr/);
     const source = read("sources/browser/studio.mjs");
     for (const wiring of ["pipeline_track(", "pipeline_detail(current, context)", "render_pipeline(rows, pipeline_context)",
-        "pipeline_track_list.replaceChildren", "aria-current", "Current step", "draft_state", "candidate_count", "object_origins", "current_rule_count", "report"]) {
+        "pipeline_track_list.replaceChildren", "aria-current", "Current step", "draft_state", "candidate_count", "object_origins", "current_rule_count", "report", "scope_ready", "scope_fact_count"]) {
         assert.ok(source.includes(wiring), `pipeline wiring is missing ${wiring}`);
     }
 });
@@ -1286,7 +1286,7 @@ test("pipeline model has one accurate stage and flow per studio step", () => {
     const applied = pipeline_detail("prompt", { source: "prompts/y.md", draft_state: "applied_draft", candidate_count: 0 });
     assert.match(applied.caution, /page-local/);
     assert.equal(applied.flow[2].artifact, "0 readings");
-    assert.equal(pipeline_detail("check", { source: "ignored" }), PIPELINE_DETAILS.check);
+    assert.equal(pipeline_detail("approve", { source: "ignored" }), PIPELINE_DETAILS.approve);
     const objects = pipeline_detail("objects", {
         objects: { total: 10, reviewed: 3, unreviewed: 7 },
         object_origins: { registry: 4, scan: 6 },
@@ -1316,6 +1316,17 @@ test("pipeline model has one accurate stage and flow per studio step", () => {
     assert.equal(rules.flow[1].artifact, "4 identified");
     assert.equal(rules.flow[2].artifact, "2 approved, 1 open");
     assert.equal(rules.flow[3].artifact, "1 removable line");
+    const check = pipeline_detail("check", {
+        scope_label: "all files in prompts/", scope_fact_count: 12, scope_ready: true, check_scope: "dir:prompts",
+    });
+    assert.match(check.consumes, /12 observations from all files in prompts/);
+    assert.match(check.produces, /Recorded evidence for dir:prompts/);
+    assert.equal(check.flow[2].artifact, "ready");
+    assert.equal(check.flow[3].artifact, "recorded");
+    const blocked = pipeline_detail("check", { scope_label: "root", scope_fact_count: 2, scope_ready: false });
+    assert.match(blocked.caution, /cannot currently supply/);
+    assert.equal(blocked.flow[2].artifact, "blocked");
+    assert.equal(blocked.flow[3].artifact, "not yet");
 });
 
 test("step status summarizes readiness without claiming approval", () => {
