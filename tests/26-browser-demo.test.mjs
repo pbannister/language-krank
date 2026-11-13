@@ -148,6 +148,7 @@ test("every step carries the processing-pipeline graphic", () => {
         "pipeline_track_list.replaceChildren", "aria-current", "Current step", "draft_state", "candidate_count", "object_origins", "current_rule_count", "report", "scope_ready", "scope_fact_count", "build_freshness", "build_entries", "current_item.offsetLeft", "pipeline_track_list.scrollLeft"]) {
         assert.ok(source.includes(wiring), `pipeline wiring is missing ${wiring}`);
     }
+    assert.match(source, /objects: proposal_counts\(\),\s*scope_label:/);
 });
 
 test("the studio page carries the step rail and its panels", () => {

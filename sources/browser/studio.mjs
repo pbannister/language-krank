@@ -2522,6 +2522,7 @@ function update_step_status() {
         candidate_count: entry.candidates.length,
         current_candidate: candidate?.id,
         current_rule_count: Array.isArray(candidate?.rules?.rules) ? candidate.rules.rules.length : 0,
+        objects: proposal_counts(),
         scope_label: scope_label(),
         scope_fact_count: selected_facts().length,
         scope_ready: candidate ? check_readiness(candidate.rules.rules, selected_facts()).ready : false,
