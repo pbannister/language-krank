@@ -18,6 +18,7 @@ import { render_file } from "./file-view.mjs";
 import { review_report, review_reduce, review_check, review_decide, review_observations_match, explanation_current } from "../compile-review.mjs";
 import { filter_proposals, review_counts, review_breakdown } from "./object-filter.mjs";
 import { review_snapshot, undo_last_review } from "./review-history.mjs";
+import { parse_artifact, select_artifact_candidate, merge_candidate } from "./artifact-import.mjs";
 import { candidate_stats, coverage_delta } from "./candidate-summary.mjs";
 import { rule_diff, rule_diff_summary, display_order, rule_field_changes } from "./candidate-diff.mjs";
 import { review_progress, filter_requirements } from "./review-queue.mjs";
@@ -123,6 +124,8 @@ const build_filter_reset = document.querySelector("#build-filter-reset");
 const build_entries = document.querySelector("#build-entries");
 const build_output = document.querySelector("#build-output");
 const build_button = document.querySelector("#build");
+const artifact_file = document.querySelector("#artifact-file");
+const artifact_load_status = document.querySelector("#artifact-load-status");
 const history_log = document.querySelector("#history-log");
 const file_history = document.querySelector("#file-history");
 const object_file = document.querySelector("#object-file");
@@ -2371,6 +2374,53 @@ function revise_prompt() {
     textarea.focus();
     textarea.scrollIntoView({ block: "center" });
 }
+
+artifact_file.addEventListener("change", async () => {
+    const file = artifact_file.files?.[0];
+    if (!file) {
+        return;
+    }
+    artifact_load_status.textContent = "Reading the saved artifact…";
+    try {
+        if (typeof file.size === "number" && file.size > 10 * 1024 * 1024) {
+            throw new Error("The selected file is larger than 10 MB.");
+        }
+        const parsed = parse_artifact(await file.text());
+        if (!parsed.ok) {
+            throw new Error(parsed.error);
+        }
+        if (parsed.artifact.source !== entry.source) {
+            throw new Error(`The artifact is for ${parsed.artifact.source}, not ${entry.source}.`);
+        }
+        const imported = select_artifact_candidate(parsed.artifact, entry.source);
+        if (!imported) {
+            throw new Error("The artifact has no candidate for this prompt.");
+        }
+        const report = review_report(imported, entry.source, working, catalog.fact_contract);
+        if (report.reasons.length > 0) {
+            throw new Error(`The artifact cannot be loaded: ${report.reasons.join(" ")}`);
+        }
+        const updated = {
+            ...entry,
+            candidates: merge_candidate(entry.candidates, imported),
+            approved: imported.id,
+        };
+        catalog.entries = catalog.entries.map((item) => (item.source === entry.source ? updated : item));
+        entry = updated;
+        candidate = imported;
+        reset_review_filters();
+        reset_review_focus();
+        reset_line_status();
+        last_check = null;
+        reconcile_check();
+        artifact_load_status.textContent = `Loaded ${imported.id}; ${report.approved} of ${report.identified} requirements are approved. This page changed only.`;
+        render();
+    } catch (error) {
+        artifact_load_status.textContent = `Could not load: ${error.message}`;
+    } finally {
+        artifact_file.value = "";
+    }
+});
 
 build_filter.addEventListener("change", () => {
     build_filter_mode = build_filter.value;

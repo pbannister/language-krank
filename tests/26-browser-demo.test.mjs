@@ -19,6 +19,7 @@ import { candidate_stats, coverage_delta } from "../sources/browser/candidate-su
 import { rule_diff, rule_diff_summary, display_order, rule_field_changes } from "../sources/browser/candidate-diff.mjs";
 import { filter_proposals, review_counts, review_breakdown } from "../sources/browser/object-filter.mjs";
 import { review_snapshot, undo_last_review } from "../sources/browser/review-history.mjs";
+import { parse_artifact, select_artifact_candidate, merge_candidate } from "../sources/browser/artifact-import.mjs";
 import { review_progress, filter_requirements } from "../sources/browser/review-queue.mjs";
 import { resolve_focus_index, move_focus_index, focus_position, focus_item } from "../sources/browser/review-focus.mjs";
 import { reduction_summary, retained_reason, line_status_rows, filter_line_status, line_status_counts } from "../sources/browser/reduction-summary.mjs";
@@ -1476,10 +1477,32 @@ test("step status summarizes readiness without claiming approval", () => {
     assert.deepEqual(step_statuses(null), blocked);
 });
 
+test("saved artifacts parse and merge without replacing unrelated readings", () => {
+    assert.equal(parse_artifact("").ok, false);
+    assert.equal(parse_artifact("not json").ok, false);
+    assert.equal(parse_artifact("[]").ok, false);
+    assert.equal(parse_artifact('{"candidates":[]}').ok, false);
+    assert.equal(parse_artifact('{"source":"prompts/x.md","candidates":[]}').ok, false);
+    const parsed = parse_artifact(JSON.stringify({
+        source: "prompts/x.md", approved: "chosen", candidates: [{ id: "first" }, { id: "chosen" }],
+    }));
+    assert.equal(parsed.ok, true);
+    assert.equal(select_artifact_candidate(parsed.artifact, "prompts/x.md").id, "chosen");
+    assert.equal(select_artifact_candidate(parsed.artifact, "prompts/y.md"), null);
+    assert.equal(select_artifact_candidate({ source: "prompts/x.md", candidates: [{ id: "one" }] }, "prompts/x.md").id, "one");
+    const candidates = [{ id: "keep", title: "Keep" }, { id: "replace", title: "Old" }];
+    const before = JSON.stringify(candidates);
+    const merged = merge_candidate(candidates, { id: "replace", title: "New" });
+    assert.equal(merged[1].title, "New");
+    assert.equal(merged[0].id, "keep");
+    assert.equal(merge_candidate(candidates, { id: "new" })[0].id, "new");
+    assert.equal(JSON.stringify(candidates), before);
+});
+
 test("the Approve and Build panels expose readiness, artifacts, and freshness", () => {
     const html = read("sources/browser/index.html");
     for (const id of ["approve-checklist", "approve-artifact-note", "build-totals", "build-filter",
-        "build-filter-summary", "build-empty", "build-filter-reset"]) {
+        "build-filter-summary", "build-empty", "build-filter-reset", "artifact-file", "artifact-load-status"]) {
         assert.ok(html.includes(`id="${id}"`), `missing #${id}`);
     }
     assert.match(html, /id="build-filter"[\s\S]*?<option value="stale">/);
@@ -1498,6 +1521,9 @@ test("the Approve and Build panels expose readiness, artifacts, and freshness", 
     assert.match(source, /approval_checklist\(/);
     assert.match(source, /build_freshness\(/);
     assert.match(source, /build_coverage_text\(item\.coverage\)/);
+    assert.match(source, /parse_artifact\(await file\.text\(\)\)/);
+    assert.match(source, /select_artifact_candidate\(parsed\.artifact, entry\.source\)/);
+    assert.match(source, /catalog\.entries = catalog\.entries\.map/);
     assert.match(source, /build_rows\(build_state\.entries, catalog\.entries\)/);
     assert.match(source, /filter_build_rows\(rows, build_filter_mode\)/);
     assert.match(source, /build_filter\.addEventListener/);

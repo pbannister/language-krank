@@ -1329,6 +1329,20 @@
             margin-top: 0;
         }
 
+        .artifact-load {
+            margin-top: 0.9rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid color-mix(in srgb, Canvas 84%, CanvasText 16%);
+        }
+
+        .artifact-load label {
+            margin-top: 0;
+        }
+
+        #artifact-file {
+            max-width: 100%;
+        }
+
         .artifact-card {
             margin-top: 1rem;
         }
@@ -2463,6 +2477,13 @@
                     <p><a id="approve-reduced" download="approved-reduced.md" aria-disabled="true">Reduced prompt unavailable</a></p>
                     <p class="note" id="approve-artifact-note"></p>
                     <p class="note">Downloading writes nothing and does not approve a requirement. A later iteration must load the saved rules and run them with suitable facts; saved prose or a historical check alone does not enforce anything.</p>
+                    <div class="artifact-load">
+                        <label for="artifact-file">Continue from a saved artifact</label>
+                        <input id="artifact-file" type="file" accept="application/json,.json">
+                        <p class="note">Loads the selected prompt's saved review into this page only. It does not write
+                            the repository or grant approval. The source text and review bindings must match exactly.</p>
+                        <p class="note" id="artifact-load-status" role="status" aria-live="polite"></p>
+                    </div>
                 </section>
             </section>
 
