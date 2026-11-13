@@ -91,6 +91,41 @@ export function rule_diff(candidate, current) {
     };
 }
 
+export function rule_field_changes(candidate, current) {
+    const errors = [];
+    const this_rules = rule_map(candidate, "This reading", errors);
+    const current_rules = rule_map(current, "Current choice", errors);
+    if (errors.length > 0) {
+        return [];
+    }
+    const changes = [];
+    for (const [id, rule] of this_rules) {
+        if (!current_rules.has(id)) {
+            continue;
+        }
+        const other = current_rules.get(id);
+        if (canonical_value(rule) === canonical_value(other)) {
+            continue;
+        }
+        const fields = [];
+        if (canonical_value(rule.when) !== canonical_value(other.when)) {
+            fields.push("conditions");
+        }
+        if (canonical_value(rule.then) !== canonical_value(other.then)) {
+            fields.push("actions");
+        }
+        if (canonical_value(rule.priority) !== canonical_value(other.priority)) {
+            fields.push("priority");
+        }
+        const known = new Set(["id", "when", "then", "priority"]);
+        if (Object.keys(rule).some((key) => !known.has(key)) || Object.keys(other).some((key) => !known.has(key))) {
+            fields.push("other fields");
+        }
+        changes.push({ id, fields: fields.length > 0 ? fields : ["definition"] });
+    }
+    return changes;
+}
+
 export function display_order(candidates, current_id) {
     const list = Array.isArray(candidates) ? candidates : [];
     const current = list.find((item) => item?.id === current_id);

@@ -19,7 +19,7 @@ import { review_report, review_reduce, review_check, review_decide, review_obser
 import { filter_proposals, review_counts, review_breakdown } from "./object-filter.mjs";
 import { review_snapshot, undo_last_review } from "./review-history.mjs";
 import { candidate_stats, coverage_delta } from "./candidate-summary.mjs";
-import { rule_diff, rule_diff_summary, display_order } from "./candidate-diff.mjs";
+import { rule_diff, rule_diff_summary, display_order, rule_field_changes } from "./candidate-diff.mjs";
 import { review_progress, filter_requirements } from "./review-queue.mjs";
 import { resolve_focus_index, move_focus_index, focus_position, focus_item } from "./review-focus.mjs";
 import { reduction_summary, retained_reason, line_status_rows, filter_line_status, line_status_counts } from "./reduction-summary.mjs";
@@ -1557,7 +1557,18 @@ function candidate_rules_delta(item) {
         detail.append(rule_id_list("Rules only in the current choice", diff.only_current));
     }
     if (diff.changed.length > 0) {
-        detail.append(rule_id_list("Same rule id, different definition", diff.changed));
+        const changes = rule_field_changes(item, candidate);
+        const listed = new Set(changes.map((change) => change.id));
+        const missing = diff.changed.filter((id) => !listed.has(id));
+        const list = document.createElement("div");
+        const heading = document.createElement("p");
+        heading.className = "candidate-label";
+        heading.textContent = "Same rule id, changed definition";
+        list.append(heading, rule_change_list(changes));
+        if (missing.length > 0) {
+            list.append(rule_id_list("Changed rules with no field detail", missing));
+        }
+        detail.append(list);
     }
     if (diff.shared.length > 0) {
         detail.append(rule_id_list("Shared rule ids", diff.shared));
@@ -1573,6 +1584,21 @@ function candidate_rules_delta(item) {
     caveat.textContent = "These differences describe form, not correctness or better intent. Review the requirements and their explanations before choosing.";
     detail.append(caveat);
     return detail;
+}
+
+function rule_change_list(changes) {
+    const list = document.createElement("ul");
+    list.className = "case-list";
+    for (const change of changes) {
+        const item = document.createElement("li");
+        const id = document.createElement("code");
+        id.textContent = change.id;
+        const fields = document.createElement("span");
+        fields.textContent = ` — ${change.fields.join(", ")}`;
+        item.append(id, fields);
+        list.append(item);
+    }
+    return list;
 }
 
 function candidate_current_note() {

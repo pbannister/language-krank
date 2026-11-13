@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 import { ruleset_render, ruleset_run } from "../sources/krank.mjs";
 import { diff_lines } from "../sources/browser/prompt-diff.mjs";
 import { candidate_stats, coverage_delta } from "../sources/browser/candidate-summary.mjs";
-import { rule_diff, rule_diff_summary, display_order } from "../sources/browser/candidate-diff.mjs";
+import { rule_diff, rule_diff_summary, display_order, rule_field_changes } from "../sources/browser/candidate-diff.mjs";
 import { filter_proposals, review_counts, review_breakdown } from "../sources/browser/object-filter.mjs";
 import { review_snapshot, undo_last_review } from "../sources/browser/review-history.mjs";
 import { review_progress, filter_requirements } from "../sources/browser/review-queue.mjs";
@@ -846,6 +846,34 @@ test("candidate rule comparison fails closed on malformed rules", () => {
     assert.equal(rule_diff({ id: "none" }, valid).valid, false);
 });
 
+test("candidate rule changes identify the changed fields", () => {
+    const current = {
+        rules: { rules: [
+            { id: "same", when: [{ fact: { type: "file" } }], then: [{ emit: "x" }] },
+            { id: "cond", when: [{ fact: { type: "file" } }], then: [{ emit: "x" }] },
+            { id: "act", when: [{ fact: { type: "file" } }], then: [{ emit: "x" }] },
+            { id: "priority", priority: 1, when: [{ fact: { type: "file" } }], then: [{ emit: "x" }] },
+        ] },
+    };
+    const candidate = {
+        rules: { rules: [
+            { id: "same", when: [{ fact: { type: "file" } }], then: [{ emit: "x" }] },
+            { id: "cond", when: [{ fact: { type: "task" } }], then: [{ emit: "x" }] },
+            { id: "act", when: [{ fact: { type: "file" } }], then: [{ emit: "y" }] },
+            { id: "priority", priority: 2, when: [{ fact: { type: "file" } }], then: [{ emit: "x" }] },
+        ] },
+    };
+    const before = JSON.stringify({ current, candidate });
+    assert.deepEqual(rule_field_changes(candidate, current), [
+        { id: "cond", fields: ["conditions"] },
+        { id: "act", fields: ["actions"] },
+        { id: "priority", fields: ["priority"] },
+    ]);
+    assert.deepEqual(rule_field_changes(current, current), []);
+    assert.deepEqual(rule_field_changes(null, current), []);
+    assert.equal(JSON.stringify({ current, candidate }), before);
+});
+
 test("candidate display order puts the current choice first without mutation", () => {
     const candidates = [{ id: "a" }, { id: "b" }, { id: "c" }];
     const before = JSON.stringify(candidates);
@@ -864,6 +892,9 @@ test("Candidates clarifies stats, choice, comparison, and next action", () => {
     assert.match(source, /display_order\(entry\.candidates, candidate\.id\)/, "the current choice is not rendered first");
     assert.match(source, /candidate_rules_delta\(item\)/, "Candidates has no formal rule comparison");
     assert.match(source, /Formal differences:/);
+    assert.match(source, /rule_field_changes\(item, candidate\)/);
+    assert.match(source, /Same rule id, changed definition/);
+    assert.match(html, /\.candidate-label/);
     assert.match(source, /These rule sets cannot be compared safely/);
     assert.match(source, /Same rules and quoted lines/);
     assert.match(source, /Same rules; only case coverage differs/);
