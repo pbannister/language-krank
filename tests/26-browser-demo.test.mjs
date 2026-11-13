@@ -651,6 +651,8 @@ test("Comparison and Reduced explain readiness and never offer a vacuous reducti
     assert.match(html, /id="line-status-summary"[^>]*aria-live="polite"/);
     assert.match(html, /<option value="attention">Needs attention<\/option>/);
     assert.match(html, /id="line-status-filter"[\s\S]*?<option value="removable">/);
+    assert.match(read("sources/browser/studio.mjs"), /line_status_section\.hidden = !show_lines/);
+    assert.match(read("sources/browser/studio.mjs"), /!summary\.legacy && summary\.available && summary\.identified > 0/);
     assert.match(html, /id="compare-status"[^>]*aria-live="polite"/);
     assert.match(html, /id="reduced-status"[^>]*aria-live="polite"/);
     assert.match(html, /id="reduced-download"[^>]*aria-disabled="true"/);

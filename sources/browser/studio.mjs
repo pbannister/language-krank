@@ -76,6 +76,7 @@ const compare_action_note = document.querySelector("#compare-action-note");
 const compare_actions = document.querySelector("#compare-actions");
 const compare_table_wrap = document.querySelector("#compare-table-wrap");
 const comparison = document.querySelector("#comparison");
+const line_status_section = document.querySelector("#line-status");
 const line_status_filter = document.querySelector("#line-status-filter");
 const line_status_summary = document.querySelector("#line-status-summary");
 const line_status_body = document.querySelector("#line-status-body");
@@ -1756,7 +1757,15 @@ function render_compare() {
             comparison.append(render_comparison_row(item, rows.get(item.id), report));
         }
     }
-    render_line_status(report);
+    const show_lines = !summary.legacy && summary.available && summary.identified > 0;
+    line_status_section.hidden = !show_lines;
+    if (show_lines) {
+        render_line_status(report);
+    } else {
+        line_status_body.replaceChildren();
+        line_status_summary.textContent = "";
+        line_status_empty.hidden = true;
+    }
 }
 
 function render_reduced() {
@@ -2311,9 +2320,10 @@ function render() {
         compare_action_note.textContent = "Generate candidates before reviewing a reduction.";
         compare_actions.replaceChildren(readiness_button("Generate candidates", review_regenerate, true));
         compare_table_wrap.hidden = true;
+        line_status_section.hidden = true;
         line_status_body.replaceChildren();
         line_status_summary.textContent = "";
-        line_status_empty.hidden = false;
+        line_status_empty.hidden = true;
         reduced_readiness.dataset.readiness = "legacy";
         reduced_status.textContent = "Nothing can be removed yet. This prompt has no candidate rule set.";
         reduced_counts_box.replaceChildren();
