@@ -116,6 +116,62 @@ export function build_coverage_text(coverage) {
     return `${coverage.identified} identified · ${coverage.approved} approved · ${removable}`;
 }
 
+export function build_rows(entries, catalog_entries) {
+    const list = Array.isArray(entries) ? entries : [];
+    const catalog = Array.isArray(catalog_entries) ? catalog_entries : [];
+    const by_source = new Map(catalog.filter((item) => item && typeof item.source === "string").map((item) => [item.source, item]));
+    return list
+        .filter((entry) => entry && typeof entry.source === "string")
+        .map((entry) => ({
+            entry,
+            freshness: build_freshness(entry, by_source.get(entry.source)),
+            removable: Array.isArray(entry.coverage?.removed) ? entry.coverage.removed.length : 0,
+        }));
+}
+
+export function sort_build_rows(rows) {
+    const rank = { stale: 0, missing: 1, fresh: 2 };
+    return [...(Array.isArray(rows) ? rows : [])].sort((left, right) => {
+        const state = (rank[left?.freshness?.state] ?? 3) - (rank[right?.freshness?.state] ?? 3);
+        if (state !== 0) {
+            return state;
+        }
+        return String(left?.entry?.source ?? "").localeCompare(String(right?.entry?.source ?? ""));
+    });
+}
+
+export function filter_build_rows(rows, mode) {
+    const list = Array.isArray(rows) ? rows : [];
+    if (mode === "fresh") {
+        return list.filter((row) => row.freshness?.state === "fresh");
+    }
+    if (mode === "stale") {
+        return list.filter((row) => row.freshness?.state !== "fresh");
+    }
+    if (mode === "removable") {
+        return list.filter((row) => row.removable > 0);
+    }
+    return [...list];
+}
+
+export function build_filter_counts(rows) {
+    const list = Array.isArray(rows) ? rows : [];
+    const counts = { all: list.length, fresh: 0, stale: 0, missing: 0, removable: 0 };
+    for (const row of list) {
+        if (row.freshness?.state === "fresh") {
+            counts.fresh += 1;
+        } else if (row.freshness?.state === "stale") {
+            counts.stale += 1;
+        } else if (row.freshness?.state === "missing") {
+            counts.missing += 1;
+        }
+        if (row.removable > 0) {
+            counts.removable += 1;
+        }
+    }
+    return counts;
+}
+
 export function build_totals(manifest) {
     const entries = Array.isArray(manifest?.entries) ? manifest.entries : [];
     let with_removable = 0;

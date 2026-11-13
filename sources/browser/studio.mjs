@@ -24,7 +24,7 @@ import { resolve_focus_index, move_focus_index, focus_position, focus_item } fro
 import { reduction_summary, retained_reason, line_status_rows, filter_line_status, line_status_counts } from "./reduction-summary.mjs";
 import { scope_stats, check_readiness, evaluation_summary } from "./check-summary.mjs";
 import { scope_options, rank_scope_suggestions, suggestion_label } from "./scope-suggestions.mjs";
-import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals } from "./approve-build-summary.mjs";
+import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals, build_rows, sort_build_rows, filter_build_rows, build_filter_counts } from "./approve-build-summary.mjs";
 import { parse_outline, selection_for_line, outline_matches } from "./prompt-outline.mjs";
 
 const catalog = await load_json("./catalog.json");
@@ -109,6 +109,10 @@ const approve_artifact_note = document.querySelector("#approve-artifact-note");
 const build_cycle = document.querySelector("#build-cycle");
 const build_totals_box = document.querySelector("#build-totals");
 const build_note = document.querySelector("#build-note");
+const build_filter = document.querySelector("#build-filter");
+const build_filter_summary = document.querySelector("#build-filter-summary");
+const build_empty = document.querySelector("#build-empty");
+const build_filter_reset = document.querySelector("#build-filter-reset");
 const build_entries = document.querySelector("#build-entries");
 const build_output = document.querySelector("#build-output");
 const build_button = document.querySelector("#build");
@@ -182,6 +186,7 @@ let review_cursor_term = null;
 let highlighted_term = "";
 const scan_times = new Map();
 let build_state = null;
+let build_filter_mode = "all";
 const urls = [];
 
 async function load_json(path) {
@@ -2148,24 +2153,34 @@ function render_build() {
     build_entries.replaceChildren();
     if (!build_state) {
         build_note.textContent = "prompts.out/ has not been built yet. Build it to produce the reduced prompts and rule sets.";
+        build_filter_summary.textContent = "";
+        build_empty.hidden = true;
         return;
     }
     const totals = build_totals(build_state);
     if (!Array.isArray(build_state.entries) || build_state.entries.length === 0) {
         build_note.textContent = "The build manifest has no usable entries. Rebuild prompts.out/.";
+        build_filter_summary.textContent = "";
+        build_empty.hidden = true;
         return;
     }
     build_note.textContent = `Built ${local_time(totals.generated_at)}; ${totals.entries} compiled prompt(s), ${totals.removable} removable line(s). This build uses recorded compile entries, not the page draft.`;
-    for (const item of build_state.entries) {
-        if (!item || typeof item.source !== "string") {
-            const invalid = document.createElement("p");
-            invalid.className = "note";
-            invalid.textContent = "Ignored a malformed manifest entry without a source.";
-            build_entries.append(invalid);
-            continue;
-        }
+    const rows = sort_build_rows(build_rows(build_state.entries, catalog.entries));
+    const counts = build_filter_counts(rows);
+    const visible = filter_build_rows(rows, build_filter_mode);
+    build_filter.value = build_filter_mode;
+    build_filter_summary.textContent = `${visible.length} of ${counts.all} entries shown; `
+        + `${counts.stale} stale, ${counts.missing} missing, ${counts.fresh} fresh, ${counts.removable} with removable lines.`;
+    build_empty.hidden = visible.length > 0;
+    const invalid_count = build_state.entries.length - rows.length;
+    if (invalid_count > 0) {
+        build_filter_summary.textContent += ` ${invalid_count} malformed entr${invalid_count === 1 ? "y" : "ies"} ignored.`;
+    }
+    if (visible.length === 0) {
+        return;
+    }
+    for (const { entry: item, freshness } of visible) {
         const article = document.createElement("article");
-        const freshness = build_freshness(item, build_catalog_entry(item.source));
         article.className = `build-entry ${freshness.state}`;
 
         const title = document.createElement("h3");
@@ -2220,6 +2235,21 @@ function revise_prompt() {
     textarea.focus();
     textarea.scrollIntoView({ block: "center" });
 }
+
+build_filter.addEventListener("change", () => {
+    build_filter_mode = build_filter.value;
+    if (build_state) {
+        render_build();
+    }
+});
+
+build_filter_reset.addEventListener("click", () => {
+    build_filter_mode = "all";
+    build_filter.value = "all";
+    if (build_state) {
+        render_build();
+    }
+});
 
 build_button.addEventListener("click", async () => {
     build_button.disabled = true;

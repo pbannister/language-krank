@@ -2114,6 +2114,18 @@
                 <div id="build-totals" class="review-counts" role="list" aria-label="Build totals"></div>
                 <dl class="summary" id="build-cycle"></dl>
                 <p class="note" id="build-note" role="status" aria-live="polite"></p>
+                <div class="row">
+                    <label for="build-filter">Show</label>
+                    <select id="build-filter">
+                        <option value="all">All entries (stale first)</option>
+                        <option value="stale">Needs rebuild (stale or missing)</option>
+                        <option value="fresh">Fresh</option>
+                        <option value="removable">With removable lines</option>
+                    </select>
+                    <span class="note" id="build-filter-summary" role="status" aria-live="polite"></span>
+                </div>
+                <p class="note" id="build-empty" hidden>No build entry matches this filter.
+                    <button id="build-filter-reset" type="button">Show all entries</button></p>
                 <div id="build-entries"></div>
                 <p class="note">The build uses recorded compile entries, never the page draft. A fresh build does not prove conformance:
                     later work must supply facts and run the saved rules. Reduced prose alone is not enforcement.</p>

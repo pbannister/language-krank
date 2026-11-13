@@ -23,7 +23,7 @@ import { resolve_focus_index, move_focus_index, focus_position, focus_item } fro
 import { reduction_summary, retained_reason, line_status_rows, filter_line_status, line_status_counts } from "../sources/browser/reduction-summary.mjs";
 import { scope_stats, required_fact_types, check_readiness, evaluation_summary } from "../sources/browser/check-summary.mjs";
 import { scope_options, rank_scope_suggestions, suggestion_label } from "../sources/browser/scope-suggestions.mjs";
-import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals } from "../sources/browser/approve-build-summary.mjs";
+import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals, build_rows, sort_build_rows, filter_build_rows, build_filter_counts } from "../sources/browser/approve-build-summary.mjs";
 import { parse_outline, selection_for_line, outline_matches } from "../sources/browser/prompt-outline.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -1164,6 +1164,40 @@ test("build coverage wording distinguishes unavailable review from reviewed zero
     assert.match(build_coverage_text({ identified: 3, approved: 1, removed: [], reasons: "bad" }), /Requirement review unavailable/);
 });
 
+test("build filtering puts stale entries first and separates filters", () => {
+    const catalog = [
+        { source: "prompts/fresh.md", source_sha256: "a", approved: "one" },
+        { source: "prompts/stale.md", source_sha256: "b", approved: "one" },
+        { source: "prompts/removable.md", source_sha256: "c", approved: "one" },
+    ];
+    const entries = [
+        { source: "prompts/fresh.md", candidate: "one", source_sha256: "a", rules: 1, coverage: { removed: [] } },
+        { source: "prompts/stale.md", candidate: "one", source_sha256: "old", rules: 1, coverage: { removed: [] } },
+        { source: "prompts/removable.md", candidate: "one", source_sha256: "c", rules: 2, coverage: { removed: [4] } },
+        { source: "prompts/missing.md", candidate: "one", source_sha256: "x", rules: 1, coverage: { removed: [] } },
+        { candidate: "bad" },
+        null,
+    ];
+    const before = JSON.stringify({ entries, catalog });
+    const rows = build_rows(entries, catalog);
+    assert.equal(rows.length, 4);
+    const sorted = sort_build_rows(rows);
+    assert.deepEqual(sorted.map((row) => row.entry.source), [
+        "prompts/stale.md", "prompts/missing.md", "prompts/fresh.md", "prompts/removable.md",
+    ]);
+    assert.deepEqual(filter_build_rows(rows, "stale").map((row) => row.entry.source).sort(), [
+        "prompts/missing.md", "prompts/stale.md",
+    ]);
+    assert.deepEqual(filter_build_rows(rows, "fresh").map((row) => row.entry.source).sort(), [
+        "prompts/fresh.md", "prompts/removable.md",
+    ]);
+    assert.deepEqual(filter_build_rows(rows, "removable").map((row) => row.entry.source), ["prompts/removable.md"]);
+    assert.equal(filter_build_rows(rows, "all").length, 4);
+    assert.deepEqual(build_filter_counts(rows), { all: 4, fresh: 2, stale: 1, missing: 1, removable: 1 });
+    assert.equal(JSON.stringify({ entries, catalog }), before);
+    assert.deepEqual(build_rows(null, null), []);
+});
+
 test("build freshness and totals fail conservatively", () => {
     const catalog = { source_sha256: "aa", approved: "chosen" };
     assert.equal(build_freshness({ source_sha256: "aa", candidate: "chosen" }, catalog).state, "fresh");
@@ -1182,9 +1216,12 @@ test("build freshness and totals fail conservatively", () => {
 
 test("the Approve and Build panels expose readiness, artifacts, and freshness", () => {
     const html = read("sources/browser/index.html");
-    for (const id of ["approve-checklist", "approve-artifact-note", "build-totals"]) {
+    for (const id of ["approve-checklist", "approve-artifact-note", "build-totals", "build-filter",
+        "build-filter-summary", "build-empty", "build-filter-reset"]) {
         assert.ok(html.includes(`id="${id}"`), `missing #${id}`);
     }
+    assert.match(html, /id="build-filter"[\s\S]*?<option value="stale">/);
+    assert.match(html, /All entries \(stale first\)/);
     assert.match(html, /id="approve-compile"[^>]*class="primary-action"/);
     assert.match(html, /id="approve-rules"[^>]*>Download the rules only \(not approval\)/);
     assert.match(html, /id="approve-reduced"[^>]*aria-disabled="true"/);
@@ -1199,6 +1236,9 @@ test("the Approve and Build panels expose readiness, artifacts, and freshness", 
     assert.match(source, /approval_checklist\(/);
     assert.match(source, /build_freshness\(/);
     assert.match(source, /build_coverage_text\(item\.coverage\)/);
+    assert.match(source, /build_rows\(build_state\.entries, catalog\.entries\)/);
+    assert.match(source, /filter_build_rows\(rows, build_filter_mode\)/);
+    assert.match(source, /build_filter\.addEventListener/);
     assert.match(source, /reduced_link\.removeAttribute\("href"\)/);
     assert.match(source, /aria-busy/);
     assert.match(source, /Approval remains a human decision/);
