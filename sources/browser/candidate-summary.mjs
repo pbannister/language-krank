@@ -21,12 +21,13 @@ function source_lines_of(candidate, source) {
 export function candidate_stats(candidate, source) {
     const cases = Array.isArray(candidate?.cases) ? candidate.cases : [];
     const lines = source_lines_of(candidate, source);
+    const files = new Set(cases.map((case_item) => case_source(case_item, source)));
     const cross_file_cases = cases.filter((case_item) => case_source(case_item, source) !== source).length;
     return {
         rule_count: Array.isArray(candidate?.rules?.rules) ? candidate.rules.rules.length : 0,
         case_count: cases.length,
         source_lines: lines.size,
-        source_files: lines.size === 0 ? 0 : 1,
+        source_files: files.size,
         cross_file_cases,
     };
 }

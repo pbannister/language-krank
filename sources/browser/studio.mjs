@@ -1078,7 +1078,7 @@ function render_candidates() {
     candidates_summary.textContent = `${entry.candidates.length} reading${entry.candidates.length === 1 ? "" : "s"}. `
         + `Current choice: ${candidate.title} (${candidate.id}), with ${current.source_lines} quoted prompt line${current.source_lines === 1 ? "" : "s"}. `
         + "Choosing a reading changes which rules are reviewed; it does not approve them.";
-    candidates_note.textContent = "Counts describe quoted lines from this prompt only. Other-file cases remain visible in each card's Case details.";
+    candidates_note.textContent = "Quoted-line counts cover this prompt only; the source-file count includes cases from other files. Other-file cases remain visible in each card's Case details.";
     for (const item of entry.candidates) {
         const article = document.createElement("article");
         article.className = `candidate${item.id === candidate.id ? " selected" : ""}`;

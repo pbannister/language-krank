@@ -303,7 +303,7 @@ test("Rules explains review progress, legacy recovery, and next actions", () => 
     assert.match(html, /\.review-legacy/);
 });
 
-test("candidate statistics separate cases from quoted source lines", () => {
+test("candidate statistics separate selected-source lines from all case files", () => {
     const candidate = {
         rules: { facts: [], rules: [{ id: "one" }, { id: "two" }] },
         cases: [
@@ -318,10 +318,29 @@ test("candidate statistics separate cases from quoted source lines", () => {
         rule_count: 2,
         case_count: 4,
         source_lines: 2,
-        source_files: 1,
+        source_files: 2,
         cross_file_cases: 1,
     });
     assert.equal(JSON.stringify(candidate), before, "statistics mutated the candidate");
+
+    const multi_file = {
+        rules: { facts: [], rules: [] },
+        cases: [
+            { rule: "a", source: "prompts/one.md", original: "One" },
+            { rule: "b", source: "prompts/two.md", original: "Two" },
+            { rule: "c", source: "prompts/two.md", original: "Two" },
+        ],
+    };
+    const multi_before = JSON.stringify(multi_file);
+    assert.deepEqual(candidate_stats(multi_file, "prompts/one.md"), {
+        rule_count: 0,
+        case_count: 3,
+        source_lines: 1,
+        source_files: 2,
+        cross_file_cases: 2,
+    });
+    assert.equal(JSON.stringify(multi_file), multi_before, "multi-file statistics mutated the candidate");
+
     const current = {
         rules: { facts: [], rules: [{ id: "old" }] },
         cases: [
