@@ -3084,6 +3084,24 @@ object_clear_filters.addEventListener("click", clear_object_filters);
 object_empty_clear.addEventListener("click", clear_object_filters);
 object_next_unreviewed.addEventListener("click", next_unreviewed);
 object_review_unreviewed.addEventListener("click", review_unreviewed);
+
+window.addEventListener("keydown", (event) => {
+    if (current_step !== "objects" || event.defaultPrevented
+        || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+    }
+    if (event.target?.closest?.("input, textarea, select, [contenteditable='true']")) {
+        return;
+    }
+    const key = String(event.key).toLowerCase();
+    if (key === "n") {
+        event.preventDefault();
+        next_unreviewed();
+    } else if (key === "u" && !object_undo_review.disabled) {
+        event.preventDefault();
+        object_undo_review.click();
+    }
+});
 object_undo_review.addEventListener("click", () => {
     const result = undo_last_review(object_review_history, proposals);
     object_review_history.length = 0;

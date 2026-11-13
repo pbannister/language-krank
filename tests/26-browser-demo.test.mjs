@@ -259,7 +259,9 @@ test("Objects review toolbar filters across tabs and exposes a review entry", ()
     }
     assert.match(html, /id="object-search"[^>]*type="search"/);
     assert.match(html, /id="object-review-summary"[^>]*aria-live="polite"/);
-    assert.match(html, /id="object-next-unreviewed"[^>]*type="button"/);
+    assert.match(html, /id="object-next-unreviewed"[^>]*aria-keyshortcuts="N"/);
+    assert.match(html, /id="object-undo-review"[^>]*aria-keyshortcuts="U"/);
+    assert.match(html, /Keyboard: <kbd>N<\/kbd>/);
     assert.match(html, /id="object-review-unreviewed"[^>]*class="primary-action"/);
     assert.match(html, /id="object-progress"[^>]*aria-label="Object review progress"/);
     const source = read("sources/browser/studio.mjs");
@@ -267,7 +269,7 @@ test("Objects review toolbar filters across tabs and exposes a review entry", ()
         "review_unreviewed", "next_unreviewed", "object_origin", "within current filters",
         'origin-${row.origin === "registry" ? "registry" : "scan"}', "object_empty.hidden", "aria-busy",
         "new_count", "known_count", "review_snapshot(row)", "undo_last_review(object_review_history, proposals)",
-        "object_undo_review.disabled"]) {
+        "object_undo_review.disabled", "current_step !== \"objects\"", 'key === "n"']) {
         assert.ok(source.includes(wiring), `the Objects step is missing ${wiring}`);
     }
 });

@@ -2101,7 +2101,7 @@
                         </label>
                         <div class="review-toolbar-actions">
                             <button id="object-clear-filters" type="button">Clear filters</button>
-                            <button id="object-next-unreviewed" type="button">Next unreviewed</button>
+                            <button id="object-next-unreviewed" type="button" aria-keyshortcuts="N">Next unreviewed</button>
                         </div>
                     </div>
                     <p class="review-progress" id="object-review-summary" role="status" aria-live="polite"></p>
@@ -2121,12 +2121,14 @@
                         <div class="object-kind-jumps" id="object-kind-jumps" aria-label="Review a kind"></div>
                         <div class="row">
                             <button id="object-review-unreviewed" class="primary-action" type="button">Review unreviewed</button>
-                            <button id="object-undo-review" type="button" disabled>Undo last review</button>
+                            <button id="object-undo-review" type="button" aria-keyshortcuts="U" disabled>Undo last review</button>
                             <span class="note">Resets filters and opens the first kind with unreviewed terms. Use
                                 <strong>Next unreviewed</strong> above to advance within the current filters. Undo
                                 restores the last row decision without changing the file.</span>
                         </div>
                         <p class="note" id="object-undo-status" role="status" aria-live="polite"></p>
+                        <p class="note">Keyboard: <kbd>N</kbd> advances to the next unreviewed term and
+                            <kbd>U</kbd> undoes the last decision when focus is outside a field.</p>
                         <p class="note" id="object-origin-summary"></p>
                     </section>
                     <h3>File</h3>
