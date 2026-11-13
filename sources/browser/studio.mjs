@@ -21,7 +21,7 @@ import { candidate_stats, coverage_delta } from "./candidate-summary.mjs";
 import { rule_diff, rule_diff_summary, display_order } from "./candidate-diff.mjs";
 import { review_progress, filter_requirements } from "./review-queue.mjs";
 import { resolve_focus_index, move_focus_index, focus_position, focus_item } from "./review-focus.mjs";
-import { reduction_summary, retained_reason } from "./reduction-summary.mjs";
+import { reduction_summary, retained_reason, line_status_rows, filter_line_status, line_status_counts } from "./reduction-summary.mjs";
 import { scope_stats, check_readiness, evaluation_summary } from "./check-summary.mjs";
 import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals } from "./approve-build-summary.mjs";
 import { parse_outline, selection_for_line, outline_matches } from "./prompt-outline.mjs";
@@ -74,7 +74,10 @@ const compare_action_note = document.querySelector("#compare-action-note");
 const compare_actions = document.querySelector("#compare-actions");
 const compare_table_wrap = document.querySelector("#compare-table-wrap");
 const comparison = document.querySelector("#comparison");
-const uncovered = document.querySelector("#uncovered");
+const line_status_filter = document.querySelector("#line-status-filter");
+const line_status_summary = document.querySelector("#line-status-summary");
+const line_status_body = document.querySelector("#line-status-body");
+const line_status_empty = document.querySelector("#line-status-empty");
 const reduced_readiness = document.querySelector("#reduced-readiness");
 const reduced_status = document.querySelector("#reduced-status");
 const reduced_counts_box = document.querySelector("#reduced-counts");
@@ -165,6 +168,7 @@ let review_query = "";
 let review_mode = "all";
 let review_focused = false;
 let review_focus_id = null;
+let line_status_mode = "attention";
 let current_review_report = null;
 let current_step = null;
 let file_overlay_return_focus = null;
@@ -655,6 +659,11 @@ function reset_review_focus() {
     review_focus_toggle.checked = false;
     review_focus_nav.hidden = true;
     review_focus_status.textContent = "";
+}
+
+function reset_line_status() {
+    line_status_mode = "attention";
+    line_status_filter.value = "attention";
 }
 
 function review_regenerate() {
@@ -1588,6 +1597,7 @@ function render_candidates() {
                 candidate = item;
                 reset_review_filters();
                 reset_review_focus();
+                reset_line_status();
                 last_check = null;
                 reconcile_check();
                 check_output.textContent = "";
@@ -1682,42 +1692,34 @@ function render_comparison_row(item, row, report) {
     return tr;
 }
 
-function render_retained_groups(report, summary) {
-    uncovered.replaceChildren();
-    const groups = new Map();
-    working.split("\n").forEach((line, index) => {
-        const line_number = index + 1;
-        if (!line.trim() || summary.removed_lines.includes(line_number)) {
-            return;
-        }
-        const reason = retained_reason(report, line_number, candidate.review?.requirements);
-        const group = groups.get(reason) ?? [];
-        group.push({ line: line_number, text: line });
-        groups.set(reason, group);
-    });
-    if (groups.size === 0) {
-        const note = document.createElement("p");
-        note.className = "note";
-        note.textContent = "No nonblank line is retained.";
-        uncovered.append(note);
+function render_line_status(report) {
+    line_status_filter.value = line_status_mode;
+    const rows = line_status_rows(working, report, candidate.review?.requirements);
+    const counts = line_status_counts(rows);
+    const visible = filter_line_status(rows, line_status_mode);
+    line_status_summary.textContent = `${counts.total} nonblank source line${counts.total === 1 ? "" : "s"}; `
+        + `${counts.removable} removable; ${counts.retained} retained. Showing ${visible.length} under this filter.`;
+    line_status_body.replaceChildren();
+    line_status_empty.hidden = visible.length > 0;
+    if (visible.length === 0) {
         return;
     }
-    for (const [reason, lines] of groups) {
-        const detail = document.createElement("details");
-        detail.className = "retained-group";
-        if (!/^Context line/.test(reason)) {
-            detail.open = true;
-        }
-        const label = document.createElement("summary");
-        label.textContent = `${reason} (${lines.length} line${lines.length === 1 ? "" : "s"})`;
-        const list = document.createElement("ul");
-        for (const item of lines) {
-            const entry = document.createElement("li");
-            entry.textContent = `Line ${item.line}: ${item.text}`;
-            list.append(entry);
-        }
-        detail.append(label, list);
-        uncovered.append(detail);
+    for (const row of visible) {
+        const tr = document.createElement("tr");
+        const status = row.state === "removable" ? "Removable" : row.category.replaceAll("_", " ");
+        tr.append(cell(String(row.line)), cell(status), cell(row.text), cell(row.reason));
+        const action = document.createElement("td");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = `Open line ${row.line}`;
+        button.addEventListener("click", () => {
+            show("prompt");
+            activate_tab("prompt", prompt_panel);
+            jump_to_outline_line(row.line);
+        });
+        action.append(button);
+        tr.append(action);
+        line_status_body.append(tr);
     }
 }
 
@@ -1739,7 +1741,7 @@ function render_compare() {
             comparison.append(render_comparison_row(item, rows.get(item.id), report));
         }
     }
-    render_retained_groups(report, summary);
+    render_line_status(report);
 }
 
 function render_reduced() {
@@ -2213,6 +2215,7 @@ function render() {
 
     if (!candidate) {
         reset_review_focus();
+        reset_line_status();
         rules_box.textContent = "";
         rules_note.textContent = "No candidate rule set for this prompt yet.";
         prose_box.textContent = "";
@@ -2225,7 +2228,9 @@ function render() {
         compare_action_note.textContent = "Generate candidates before reviewing a reduction.";
         compare_actions.replaceChildren(readiness_button("Generate candidates", review_regenerate, true));
         compare_table_wrap.hidden = true;
-        uncovered.replaceChildren();
+        line_status_body.replaceChildren();
+        line_status_summary.textContent = "";
+        line_status_empty.hidden = false;
         reduced_readiness.dataset.readiness = "legacy";
         reduced_status.textContent = "Nothing can be removed yet. This prompt has no candidate rule set.";
         reduced_counts_box.replaceChildren();
@@ -2437,6 +2442,7 @@ select_prompt.addEventListener("change", () => {
     last_check = null;
     reset_review_filters();
     reset_review_focus();
+    reset_line_status();
     reconcile_check();
     render();
 });
@@ -2714,6 +2720,13 @@ review_focus_prev.addEventListener("click", () => focus_visible_review(-1));
 review_focus_next.addEventListener("click", () => focus_visible_review(1));
 review_focus_exit.addEventListener("click", () => set_review_focus(false));
 
+line_status_filter.addEventListener("change", () => {
+    line_status_mode = line_status_filter.value;
+    if (candidate) {
+        render_line_status(review_status());
+    }
+});
+
 propose_button.addEventListener("click", async () => {
     const source_scan = entry.source;
     propose_button.disabled = true;
@@ -2798,6 +2811,7 @@ document.querySelector("#generate").addEventListener("click", async () => {
         candidate = entry.candidates[0];
         reset_review_filters();
         reset_review_focus();
+        reset_line_status();
         working = request_text;
         edited = working !== entry.markdown;
         last_check = null;

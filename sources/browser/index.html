@@ -398,6 +398,18 @@
             min-width: 10rem;
         }
 
+        .line-status {
+            margin: 1.25rem 0 0;
+        }
+
+        .line-status .step-head {
+            align-items: end;
+        }
+
+        .line-status code {
+            white-space: nowrap;
+        }
+
         .object-empty {
             border-left: 3px solid color-mix(in srgb, Canvas 60%, CanvasText 40%);
             padding: 0.5rem 0.75rem;
@@ -1906,10 +1918,40 @@
                             <tbody id="comparison"></tbody>
                         </table>
                     </div>
-                    <details class="raw">
-                        <summary>Retained lines grouped by reason</summary>
-                        <div id="uncovered"></div>
-                    </details>
+                    <section class="line-status" id="line-status" aria-labelledby="line-status-title">
+                        <div class="step-head">
+                            <div>
+                                <h3 id="line-status-title">Source lines</h3>
+                                <p class="note" id="line-status-note">Every nonblank line, its removable or retained
+                                    state, and the reason. Opening a line selects it in Prompt; it does not edit it.</p>
+                            </div>
+                            <label class="review-field" for="line-status-filter">Show
+                                <select id="line-status-filter">
+                                    <option value="attention">Needs attention</option>
+                                    <option value="all">All lines</option>
+                                    <option value="removable">Removable</option>
+                                    <option value="retained">Retained</option>
+                                    <option value="context">Context only</option>
+                                </select>
+                            </label>
+                        </div>
+                        <p class="review-progress" id="line-status-summary" role="status" aria-live="polite"></p>
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Line</th>
+                                        <th>Status</th>
+                                        <th>Source</th>
+                                        <th>Why</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="line-status-body"></tbody>
+                            </table>
+                        </div>
+                        <p class="note" id="line-status-empty" hidden>No source line matches this filter.</p>
+                    </section>
                 </div>
                 <div class="tab-panel" id="tab-reduced" data-tab="reduced" hidden>
                     <div class="step-head">

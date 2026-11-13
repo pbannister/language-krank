@@ -480,8 +480,10 @@ test("studio distinguishes a removable reduction from a blocked one", async () =
         assert.equal(element("#reduced-download").getAttribute("aria-disabled"), "false");
         assert.match(element("#reduced-download").href, /^blob:/);
         assert.equal(element("#diff-empty").hidden, true);
-        assert.match(element("#uncovered").textContent, /Context line: no extracted requirement/);
-        assert.match(element("#uncovered").textContent, /Needs a decision in Rules/);
+        assert.match(element("#line-status-body").textContent, /Needs a decision in Rules/);
+        element("#line-status-filter").value = "context";
+        await element("#line-status-filter").fire("change");
+        assert.match(element("#line-status-body").textContent, /Context line: no extracted requirement/);
     });
     await with_studio(async ({ element }) => {
         assert.match(element("#compare-status").textContent, /Nothing can be removed yet/);

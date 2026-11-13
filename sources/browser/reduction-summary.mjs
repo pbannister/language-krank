@@ -101,6 +101,87 @@ export function reduction_summary(report, text) {
     };
 }
 
+// line_status_rows classifies every nonblank source line for the comparison
+// navigator. It reuses the report's decisions and eligibility flags.
+export function line_status_rows(text, report, requirements) {
+    const lines = nonblank_lines(text);
+    const removed = new Set(Array.isArray(report?.removed) ? report.removed : []);
+    const rows_by_id = new Map(report_rows(report).map((row) => [row.id, row]));
+    const requirements_by_line = new Map();
+    for (const requirement of Array.isArray(requirements) ? requirements : []) {
+        const list = requirements_by_line.get(requirement?.line) ?? [];
+        list.push(requirement);
+        requirements_by_line.set(requirement?.line, list);
+    }
+    return lines.map((item) => {
+        const on_line = requirements_by_line.get(item.line) ?? [];
+        if (removed.has(item.line)) {
+            return {
+                line: item.line, text: item.text, state: "removable", category: "removable",
+                reason: "Eligible for removal under the recorded review and check scope.",
+                requirement_ids: on_line.map((requirement) => requirement.id),
+            };
+        }
+        let category = "context";
+        let reason = "Context line: no extracted requirement.";
+        if (legacy_report(report)) {
+            category = "legacy";
+            reason = retained_reason(report, item.line, requirements);
+        } else if (unavailable(report)) {
+            category = "unavailable";
+            reason = retained_reason(report, item.line, requirements);
+        } else if (on_line.length > 0) {
+            if (on_line.some((requirement) => (rows_by_id.get(requirement.id)?.decision ?? "unreviewed") === "unreviewed")) {
+                category = "needs_decision";
+            } else if (on_line.some((requirement) => rows_by_id.get(requirement.id)?.decision === "rejected")) {
+                category = "rejected";
+            } else if (on_line.some((requirement) => requirement.status !== "executable")) {
+                category = "non_executable";
+            } else if (on_line.some((requirement) => rows_by_id.get(requirement.id)?.eligible !== true)) {
+                category = "needs_check";
+            } else {
+                category = "other";
+            }
+            reason = retained_reason(report, item.line, requirements);
+        }
+        return {
+            line: item.line, text: item.text, state: "retained", category, reason,
+            requirement_ids: on_line.map((requirement) => requirement.id),
+        };
+    });
+}
+
+export function filter_line_status(rows, mode) {
+    const list = Array.isArray(rows) ? rows : [];
+    if (mode === "removable") {
+        return list.filter((row) => row.state === "removable");
+    }
+    if (mode === "retained") {
+        return list.filter((row) => row.state === "retained");
+    }
+    if (mode === "context") {
+        return list.filter((row) => row.category === "context");
+    }
+    if (mode === "attention") {
+        return list.filter((row) => row.state === "removable" || row.category !== "context");
+    }
+    return [...list];
+}
+
+export function line_status_counts(rows) {
+    const list = Array.isArray(rows) ? rows : [];
+    const counts = { total: list.length, removable: 0, retained: 0, by_category: {} };
+    for (const row of list) {
+        if (row.state === "removable") {
+            counts.removable += 1;
+        } else {
+            counts.retained += 1;
+        }
+        counts.by_category[row.category] = (counts.by_category[row.category] ?? 0) + 1;
+    }
+    return counts;
+}
+
 // retained_reason explains why a particular nonblank line is still present. It
 // uses the report's decision/eligibility rows; it does not re-evaluate a rule.
 export function retained_reason(report, line_number, requirements) {

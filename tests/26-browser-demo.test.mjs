@@ -20,7 +20,7 @@ import { rule_diff, rule_diff_summary, display_order } from "../sources/browser/
 import { filter_proposals, review_counts, review_breakdown } from "../sources/browser/object-filter.mjs";
 import { review_progress, filter_requirements } from "../sources/browser/review-queue.mjs";
 import { resolve_focus_index, move_focus_index, focus_position, focus_item } from "../sources/browser/review-focus.mjs";
-import { reduction_summary, retained_reason } from "../sources/browser/reduction-summary.mjs";
+import { reduction_summary, retained_reason, line_status_rows, filter_line_status, line_status_counts } from "../sources/browser/reduction-summary.mjs";
 import { scope_stats, required_fact_types, check_readiness, evaluation_summary } from "../sources/browser/check-summary.mjs";
 import { approval_checklist, artifact_state, build_coverage_text, build_freshness, build_totals } from "../sources/browser/approve-build-summary.mjs";
 import { parse_outline, selection_for_line, outline_matches } from "../sources/browser/prompt-outline.mjs";
@@ -125,7 +125,7 @@ test("the studio page carries the step rail and its panels", () => {
     for (const tab of ["prompt", "history", "about", "object-status", "object-about", "candidates", "rules", "prose", "comparison", "reduced"]) {
         assert.ok(html.includes(`data-tab="${tab}"`), `no tab for ${tab}`);
     }
-    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "object-file", "file-history", "history-log", "prompt-download", "file-overlay", "file-overlay-body", "file-overlay-note", "file-overlay-close", "candidates-note", "candidates-summary", "candidates-next", "rules-badges", "rule-summary", "uncovered", "check-summary", "approve-warning", "build", "build-cycle", "build-note", "build-entries", "build-output", "revise-comparison", "revise-approve"]) {
+    for (const id of ["source", "candidates", "rules", "prose", "comparison", "reduced", "diff", "scope", "run", "check-output", "approve", "object-tabs", "objects-count", "propose", "object-file", "file-history", "history-log", "prompt-download", "file-overlay", "file-overlay-body", "file-overlay-note", "file-overlay-close", "candidates-note", "candidates-summary", "candidates-next", "rules-badges", "rule-summary", "line-status-body", "line-status-summary", "line-status-filter", "check-summary", "approve-warning", "build", "build-cycle", "build-note", "build-entries", "build-output", "revise-comparison", "revise-approve"]) {
         assert.ok(html.includes(`id="${id}"`), `the page has no #${id}`);
     }
 });
@@ -587,14 +587,63 @@ test("Rules explains review progress, legacy recovery, and next actions", () => 
     assert.match(html, /\.review-legacy/);
 });
 
+test("source-line status distinguishes removable lines, decisions, and check gaps", () => {
+    const text = "heading\nremove me\nblank context\nneeds decision\nneeds facts\nneeds check\nrejected line";
+    const requirements = [
+        { id: "a", line: 2, status: "executable" },
+        { id: "b", line: 4, status: "executable" },
+        { id: "c", line: 5, status: "needs_facts" },
+        { id: "d", line: 6, status: "executable" },
+        { id: "e", line: 7, status: "executable" },
+    ];
+    const report = {
+        removed: [2],
+        check_scope: "file:x",
+        reasons: [],
+        requirements: [
+            { id: "a", decision: "approved", eligible: true },
+            { id: "b", decision: "unreviewed", eligible: false },
+            { id: "c", decision: "approved", eligible: false },
+            { id: "d", decision: "approved", eligible: false },
+            { id: "e", decision: "rejected", eligible: false },
+        ],
+    };
+    const before = JSON.stringify(report);
+    const rows = line_status_rows(text, report, requirements);
+    assert.equal(rows.length, 7);
+    assert.deepEqual(rows.map((row) => row.category), [
+        "context", "removable", "context", "needs_decision", "non_executable", "needs_check", "rejected",
+    ]);
+    assert.equal(rows[1].state, "removable");
+    assert.equal(rows[2].state, "retained");
+    assert.deepEqual(line_status_counts(rows), {
+        total: 7, removable: 1, retained: 6,
+        by_category: { context: 2, removable: 1, needs_decision: 1, non_executable: 1, needs_check: 1, rejected: 1 },
+    });
+    assert.deepEqual(filter_line_status(rows, "removable").map((row) => row.line), [2]);
+    assert.deepEqual(filter_line_status(rows, "context").map((row) => row.line), [1, 3]);
+    assert.deepEqual(filter_line_status(rows, "attention").map((row) => row.line), [2, 4, 5, 6, 7]);
+    assert.deepEqual(filter_line_status(rows, "retained").map((row) => row.line), [1, 3, 4, 5, 6, 7]);
+    assert.equal(filter_line_status(rows, "unknown").length, 7);
+    assert.equal(JSON.stringify(report), before);
+    const legacy = line_status_rows("a\nb", { reasons: ["legacy"], removed: [] }, []);
+    assert.ok(legacy.every((row) => row.category === "legacy"));
+    assert.deepEqual(line_status_rows("", report, requirements), []);
+    assert.ok(line_status_rows("a\nb", null, []).every((row) => row.category === "legacy"));
+});
+
 test("Comparison and Reduced explain readiness and never offer a vacuous reduction", () => {
     const html = read("sources/browser/index.html");
     for (const id of ["compare-readiness", "compare-status", "compare-counts", "compare-blockers",
         "compare-action-note", "compare-actions", "compare-table-wrap", "reduced-readiness",
         "reduced-status", "reduced-counts", "reduced-blockers", "reduced-action-note",
-        "reduced-download", "diff-empty"]) {
+        "reduced-download", "diff-empty", "line-status", "line-status-filter", "line-status-summary",
+        "line-status-body", "line-status-empty"]) {
         assert.ok(html.includes(`id="${id}"`), `Reduction UI is missing #${id}`);
     }
+    assert.match(html, /id="line-status-summary"[^>]*aria-live="polite"/);
+    assert.match(html, /<option value="attention">Needs attention<\/option>/);
+    assert.match(html, /id="line-status-filter"[\s\S]*?<option value="removable">/);
     assert.match(html, /id="compare-status"[^>]*aria-live="polite"/);
     assert.match(html, /id="reduced-status"[^>]*aria-live="polite"/);
     assert.match(html, /id="reduced-download"[^>]*aria-disabled="true"/);
@@ -608,7 +657,8 @@ test("Comparison and Reduced explain readiness and never offer a vacuous reducti
     for (const text of ["reduction_summary(", "retained_reason(", "Nothing can be removed yet.",
         "Reduced prompt download unavailable", "No extraction or approval blocker is recorded",
         "Resolve the retained reasons", "removeAttribute(\"href\")", "setAttribute(\"aria-disabled\", \"true\")",
-        "setAttribute(\"aria-disabled\", \"false\")", "render_retained_groups("]) {
+        "setAttribute(\"aria-disabled\", \"false\")", "render_line_status(", "line_status_rows(",
+        "filter_line_status(", "Open line "]) {
         assert.ok(source.includes(text), `Reduction UI is missing: ${text}`);
     }
     assert.match(source, /if \(can_download\)/);
