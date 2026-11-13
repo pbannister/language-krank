@@ -323,6 +323,23 @@ test("studio presents candidate choice as review, not approval", async () => {
     });
 });
 
+test("studio renders review progress and a next review action", async () => {
+    await with_studio(async ({ element }) => {
+        assert.equal(element("#review-toolbar").hidden, false);
+        assert.match(element("#review-counts").textContent, /identified/);
+        assert.match(element("#review-counts").textContent, /4/);
+        assert.match(element("#review-counts").textContent, /approved/);
+        assert.match(element("#review-next-note").textContent, /2 requirements still need a decision/);
+        assert.equal(element("#review-next-action").textContent, "Next needing review");
+        assert.match(element("#review-queue-summary").textContent, /4 of 4 requirements shown/);
+        assert.match(element("#rule-summary").textContent, /Exact deterministic interpretation and raw rules/);
+        assert.match(element("#rule-summary").textContent, /Approve requirement/);
+        assert.match(element("#rule-summary").textContent, /Retained as human judgment/);
+        await element("#review-next-needing").fire("click");
+        assert.match(element("#review-queue-summary").textContent, /Focused requirement repeat/);
+    });
+});
+
 test("studio loads the selected reading and invalidates downloads on an unapplied edit", async () => {
     await with_studio(async ({ element, original_fetch }) => {
         const before = await (await original_fetch(element("#approve-compile").href)).json();

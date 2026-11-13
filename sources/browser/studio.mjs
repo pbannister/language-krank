@@ -18,6 +18,7 @@ import { render_file } from "./file-view.mjs";
 import { review_report, review_reduce, review_check, review_decide, review_observations_match, explanation_current } from "../compile-review.mjs";
 import { filter_proposals, review_counts } from "./object-filter.mjs";
 import { candidate_stats, coverage_delta } from "./candidate-summary.mjs";
+import { review_progress, filter_requirements } from "./review-queue.mjs";
 
 const catalog = await load_json("./catalog.json");
 const bundle = await load_json("./files.json");
@@ -35,6 +36,21 @@ const rules_box = document.querySelector("#rules");
 const rules_note = document.querySelector("#rules-note");
 const rules_badges = document.querySelector("#rules-badges");
 const rule_summary = document.querySelector("#rule-summary");
+const review_overview = document.querySelector("#rules-overview");
+const review_policy = document.querySelector("#review-policy");
+const review_counts_box = document.querySelector("#review-counts");
+const review_next_note = document.querySelector("#review-next-note");
+const review_next_action = document.querySelector("#review-next-action");
+const review_toolbar = document.querySelector("#review-toolbar");
+const review_search = document.querySelector("#review-search");
+const review_filter = document.querySelector("#review-filter");
+const review_clear_filters = document.querySelector("#review-clear-filters");
+const review_next_needing = document.querySelector("#review-next-needing");
+const review_queue_summary = document.querySelector("#review-queue-summary");
+const review_empty = document.querySelector("#review-empty");
+const review_empty_message = document.querySelector("#review-empty-message");
+const review_empty_clear = document.querySelector("#review-empty-clear");
+const review_empty_regenerate = document.querySelector("#review-empty-regenerate");
 const prose_box = document.querySelector("#prose");
 const compare_note = document.querySelector("#compare-note");
 const comparison = document.querySelector("#comparison");
@@ -88,6 +104,10 @@ let draft_revision = 0;
 let proposals = proposal_rows(object_model);
 let object_query = "";
 let object_mode = "all";
+let review_query = "";
+let review_mode = "all";
+let current_review_report = null;
+const review_card_elements = new Map();
 let review_cursor_term = null;
 let highlighted_term = "";
 const scan_times = new Map();
@@ -481,70 +501,352 @@ function review_status() {
     return review_report(candidate, entry.source, working, catalog.fact_contract);
 }
 
-function review_cards() {
-    const container = document.createElement("div");
-    const report = review_status();
-    if (!candidate.review || report.reasons.length) {
-        const note = document.createElement("p");
-        note.textContent = report.reasons.join(" ") || "Legacy candidate: regenerate to identify and review requirements.";
-        container.append(note, rule_list(candidate));
-        return container;
+function reset_review_filters() {
+    review_query = "";
+    review_mode = "all";
+    review_search.value = "";
+    review_filter.value = "all";
+}
+
+function review_regenerate() {
+    show("prompt");
+    activate_tab("prompt", prompt_panel);
+    generate_button.focus();
+}
+
+function review_go_check() {
+    show("check");
+    document.querySelector("#scope").focus();
+}
+
+function review_continue_approve() {
+    show("approve");
+}
+
+function review_show_comparison() {
+    show("rules");
+    activate_tab("comparison", document.querySelector('.panel[data-panel="rules"]'));
+}
+
+function review_count_item(label, value, class_name = "") {
+    const item = document.createElement("div");
+    item.className = `review-count${class_name ? ` ${class_name}` : ""}`;
+    item.setAttribute("role", "listitem");
+    const number = document.createElement("strong");
+    number.textContent = String(value);
+    const caption = document.createElement("span");
+    caption.textContent = label;
+    item.append(number, caption);
+    return item;
+}
+
+function review_chip(text, class_name = "") {
+    const chip = document.createElement("span");
+    chip.className = `review-badge${class_name ? ` ${class_name}` : ""}`;
+    chip.textContent = text;
+    return chip;
+}
+
+function review_decision_button(requirement, decision, label, disabled_reason, eligibility) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+    button.disabled = Boolean(disabled_reason);
+    if (disabled_reason) {
+        button.title = disabled_reason;
+        button.setAttribute("aria-describedby", eligibility.id);
     }
-    for (const requirement of candidate.review.requirements) {
-        const status = report.requirements.find((item) => item.id === requirement.id);
-        const explanation = explanation_current(candidate, requirement.id, entry.source, working, catalog.fact_contract);
-        const card = document.createElement("article");
-        card.className = "candidate review-card";
-        const heading = document.createElement("h3");
-        heading.textContent = explanation?.title ?? requirement.title;
-        const source = document.createElement("blockquote");
-        source.textContent = `${entry.source}:${requirement.line}: ${working.split("\n")[requirement.line - 1]}`;
-        const summary = document.createElement("p");
-        summary.textContent = `${requirement.status.replaceAll("_", " ")} · ${status.decision} — ${status.reason}`;
-        const prose = document.createElement("p");
-        prose.textContent = explanation ? `Model explanation: ${explanation.text}`
-            : requirement.status === "executable" ? candidate.review.explanation_error ?? "Explanation unavailable. Review the exact interpretation below."
-            : `Extraction rationale: ${requirement.reason}`;
-        const limitations = document.createElement("p");
-        limitations.textContent = explanation ? `Limitations: ${explanation.limitations}`
-            : `Missing facts: ${requirement.missing_facts.join(", ") || "none specified"}. This is not an approved executable interpretation.`;
-        const rules = { facts: [], rules: candidate.rules.rules.filter((rule) => requirement.rules.includes(rule.id)) };
-        const detail = document.createElement("details");
-        const label = document.createElement("summary");
-        label.textContent = "Exact deterministic interpretation and raw rules";
-        const exact = document.createElement("pre");
-        exact.textContent = `${ruleset_render(rules)}\n\n${JSON.stringify(rules, null, 4)}`;
-        detail.append(label, exact);
-        const acknowledgment = document.createElement("p");
-        acknowledgment.className = "note";
-        acknowledgment.textContent = `Approval confirms all clauses and exceptions on this line are accounted for, this explanation matches the rules, and the limitations and recorded scope (${report.check_scope ?? "not checked"}) are appropriate. It does not prove future enforcement.`;
-        card.append(heading, source, summary, prose, limitations, detail, acknowledgment);
-        for (const [decision, title] of [["approved", "Approve coverage, limitations, and scope"], ["rejected", "Reject"], ["unreviewed", "Clear decision"]]) {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.textContent = title;
-            button.disabled = decision === "approved" && requirement.status === "executable" && !report.check_scope;
-            button.addEventListener("click", () => {
-                try {
-                    if (textarea.value !== working) {
-                        throw new Error("Apply the edited prompt before reviewing requirements.");
-                    }
-                    review_decide(candidate, requirement.id, decision, entry.source, working, catalog.fact_contract);
-                    render();
-                } catch (error) {
-                    summary.textContent = error.message;
-                }
-            });
-            card.append(button);
+    if (decision === "approved") {
+        button.className = "review-primary-action";
+    }
+    button.addEventListener("click", () => {
+        try {
+            if (textarea.value !== working) {
+                throw new Error("Apply the edited prompt before reviewing requirements.");
+            }
+            review_decide(candidate, requirement.id, decision, entry.source, working, catalog.fact_contract);
+            render();
+        } catch (error) {
+            eligibility.textContent = error.message;
+            eligibility.focus();
         }
-        const revise = document.createElement("button");
-        revise.type = "button";
-        revise.textContent = "Revise prompt and regenerate";
-        revise.addEventListener("click", revise_prompt);
-        card.append(revise);
-        container.append(card);
+    });
+    return button;
+}
+
+function review_requirement_card(requirement, report, progress) {
+    const status = report.requirements.find((item) => item.id === requirement.id);
+    const decision = status?.decision ?? "unreviewed";
+    const explanation = explanation_current(candidate, requirement.id, entry.source, working, catalog.fact_contract);
+    const source_line = working.split("\n")[requirement.line - 1] ?? requirement.quote;
+    const unapplied = textarea.value !== working;
+
+    const card = document.createElement("article");
+    card.className = "candidate review-card";
+    card.dataset.decision = decision;
+    card.dataset.status = requirement.status;
+    card.dataset.requirement = requirement.id;
+    card.tabIndex = -1;
+
+    const heading = document.createElement("h3");
+    heading.textContent = explanation?.title ?? requirement.title;
+
+    const badges = document.createElement("div");
+    badges.className = "review-badges";
+    const status_label = requirement.status.replaceAll("_", " ");
+    badges.append(review_chip(status_label, requirement.status === "executable" ? "origin-scan" : ""),
+        review_chip(`decision: ${decision}`),
+        review_chip(`line ${requirement.line}`));
+
+    const quote = document.createElement("blockquote");
+    quote.textContent = `${entry.source}:${requirement.line}\n${source_line}`;
+
+    const eligibility = document.createElement("p");
+    eligibility.className = "review-eligibility";
+    eligibility.id = `review-eligibility-${requirement.id.replace(/[^A-Za-z0-9_-]/g, "-")}`;
+    let eligibility_text;
+    if (unapplied) {
+        eligibility_text = "Apply the edited prompt before approving or rejecting this requirement.";
+    } else if (requirement.status !== "executable") {
+        eligibility_text = `Retained as ${status_label}. Approval acknowledges this extracted requirement, but it cannot enable prose removal.`;
+    } else if (!progress.has_check) {
+        eligibility_text = "Needs a check. Run a relevant scope in 5. Check before approving this executable requirement.";
+    } else if (decision === "approved") {
+        eligibility_text = `Approved for the recorded check scope: ${report.check_scope}. The line may be removed only when every clause on it is eligible.`;
+    } else if (decision === "rejected") {
+        eligibility_text = "Rejected. The source text will remain.";
+    } else {
+        eligibility_text = "Ready for review. Approval confirms the explanation, limitations, and recorded scope; it does not prove future enforcement.";
     }
-    return container;
+    eligibility.textContent = eligibility_text;
+    eligibility.tabIndex = -1;
+
+    const prose = document.createElement("p");
+    prose.textContent = explanation
+        ? `Model explanation: ${explanation.text}`
+        : requirement.status === "executable"
+            ? candidate.review.explanation_error ?? "Explanation unavailable. Review the exact interpretation below."
+            : `Extraction rationale: ${requirement.reason}`;
+    prose.className = "review-explanation";
+
+    const limitations = document.createElement("p");
+    limitations.className = "note";
+    limitations.textContent = explanation
+        ? `Limitations: ${explanation.limitations}`
+        : `Missing facts: ${requirement.missing_facts.join(", ") || "none specified"}. This is not an approved executable interpretation.`;
+
+    const rule_set = { facts: [], rules: candidate.rules.rules.filter((rule) => requirement.rules.includes(rule.id)) };
+    const detail = document.createElement("details");
+    detail.className = "raw";
+    const label = document.createElement("summary");
+    label.textContent = "Exact deterministic interpretation and raw rules";
+    const exact = document.createElement("pre");
+    exact.textContent = `${ruleset_render(rule_set)}\n\n${JSON.stringify(rule_set, null, 4)}`;
+    detail.append(label, exact);
+
+    const actions = document.createElement("div");
+    actions.className = "review-actions";
+    const needs_check = requirement.status === "executable" && !progress.has_check;
+    const disabled_reason = unapplied
+        ? "Apply the edited prompt first."
+        : needs_check
+            ? "Run a check on a supported scope before approving this executable requirement."
+            : "";
+    const approve_label = requirement.status === "executable" ? "Approve requirement" : "Approve retained prose";
+    actions.append(
+        review_decision_button(requirement, "approved", approve_label, disabled_reason, eligibility),
+        review_decision_button(requirement, "rejected", "Reject", unapplied ? "Apply the edited prompt first." : "", eligibility),
+        review_decision_button(requirement, "unreviewed", "Clear decision", unapplied ? "Apply the edited prompt first." : "", eligibility),
+    );
+    if (needs_check) {
+        const check = document.createElement("button");
+        check.type = "button";
+        check.textContent = "Go to Check";
+        check.addEventListener("click", review_go_check);
+        actions.append(check);
+    }
+
+    card.append(heading, badges, quote, eligibility, prose, limitations, detail, actions);
+    return card;
+}
+
+function review_legacy_card(report) {
+    const legacy = !candidate.review;
+    const stale = !legacy && report.reasons.length > 0;
+    const card = document.createElement("article");
+    card.className = "candidate review-card review-legacy";
+    const heading = document.createElement("h3");
+    heading.textContent = legacy
+        ? "This reading has no requirement review"
+        : stale ? "This review is stale or incomplete" : "Requirement review is unavailable";
+    const explanation = document.createElement("p");
+    explanation.textContent = legacy
+        ? "The recorded candidate predates requirement-level review. Its compiled rules remain inspectable and can be checked, but no requirement is approved and no prose will be reduced."
+        : report.reasons.join(" ");
+    const note = document.createElement("p");
+    note.className = "note";
+    note.textContent = "Regenerate candidates to inventory requirements and enable individual review. Generating is not approval.";
+    const actions = document.createElement("div");
+    actions.className = "review-actions";
+    const regenerate = document.createElement("button");
+    regenerate.type = "button";
+    regenerate.className = "review-primary-action";
+    regenerate.textContent = "Regenerate candidates";
+    regenerate.addEventListener("click", review_regenerate);
+    const check = document.createElement("button");
+    check.type = "button";
+    check.textContent = "Go to Check";
+    check.addEventListener("click", review_go_check);
+    actions.append(regenerate, check);
+
+    const detail = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = "Compiled rules (readable list)";
+    detail.append(summary, rule_list(candidate));
+    card.append(heading, explanation, note, actions, detail);
+    return card;
+}
+
+function review_overview_next(report, progress) {
+    if (!candidate.review || report.reasons.length > 0) {
+        review_next_note.textContent = "No requirement can be reviewed until a current reading is generated. Use the recovery action below.";
+        review_next_action.hidden = true;
+        return;
+    }
+    if (progress.identified === 0) {
+        review_next_note.textContent = "No requirements were extracted for this reading, so there is nothing to approve or remove.";
+        review_next_action.hidden = false;
+        review_next_action.textContent = "Regenerate candidates";
+        review_next_action.onclick = review_regenerate;
+        return;
+    }
+    if (progress.unreviewed > 0) {
+        review_next_note.textContent = `${progress.unreviewed} requirement${progress.unreviewed === 1 ? "" : "s"} still ${progress.unreviewed === 1 ? "needs" : "need"} a decision. Review is separate from approval.`;
+        review_next_action.hidden = false;
+        review_next_action.textContent = "Next needing review";
+        review_next_action.onclick = focus_next_review;
+        return;
+    }
+    if (progress.executable > 0 && !progress.has_check) {
+        review_next_note.textContent = "All requirements have a decision, but executable requirements need a current check before approval.";
+        review_next_action.hidden = false;
+        review_next_action.textContent = "Go to Check";
+        review_next_action.onclick = review_go_check;
+        return;
+    }
+    if (progress.executable === 0) {
+        review_next_note.textContent = "No executable requirement can remove prose. Approval will record acknowledgement, but the prompt will remain intact.";
+        review_next_action.hidden = false;
+        review_next_action.textContent = "Continue to Approve";
+        review_next_action.onclick = review_continue_approve;
+        return;
+    }
+    if (progress.approved === 0) {
+        review_next_note.textContent = "Every requirement has a decision, but none is approved. The prompt will remain unchanged.";
+        review_next_action.hidden = false;
+        review_next_action.textContent = "Review decisions";
+        review_next_action.onclick = () => {
+            review_mode = "all";
+            review_filter.value = "all";
+            render_review_queue(current_review_report, review_progress(current_review_report));
+        };
+        return;
+    }
+    if (progress.removable_lines === 0) {
+        review_next_note.textContent = "Requirements are reviewed, but no complete source line is currently eligible for removal. Inspect the comparison for retained clauses.";
+        review_next_action.hidden = false;
+        review_next_action.textContent = "Review reduction blockers";
+        review_next_action.onclick = review_show_comparison;
+        return;
+    }
+    review_next_note.textContent = `${progress.removable_lines} line${progress.removable_lines === 1 ? "" : "s"} can be reduced after review. Continue to record the complete artifact.`;
+    review_next_action.hidden = false;
+    review_next_action.textContent = "Continue to Approve";
+    review_next_action.onclick = review_continue_approve;
+}
+
+function render_review_overview(report, progress) {
+    review_policy.textContent = "Only a source line whose clauses are all executable, checked against a current fact scope, and explicitly approved can be removed. "
+        + "Approval records human judgement for that scope; it does not prove future enforcement or complete intent.";
+    if (!candidate.review || report.reasons.length > 0) {
+        const unavailable = document.createElement("p");
+        unavailable.className = "note";
+        unavailable.textContent = !candidate.review
+            ? "No requirement counts are available because this reading has no requirement-level review."
+            : "Requirement counts are unavailable because the recorded review is stale or invalid.";
+        review_counts_box.replaceChildren(unavailable);
+    } else {
+        review_counts_box.replaceChildren(
+            review_count_item("identified", progress.identified),
+            review_count_item("executable", progress.executable, progress.executable > 0 ? "good" : ""),
+            review_count_item("approved", progress.approved, progress.approved > 0 ? "good" : ""),
+            review_count_item("rejected", progress.rejected),
+            review_count_item("unreviewed", progress.unreviewed, progress.unreviewed > 0 ? "attention" : ""),
+            review_count_item("removable lines", progress.removable_lines, progress.removable_lines > 0 ? "good" : ""),
+        );
+    }
+    review_overview_next(report, progress);
+}
+
+function focus_next_review() {
+    if (!candidate?.review) {
+        review_next_note.textContent = "No review is available. Regenerate candidates first.";
+        return;
+    }
+    const report = review_status();
+    const next = candidate.review.requirements.find((requirement) => {
+        const row = report.requirements.find((item) => item.id === requirement.id);
+        return (row?.decision ?? "unreviewed") === "unreviewed";
+    });
+    if (!next) {
+        review_next_note.textContent = "No requirement is waiting for a decision.";
+        render_review_queue(report, review_progress(report));
+        return;
+    }
+    review_query = "";
+    review_search.value = "";
+    review_mode = "all";
+    review_filter.value = "all";
+    render_review_queue(report, review_progress(report));
+    const card = review_card_elements.get(next.id);
+    review_queue_summary.textContent = `Focused requirement ${next.id}. Its decision is still ${"unreviewed"}.`;
+    if (card) {
+        card.focus({ preventScroll: true });
+        card.scrollIntoView?.({ block: "center" });
+    }
+}
+
+function render_review_queue(report, progress) {
+    review_card_elements.clear();
+    if (!candidate.review || report.reasons.length > 0) {
+        review_toolbar.hidden = true;
+        rule_summary.replaceChildren(review_legacy_card(report));
+        return;
+    }
+    review_toolbar.hidden = false;
+    const requirements = candidate.review.requirements;
+    const visible = filter_requirements(requirements, report, review_query, review_mode,
+        (requirement) => explanation_current(candidate, requirement.id, entry.source, working, catalog.fact_contract));
+    review_queue_summary.textContent = `${visible.length} of ${requirements.length} requirements shown. `
+        + `${progress.unreviewed} awaiting a decision; ${progress.approved} approved; ${progress.rejected} rejected.`;
+    review_empty.hidden = visible.length > 0;
+    review_next_needing.disabled = progress.unreviewed === 0;
+    const no_requirements = requirements.length === 0;
+    review_empty_message.textContent = no_requirements
+        ? "No requirements were extracted for this reading. Regenerate candidates to try again, or inspect the rules below."
+        : "No requirements match these filters.";
+    review_empty_clear.hidden = no_requirements;
+    review_empty_regenerate.hidden = !no_requirements;
+    if (visible.length === 0) {
+        rule_summary.replaceChildren();
+        return;
+    }
+    const cards = visible.map((requirement) => {
+        const card = review_requirement_card(requirement, report, progress);
+        review_card_elements.set(requirement.id, card);
+        return card;
+    });
+    rule_summary.replaceChildren(...cards);
 }
 
 let prompt_url = null;
@@ -822,6 +1124,7 @@ function render_candidates() {
             choose.textContent = "Choose this reading";
             choose.addEventListener("click", () => {
                 candidate = item;
+                reset_review_filters();
                 last_check = null;
                 reconcile_check();
                 check_output.textContent = "";
@@ -840,15 +1143,32 @@ function render_candidates() {
 }
 
 function render_rules() {
-    rules_note.textContent = `Candidate ${candidate.id}: ${candidate.rules.rules.length} rules, ${candidate.cases.length} cases${edited ? "; the working prompt has an applied edit" : ""}.`;
+    const report = review_status();
+    const progress = review_progress(report);
+    current_review_report = report;
+    const review_state = !candidate.review
+        ? "No requirement review is recorded."
+        : report.reasons.length > 0
+            ? "The recorded review is stale or invalid."
+            : `${progress.approved} of ${progress.identified} requirements approved.`;
+    const rule_count = candidate.rules.rules.length;
+    const case_count = candidate.cases.length;
+    const rule_label = `${rule_count} rule${rule_count === 1 ? "" : "s"}`;
+    const case_label = `${case_count} case${case_count === 1 ? "" : "s"}`;
+    rules_note.textContent = `Candidate ${candidate.id}: ${rule_label}, ${case_label}. ${review_state}${edited ? " The working prompt has an applied edit." : ""}`;
     rules_badges.replaceChildren();
-    for (const text of [`${candidate.rules.rules.length} rules`, `${candidate.cases.length} cases`]) {
+    const badge_texts = [rule_label, case_label];
+    if (candidate.review) {
+        badge_texts.push(`${progress.identified} requirements`, `${progress.approved} approved`);
+    }
+    for (const text of badge_texts) {
         const badge = document.createElement("span");
         badge.className = "badge";
         badge.textContent = text;
         rules_badges.append(badge);
     }
-    rule_summary.replaceChildren(review_cards());
+    render_review_overview(report, progress);
+    render_review_queue(report, progress);
     const text = JSON.stringify(candidate.rules, null, 2);
     rules_box.textContent = text;
     const link = document.querySelector("#rules-download");
@@ -1244,6 +1564,7 @@ select_prompt.addEventListener("change", () => {
     working = entry.markdown;
     edited = false;
     last_check = null;
+    reset_review_filters();
     reconcile_check();
     render();
 });
@@ -1420,6 +1741,26 @@ object_clear_filters.addEventListener("click", clear_object_filters);
 object_empty_clear.addEventListener("click", clear_object_filters);
 object_next_unreviewed.addEventListener("click", next_unreviewed);
 
+function clear_review_filters() {
+    reset_review_filters();
+    render_review_queue(current_review_report, review_progress(current_review_report));
+}
+
+review_search.addEventListener("input", () => {
+    review_query = review_search.value;
+    render_review_queue(current_review_report, review_progress(current_review_report));
+});
+
+review_filter.addEventListener("change", () => {
+    review_mode = review_filter.value;
+    render_review_queue(current_review_report, review_progress(current_review_report));
+});
+
+review_clear_filters.addEventListener("click", clear_review_filters);
+review_empty_clear.addEventListener("click", clear_review_filters);
+review_empty_regenerate.addEventListener("click", review_regenerate);
+review_next_needing.addEventListener("click", focus_next_review);
+
 propose_button.addEventListener("click", async () => {
     const source_scan = entry.source;
     propose_button.disabled = true;
@@ -1502,6 +1843,7 @@ document.querySelector("#generate").addEventListener("click", async () => {
         const candidates = result.candidates;
         entry = { ...entry, compiled: true, candidates };
         candidate = entry.candidates[0];
+        reset_review_filters();
         working = request_text;
         edited = working !== entry.markdown;
         last_check = null;

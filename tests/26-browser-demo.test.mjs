@@ -17,6 +17,7 @@ import { ruleset_render, ruleset_run } from "../sources/krank.mjs";
 import { diff_lines } from "../sources/browser/prompt-diff.mjs";
 import { candidate_stats, coverage_delta } from "../sources/browser/candidate-summary.mjs";
 import { filter_proposals, review_counts } from "../sources/browser/object-filter.mjs";
+import { review_progress, filter_requirements } from "../sources/browser/review-queue.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const read = (rel) => readFileSync(`${root}${rel}`, "utf8");
@@ -66,6 +67,9 @@ test("every demo module imports the barrel and no node: builtin", () => {
     const filter = read("sources/browser/object-filter.mjs");
     assert.ok(!/from\s+["']node:/.test(filter), "object-filter.mjs imports a node: builtin");
     assert.ok(!/\bdocument\b|\bwindow\b/.test(filter), "object-filter.mjs depends on the DOM");
+    const queue = read("sources/browser/review-queue.mjs");
+    assert.ok(!/from\s+["']node:/.test(queue), "review-queue.mjs imports a node: builtin");
+    assert.ok(!/\bdocument\b|\bwindow\b/.test(queue), "review-queue.mjs depends on the DOM");
 });
 
 test("each page loads its module", () => {
@@ -199,6 +203,104 @@ test("Prompt introduces draft decisions, accessible state, and the next action",
     assert.match(html, /\.prompt-actions\s*\{[^}]*flex-wrap:\s*wrap/s);
     assert.match(html, /@media \(max-width: 54rem\)\s*\{\s*body\s*\{[^}]*padding-top:\s*3\.5rem/s);
     assert.match(html, /#tab-prompt #source\s*\{[^}]*box-sizing:\s*border-box/s);
+});
+
+test("review progress separates decisions, checks, and removable lines", () => {
+    const report = {
+        identified: 5,
+        executable: 3,
+        approved: 1,
+        check_scope: "file:prompts/x.md",
+        removed: [2],
+        requirements: [
+            { id: "a", decision: "approved", eligible: true },
+            { id: "b", decision: "unreviewed", eligible: false },
+            { id: "c", decision: "rejected", eligible: false },
+            { id: "d", decision: "approved", eligible: false },
+        ],
+    };
+    assert.deepEqual(review_progress(report), {
+        identified: 5,
+        executable: 3,
+        approved: 2,
+        rejected: 1,
+        unreviewed: 1,
+        eligible: 1,
+        non_executable: 2,
+        blocked: 2,
+        needs_check: 0,
+        removable_lines: 1,
+        decided: 3,
+        all_reviewed: false,
+        has_check: true,
+    });
+    const unchecked = review_progress({ ...report, check_scope: null, removed: [] });
+    assert.equal(unchecked.needs_check, 3);
+    assert.equal(unchecked.has_check, false);
+    assert.equal(unchecked.removable_lines, 0);
+    const empty = review_progress({});
+    assert.equal(empty.identified, 0);
+    assert.equal(empty.all_reviewed, false);
+});
+
+test("requirement filtering uses report decisions and never mutates", () => {
+    const requirements = [
+        { id: "a", status: "executable", title: "Files use spaces", quote: "Files use spaces.", reason: "Observed.", missing_facts: [], explanation: { title: "Spaces", text: "Reject tabs.", limitations: "Lexical only." } },
+        { id: "b", status: "executable", title: "Tasks verify", quote: "Tasks verify.", reason: "Observed.", missing_facts: [] },
+        { id: "c", status: "executable", title: "History stays", quote: "History stays.", reason: "Observed.", missing_facts: [] },
+        { id: "d", status: "needs_facts", title: "Helpful reviews", quote: "Reviews help.", reason: "Needs judgement.", missing_facts: ["Review quality"] },
+    ];
+    const report = {
+        requirements: [
+            { id: "a", decision: "approved", eligible: true, reason: "Approved for scope." },
+            { id: "b", decision: "unreviewed", eligible: false, reason: "Review first." },
+            { id: "c", decision: "rejected", eligible: false, reason: "Rejected." },
+            { id: "d", decision: "approved", eligible: false, reason: "Retained." },
+        ],
+    };
+    const before = JSON.stringify(requirements);
+    assert.deepEqual(filter_requirements(requirements, report, "", "all").map((item) => item.id), ["a", "b", "c", "d"]);
+    assert.deepEqual(filter_requirements(requirements, report, "", "needs_review").map((item) => item.id), ["b"]);
+    assert.deepEqual(filter_requirements(requirements, report, "", "approved").map((item) => item.id), ["a", "d"]);
+    assert.deepEqual(filter_requirements(requirements, report, "", "rejected").map((item) => item.id), ["c"]);
+    assert.deepEqual(filter_requirements(requirements, report, "", "non_executable").map((item) => item.id), ["d"]);
+    assert.deepEqual(filter_requirements(requirements, report, "LEXICAL", "all").map((item) => item.id), ["a"]);
+    assert.deepEqual(filter_requirements(requirements, report, "review quality", "all").map((item) => item.id), ["d"]);
+    assert.deepEqual(
+        filter_requirements(requirements, report, "separate explanation store", "all",
+            (item) => item.id === "b" ? { text: "This text lives in the separate explanation store." } : null)
+            .map((item) => item.id),
+        ["b"],
+    );
+    assert.equal(JSON.stringify(requirements), before, "requirement filtering mutated its input");
+    const orphan = filter_requirements(requirements, {}, "", "needs_review");
+    assert.equal(orphan.length, 4, "an absent report must not silently hide requirements");
+});
+
+test("Rules explains review progress, legacy recovery, and next actions", () => {
+    const html = read("sources/browser/index.html");
+    for (const id of ["rules-overview", "review-policy", "review-counts", "review-next-note",
+        "review-next-action", "review-toolbar", "review-search", "review-filter",
+        "review-clear-filters", "review-next-needing", "review-queue-summary",
+        "review-empty", "review-empty-clear", "review-empty-message", "review-empty-regenerate"]) {
+        assert.ok(html.includes(`id="${id}"`), `Rules is missing #${id}`);
+    }
+    assert.match(html, /id="review-counts"[^>]*role="list"/);
+    assert.match(html, /id="review-next-note"[^>]*aria-live="polite"/);
+    assert.match(html, /id="review-queue-summary"[^>]*aria-live="polite"/);
+    assert.match(html, /id="review-toolbar"[^>]*hidden/);
+    const source = read("sources/browser/studio.mjs");
+    for (const text of ["review_progress(", "filter_requirements(", "This reading has no requirement review",
+        "This review is stale or incomplete", "Regenerate candidates", "Approve retained prose",
+        "Go to Check", "Continue to Approve", "Review reduction blockers", "Needs a check.",
+        "No requirements were extracted", "Exact deterministic interpretation and raw rules", "review_decide(candidate"]) {
+        assert.ok(source.includes(text), `Rules is missing: ${text}`);
+    }
+    assert.match(source, /ruleset_render\(rule_set\)/);
+    assert.match(source, /JSON\.stringify\(rule_set, null, 4\)/);
+    assert.match(source, /aria-describedby/, "a disabled approval must point to its explanation");
+    assert.match(html, /\.review-card\[data-decision="approved"\]/);
+    assert.match(html, /\.review-legacy/);
 });
 
 test("candidate statistics separate cases from quoted source lines", () => {

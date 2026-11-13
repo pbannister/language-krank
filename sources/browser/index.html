@@ -600,6 +600,149 @@
             margin: 0 0 1rem;
         }
 
+        .review-overview {
+            border: 1px solid color-mix(in srgb, Canvas 78%, CanvasText 22%);
+            border-radius: 0.35rem;
+            padding: 0.75rem 1rem;
+            margin: 0 0 0.9rem;
+        }
+
+        .review-overview h3 {
+            margin: 0 0 0.35rem;
+        }
+
+        .review-overview .note {
+            margin-bottom: 0.65rem;
+        }
+
+        .review-counts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            margin: 0.6rem 0;
+        }
+
+        .review-count {
+            min-width: 6.5rem;
+            padding: 0.35rem 0.55rem;
+            border-left: 3px solid color-mix(in srgb, Canvas 62%, CanvasText 38%);
+            background: color-mix(in srgb, Canvas 94%, CanvasText 6%);
+        }
+
+        .review-count strong {
+            display: block;
+            font-size: 1.2rem;
+            line-height: 1.1;
+        }
+
+        .review-count span {
+            font-size: 0.78rem;
+            opacity: 0.8;
+        }
+
+        .review-count.attention {
+            border-left-color: #b26a00;
+        }
+
+        .review-count.good {
+            border-left-color: #2e7d32;
+        }
+
+        .review-next {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 0.6rem;
+        }
+
+        .review-next .note {
+            flex: 1 1 24rem;
+            margin: 0;
+        }
+
+        .review-card {
+            border-left-width: 4px;
+        }
+
+        .review-card:focus {
+            outline: 2px solid color-mix(in srgb, Canvas 45%, #f9a825 55%);
+            outline-offset: 2px;
+        }
+
+        .review-card[data-decision="approved"] {
+            border-left-color: #2e7d32;
+        }
+
+        .review-card[data-decision="rejected"] {
+            border-left-color: #9e9e9e;
+        }
+
+        .review-card blockquote {
+            margin: 0.5rem 0;
+            padding: 0.35rem 0.65rem;
+            border-left: 2px solid color-mix(in srgb, Canvas 65%, CanvasText 35%);
+            font-family: ui-monospace, monospace;
+            font-size: 0.8rem;
+            overflow-wrap: anywhere;
+        }
+
+        .review-card .review-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            margin: 0.35rem 0 0.5rem;
+        }
+
+        .review-card .review-badge {
+            white-space: normal;
+            text-transform: none;
+        }
+
+        .review-eligibility {
+            padding: 0.4rem 0.6rem;
+            border-radius: 0.25rem;
+            background: color-mix(in srgb, Canvas 92%, CanvasText 8%);
+            font-size: 0.85rem;
+        }
+
+        .review-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            margin-top: 0.6rem;
+        }
+
+        .review-actions button {
+            margin: 0;
+        }
+
+        .review-primary-action {
+            font-weight: 600;
+        }
+
+        .review-empty {
+            border-left: 3px solid color-mix(in srgb, Canvas 60%, CanvasText 40%);
+            padding: 0.5rem 0.75rem;
+            margin: 0.6rem 0;
+        }
+
+        .review-empty[hidden] {
+            display: none;
+        }
+
+        .review-legacy {
+            border-left: 4px solid #b26a00;
+        }
+
+        .review-legacy h3 {
+            margin-top: 0;
+        }
+
+        .review-legacy details {
+            margin-top: 0.6rem;
+        }
+
         .raw {
             margin: 0.75rem 0;
         }
@@ -836,6 +979,20 @@
             }
 
             .review-toolbar-actions button {
+                flex: 1 1 auto;
+            }
+
+            .review-count {
+                flex: 1 1 7rem;
+            }
+
+            .review-next {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .review-next button,
+            .review-actions button {
                 flex: 1 1 auto;
             }
         }
@@ -1086,6 +1243,43 @@
                         </div>
                         <div class="badges" id="rules-badges"></div>
                     </div>
+                    <section class="review-overview" id="rules-overview" aria-labelledby="rules-overview-title">
+                        <h3 id="rules-overview-title">Review progress</h3>
+                        <p class="note" id="review-policy"></p>
+                        <div class="review-counts" id="review-counts" role="list" aria-label="Requirement review counts"></div>
+                        <div class="review-next">
+                            <p class="note" id="review-next-note" role="status" aria-live="polite"></p>
+                            <button id="review-next-action" type="button" class="review-primary-action" hidden></button>
+                        </div>
+                    </section>
+                    <section class="review-toolbar" id="review-toolbar" aria-label="Requirement review queue" hidden>
+                        <h3>Requirement queue</h3>
+                        <div class="review-toolbar-controls">
+                            <label class="review-field" for="review-search">Find a requirement
+                                <input id="review-search" type="search" placeholder="title, quote, reason, or fact"
+                                    autocomplete="off">
+                            </label>
+                            <label class="review-field" for="review-filter">Show
+                                <select id="review-filter">
+                                    <option value="all">All requirements</option>
+                                    <option value="needs_review">Needs review</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                    <option value="non_executable">Retained non-executable</option>
+                                </select>
+                            </label>
+                            <div class="review-toolbar-actions">
+                                <button id="review-clear-filters" type="button">Clear filters</button>
+                                <button id="review-next-needing" type="button">Next needing review</button>
+                            </div>
+                        </div>
+                        <p class="review-progress" id="review-queue-summary" role="status" aria-live="polite"></p>
+                        <div class="review-empty" id="review-empty" hidden>
+                            <p id="review-empty-message">No requirements match these filters.</p>
+                            <button id="review-empty-clear" type="button">Clear filters</button>
+                            <button id="review-empty-regenerate" type="button" hidden>Regenerate candidates</button>
+                        </div>
+                    </section>
                     <div id="rule-summary" class="rule-summary"></div>
                     <details class="raw">
                         <summary>Raw rule set (JSON)</summary>
