@@ -30,6 +30,7 @@ for file_expected in \
     "$DIRECTORY_TREE/browser/prompt-outline.mjs" \
     "$DIRECTORY_TREE/browser/review-queue.mjs" \
     "$DIRECTORY_TREE/browser/review-focus.mjs" \
+    "$DIRECTORY_TREE/browser/review-history.mjs" \
     "$DIRECTORY_TREE/browser/reduction-summary.mjs" \
     "$DIRECTORY_TREE/browser/check-summary.mjs" \
     "$DIRECTORY_TREE/browser/scope-suggestions.mjs" \

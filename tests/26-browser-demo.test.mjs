@@ -18,6 +18,7 @@ import { diff_lines } from "../sources/browser/prompt-diff.mjs";
 import { candidate_stats, coverage_delta } from "../sources/browser/candidate-summary.mjs";
 import { rule_diff, rule_diff_summary, display_order } from "../sources/browser/candidate-diff.mjs";
 import { filter_proposals, review_counts, review_breakdown } from "../sources/browser/object-filter.mjs";
+import { review_snapshot, undo_last_review } from "../sources/browser/review-history.mjs";
 import { review_progress, filter_requirements } from "../sources/browser/review-queue.mjs";
 import { resolve_focus_index, move_focus_index, focus_position, focus_item } from "../sources/browser/review-focus.mjs";
 import { reduction_summary, retained_reason, line_status_rows, filter_line_status, line_status_counts } from "../sources/browser/reduction-summary.mjs";
@@ -228,12 +229,30 @@ test("object origin filters and review breakdown stay conservative", () => {
     assert.equal(JSON.stringify(rows), before, "origin filtering mutated its input");
 });
 
+test("object review undo restores the last decision without mutation surprises", () => {
+    const row = { term: "task", use: "accept", reviewed: true };
+    const rows = [row, { term: "file", use: "ignore", reviewed: false }];
+    const snapshot = review_snapshot(row);
+    assert.deepEqual(snapshot, { term: "task", use: "accept", reviewed: true });
+    assert.equal(review_snapshot(null), null);
+    const history = [snapshot];
+    const before = JSON.stringify({ history, rows });
+    const result = undo_last_review(history, rows);
+    assert.deepEqual(result.history, []);
+    assert.equal(result.row, row);
+    assert.deepEqual(result.snapshot, snapshot);
+    assert.equal(JSON.stringify({ history, rows }), before);
+    assert.deepEqual(undo_last_review([], rows), { history: [], row: null, snapshot: null });
+    assert.equal(undo_last_review([{ term: "gone" }], rows).row, null);
+});
+
 test("Objects review toolbar filters across tabs and exposes a review entry", () => {
     const html = read("sources/browser/index.html");
     for (const id of ["object-review-toolbar", "object-search", "object-filter", "object-origin",
         "object-clear-filters", "object-next-unreviewed", "object-review-summary", "object-empty",
         "object-empty-clear", "object-review-entry", "object-entry-progress", "object-progress",
-        "object-kind-jumps", "object-review-unreviewed", "object-origin-summary"]) {
+        "object-kind-jumps", "object-review-unreviewed", "object-undo-review", "object-undo-status",
+        "object-origin-summary"]) {
         assert.ok(html.includes(`id="${id}"`), `the review toolbar has no #${id}`);
     }
     assert.match(html, /id="object-search"[^>]*type="search"/);
@@ -245,7 +264,8 @@ test("Objects review toolbar filters across tabs and exposes a review entry", ()
     for (const wiring of ["filter_proposals(", "review_breakdown(", "render_object_entry(",
         "review_unreviewed", "next_unreviewed", "object_origin", "within current filters",
         'origin-${row.origin === "registry" ? "registry" : "scan"}', "object_empty.hidden", "aria-busy",
-        "new_count", "known_count"]) {
+        "new_count", "known_count", "review_snapshot(row)", "undo_last_review(object_review_history, proposals)",
+        "object_undo_review.disabled"]) {
         assert.ok(source.includes(wiring), `the Objects step is missing ${wiring}`);
     }
 });

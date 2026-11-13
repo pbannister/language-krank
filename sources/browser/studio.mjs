@@ -17,6 +17,7 @@ import { diff_lines } from "./prompt-diff.mjs";
 import { render_file } from "./file-view.mjs";
 import { review_report, review_reduce, review_check, review_decide, review_observations_match, explanation_current } from "../compile-review.mjs";
 import { filter_proposals, review_counts, review_breakdown } from "./object-filter.mjs";
+import { review_snapshot, undo_last_review } from "./review-history.mjs";
 import { candidate_stats, coverage_delta } from "./candidate-summary.mjs";
 import { rule_diff, rule_diff_summary, display_order } from "./candidate-diff.mjs";
 import { review_progress, filter_requirements } from "./review-queue.mjs";
@@ -167,6 +168,8 @@ const object_progress = document.querySelector("#object-progress");
 const object_entry_progress = document.querySelector("#object-entry-progress");
 const object_kind_jumps = document.querySelector("#object-kind-jumps");
 const object_review_unreviewed = document.querySelector("#object-review-unreviewed");
+const object_undo_review = document.querySelector("#object-undo-review");
+const object_undo_status = document.querySelector("#object-undo-status");
 const object_origin_summary = document.querySelector("#object-origin-summary");
 const object_clear_filters = document.querySelector("#object-clear-filters");
 const object_empty_clear = document.querySelector("#object-empty-clear");
@@ -190,6 +193,7 @@ let proposals = proposal_rows(object_model);
 let object_query = "";
 let object_mode = "all";
 let object_origin = "all";
+const object_review_history = [];
 let review_query = "";
 let review_mode = "all";
 let review_focused = false;
@@ -567,9 +571,14 @@ function render_proposals() {
         box.dataset.reviewTerm = row.term;
         box.setAttribute("aria-label", `accept ${row.term}`);
         box.addEventListener("change", () => {
+            const snapshot = review_snapshot(row);
+            if (snapshot) {
+                object_review_history.push(snapshot);
+            }
             row.use = box.checked ? "accept" : "ignore";
             row.reviewed = true;
             review_cursor_term = row.term;
+            object_undo_status.textContent = `Reviewed ${row.term} as ${row.use}.`;
             render_proposals();
         });
         term_line.append(box, document.createTextNode(row.term));
@@ -645,6 +654,7 @@ function render_proposals() {
     }
     proposals_url = download_url(JSON.stringify({ proposals }, null, 2), "application/json");
     document.querySelector("#proposals-download").href = proposals_url;
+    object_undo_review.disabled = object_review_history.length === 0;
     update_step_status();
 }
 
@@ -2894,6 +2904,21 @@ object_clear_filters.addEventListener("click", clear_object_filters);
 object_empty_clear.addEventListener("click", clear_object_filters);
 object_next_unreviewed.addEventListener("click", next_unreviewed);
 object_review_unreviewed.addEventListener("click", review_unreviewed);
+object_undo_review.addEventListener("click", () => {
+    const result = undo_last_review(object_review_history, proposals);
+    object_review_history.length = 0;
+    object_review_history.push(...result.history);
+    if (!result.row) {
+        object_undo_status.textContent = "There is no review decision to undo.";
+        render_proposals();
+        return;
+    }
+    result.row.use = result.snapshot.use;
+    result.row.reviewed = result.snapshot.reviewed;
+    review_cursor_term = result.row.term;
+    object_undo_status.textContent = `Restored ${result.row.term} to ${result.row.reviewed ? result.row.use : "unreviewed"}.`;
+    render_proposals();
+});
 
 function clear_review_filters() {
     reset_review_filters();
