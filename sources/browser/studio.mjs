@@ -18,6 +18,7 @@ import { render_file } from "./file-view.mjs";
 import { review_report, review_reduce, review_check, review_decide, review_observations_match, explanation_current } from "../compile-review.mjs";
 import { filter_proposals, review_counts, review_breakdown } from "./object-filter.mjs";
 import { candidate_stats, coverage_delta } from "./candidate-summary.mjs";
+import { rule_diff, rule_diff_summary, display_order } from "./candidate-diff.mjs";
 import { review_progress, filter_requirements } from "./review-queue.mjs";
 import { reduction_summary, retained_reason } from "./reduction-summary.mjs";
 import { scope_stats, check_readiness, evaluation_summary } from "./check-summary.mjs";
@@ -1380,6 +1381,88 @@ function candidate_delta(item) {
     return detail;
 }
 
+function rule_id_list(label, ids) {
+    const block = document.createElement("div");
+    block.className = "rule-diff-group";
+    const heading = document.createElement("p");
+    heading.className = "candidate-label";
+    heading.textContent = `${label} (${ids.length})`;
+    block.append(heading);
+    if (ids.length === 0) {
+        const none = document.createElement("p");
+        none.className = "note";
+        none.textContent = "None.";
+        block.append(none);
+        return block;
+    }
+    const list = document.createElement("ul");
+    list.className = "rule-id-list";
+    for (const id of ids) {
+        const item = document.createElement("li");
+        const code = document.createElement("code");
+        code.textContent = id;
+        item.append(code);
+        list.append(item);
+    }
+    block.append(list);
+    return block;
+}
+
+function candidate_rules_delta(item) {
+    const detail = document.createElement("details");
+    detail.className = "candidate-rule-diff";
+    const diff = rule_diff(item, candidate);
+    const summary = document.createElement("summary");
+    summary.textContent = `Formal differences: ${rule_diff_summary(diff)}`;
+    detail.append(summary);
+    if (!diff.valid) {
+        const problem = document.createElement("p");
+        problem.className = "note";
+        problem.textContent = `These rule sets cannot be compared safely: ${diff.errors.join("; ")}.`;
+        detail.append(problem);
+        return detail;
+    }
+    const coverage = coverage_delta(item, candidate, entry.source);
+    if (diff.identical) {
+        const same = document.createElement("p");
+        same.className = "note";
+        same.textContent = coverage.only_this === 0 && coverage.only_current === 0
+            ? "Same rules and quoted lines. The reading is still a separate choice, not an approval."
+            : "Same rules; only case coverage differs.";
+        detail.append(same);
+    }
+    if (diff.only_this.length > 0) {
+        detail.append(rule_id_list("Rules only in this reading", diff.only_this));
+    }
+    if (diff.only_current.length > 0) {
+        detail.append(rule_id_list("Rules only in the current choice", diff.only_current));
+    }
+    if (diff.changed.length > 0) {
+        detail.append(rule_id_list("Same rule id, different definition", diff.changed));
+    }
+    if (diff.shared.length > 0) {
+        detail.append(rule_id_list("Shared rule ids", diff.shared));
+    }
+    if (diff.order_changed) {
+        const order = document.createElement("p");
+        order.className = "note";
+        order.textContent = "Shared rules appear in a different order.";
+        detail.append(order);
+    }
+    const caveat = document.createElement("p");
+    caveat.className = "note";
+    caveat.textContent = "These differences describe form, not correctness or better intent. Review the requirements and their explanations before choosing.";
+    detail.append(caveat);
+    return detail;
+}
+
+function candidate_current_note() {
+    const note = document.createElement("p");
+    note.className = "candidate-current-note note";
+    note.textContent = "Current choice (not approval). Its rules are the ones reviewed and checked in the following steps.";
+    return note;
+}
+
 function render_candidates() {
     candidates_box.replaceChildren();
     candidates_next.hidden = !candidate;
@@ -1408,7 +1491,7 @@ function render_candidates() {
         + `Current choice: ${candidate.title} (${candidate.id}), with ${current.source_lines} quoted prompt line${current.source_lines === 1 ? "" : "s"}. `
         + "Choosing a reading changes which rules are reviewed; it does not approve them.";
     candidates_note.textContent = "Quoted-line counts cover this prompt only; the source-file count includes cases from other files. Other-file cases remain visible in each card's Case details.";
-    for (const item of entry.candidates) {
+    for (const item of display_order(entry.candidates, candidate.id)) {
         const article = document.createElement("article");
         article.className = `candidate${item.id === candidate.id ? " selected" : ""}`;
 
@@ -1463,8 +1546,10 @@ function render_candidates() {
         }
 
         article.append(title, explanation_label, explanation, stats, badges);
-        if (item.id !== candidate.id) {
-            article.append(candidate_delta(item));
+        if (item.id === candidate.id) {
+            article.append(candidate_current_note());
+        } else {
+            article.append(candidate_rules_delta(item), candidate_delta(item));
         }
         article.append(choose, rule_detail, case_detail);
         candidates_box.append(article);
