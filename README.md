@@ -41,6 +41,14 @@ The compile is recorded: `scripts/site-catalog.mjs` assembles the compiled rule 
 
 **Generating candidates.** The studio's **Generate candidates** button posts the selected prompt to the studio server's `POST /compile`. The server runs `scripts/compile-with-harness.mjs`, which runs the task through the DeepSeek Harness headless profile, and validates the returned rules with the engine before replying. The server holds no model credential; the Harness owns the provider. The headless profile still needs its own credential: export `DEEPSEEK_API_KEY` before `make studio`, because the key the web Models page stores is not visible to a separate process. Set `DSH_BIN` if `dsh` is not on `PATH`, and `STUDIO_COMPILER_SCRIPT` to point at a different backend.
 
+**Model time limit.** Each extraction, proposal, or explanation pass has a 15-minute wall-clock limit by default.
+Reasoning progress does not reset that limit.
+Set `STUDIO_MODEL_TIMEOUT_SECONDS` to a positive whole number of seconds before starting the studio, for example `STUDIO_MODEL_TIMEOUT_SECONDS=1800 make studio` for 30 minutes per pass.
+Restart an already-running studio server to apply either a code update or a changed setting; refreshing the browser alone does not replace the server process.
+Extraction and explanations have separate budgets, so the complete review may take longer than one pass.
+A timed-out explanation preserves the validated rules with an explanation-unavailable notice.
+On POSIX, reaching the deadline stops the backend process group, including its Harness child, rather than leaving the model running after its wrapper exits.
+
 **In the Harness.** `sources/harness/krank-studio/` is a Harness client plugin that adds a **Krank** action to the conversation session header and opens the local studio. Install it into the web profile with `dsh plugin --profile web add -w sources/harness/krank-studio`, then reload the page. It is a launcher, not a second copy of the studio, and it is never published.
 
 ## Requirement review and safe reduction

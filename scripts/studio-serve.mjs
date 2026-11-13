@@ -21,6 +21,7 @@
 //
 // Usage: node scripts/studio-serve.mjs [port] [root]
 // Defaults: port 8090, root dataflow.out/studio.
+// STUDIO_MODEL_TIMEOUT_SECONDS: positive integer seconds per model pass (default 900).
 
 import { spawn } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
@@ -35,6 +36,13 @@ const port = Number(process.argv[2] ?? 8090);
 const root = resolve(process.argv[3] ?? fileURLToPath(new URL("../dataflow.out/studio", import.meta.url)));
 const repository_root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const compiler = process.env.STUDIO_COMPILER_SCRIPT ?? fileURLToPath(new URL("./compile-with-harness.mjs", import.meta.url));
+const timeout_setting = process.env.STUDIO_MODEL_TIMEOUT_SECONDS ?? "900";
+const timeout_seconds = Number(timeout_setting);
+// Node clamps overflowing timer durations to one millisecond; refuse instead.
+if (!/^[0-9]+$/.test(timeout_setting) || !Number.isSafeInteger(timeout_seconds)
+    || timeout_seconds < 1 || 2147483 < timeout_seconds) {
+    fail("STUDIO_MODEL_TIMEOUT_SECONDS must be an integer from 1 to 2147483");
+}
 const page_studio = "/browser/index.html";
 const page_playground = "/browser/playground.html";
 const model_path = fileURLToPath(new URL("../dataflow.in/object-model.json", import.meta.url));
@@ -231,14 +239,27 @@ function parse_proposals(output) {
 
 function compile(task, on_event) {
     return new Promise((resolve, reject) => {
-        const child = spawn(process.execPath, [compiler], { stdio: ["pipe", "pipe", "pipe"] });
+        // On POSIX the backend and its Harness subprocess share a fresh group;
+        // a deadline must stop the actual model process, not just its wrapper.
+        const grouped = process.platform !== "win32";
+        const child = spawn(process.execPath, [compiler], { stdio: ["pipe", "pipe", "pipe"], detached: grouped });
         let buffer = "";
         let final_text = null;
         let stderr = "";
         const timer = setTimeout(() => {
-            child.kill("SIGKILL");
-            reject(new Error("model task timed out after 180 seconds"));
-        }, 180000);
+            try {
+                if (grouped && child.pid) {
+                    process.kill(-child.pid, "SIGKILL");
+                } else {
+                    child.kill("SIGKILL");
+                }
+            } catch (error) {
+                if (error.code !== "ESRCH") {
+                    child.kill("SIGKILL");
+                }
+            }
+            reject(new Error(`model task timed out after ${timeout_seconds} seconds; increase STUDIO_MODEL_TIMEOUT_SECONDS and restart the studio server to allow more time`));
+        }, timeout_seconds * 1000);
         child.once("close", () => clearTimeout(timer));
         child.once("error", () => clearTimeout(timer));
         child.stdout.on("data", (chunk) => {
@@ -366,7 +387,7 @@ function handle_stream(request, response, build, parse) {
             });
             stream_open = true;
             const send = (event) => response.write(`data: ${JSON.stringify(event)}\n\n`);
-            send({ type: "phase", phase: "start", message: "the Harness started; waiting for the model" });
+            send({ type: "phase", phase: "start", message: `the Harness started; waiting for the model (limit ${timeout_seconds} seconds per pass)` });
             const answer = await compile(build(body.source, body.text), (event) => {
                 const progress = progress_event(event);
                 if (progress) {
@@ -525,4 +546,5 @@ server.listen(port, "127.0.0.1", () => {
     console.log(`studio-serve: playground http://127.0.0.1:${address.port}${page_playground}`);
     console.log(`studio-serve: compiler  ${compiler}`);
     console.log(`studio-serve: objects   ${confirmed_objects.length} confirmed`);
+    console.log(`studio-serve: model timeout ${timeout_seconds} seconds per pass`);
 });
