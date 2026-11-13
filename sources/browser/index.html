@@ -709,11 +709,11 @@
                     </p>
                     <p>
                         We use the model to render formal rules back into prose.
-                        Further, we use the model to compare the original and generated prose.
-                        If they match, then we can be confident that the model captured original intent.
+                        A separate explanation pass sees validated rules and fact definitions, not the original prose.
+                        Agreement is useful evidence, not proof that the original intent was captured.
                     </p>
                     <p>
-                        Human review is only needed when the original and generated prose do not match.
+                        Human review and explicit approval are always required before removing prose.
                         Guided by the model's comparison, with both original and generated prose, we can revise the
                         original so as to better express our intent.
                     </p>
@@ -818,10 +818,12 @@
                     <div class="step-head">
                         <div>
                             <h2>Prose from the rules</h2>
-                            <p class="note">The rule set rendered back into words, so the round trip can be read.</p>
+                            <p class="note">The exact deterministic rendering is below. Read the model explanations and review individual requirements in the Rules tab.</p>
                         </div>
                     </div>
-                    <pre id="prose" class="fill"></pre>
+                    <details class="raw"><summary>Exact deterministic interpretation</summary>
+                        <pre id="prose" class="fill"></pre>
+                    </details>
                 </div>
                 <div class="tab-panel" id="tab-comparison" data-tab="comparison" hidden>
                     <div class="step-head">
@@ -844,7 +846,7 @@
                         <tbody id="comparison"></tbody>
                     </table>
                     <details class="raw">
-                        <summary>Lines no rule captured</summary>
+                        <summary>Retained lines (context, unresolved, unchecked, or unapproved)</summary>
                         <ul id="uncovered"></ul>
                     </details>
                 </div>
@@ -852,8 +854,7 @@
                     <div class="step-head">
                         <div>
                             <h2>Reduced prompt</h2>
-                            <p class="note">Covered lines are removed and replaced by a pointer. An edit that breaks
-                                a covered line keeps the line, and the comparison marks it.</p>
+                            <p class="note">Only fully covered lines with explicitly approved executable requirements and a recorded check are removed. Partial lines and context stay intact. Source, rules, or fact-contract changes require a fresh review.</p>
                         </div>
                         <p><a id="reduced-download" download="reduced-prompt.md">Download the reduced prompt</a></p>
                     </div>
@@ -865,7 +866,7 @@
                     </details>
                 </div>
                 <div class="tab-panel" id="tab-rules-about" data-tab="about" hidden>
-                    <p class="lead">This step proves the round trip. Rules is the compiled rule set; Prose renders those
+                    <p class="lead">This step supports human review of the round trip; it does not prove equivalence. Rules is the compiled rule set; Prose renders those
                         rules back into words; Comparison lines the original up against the rendering; Reduced shows the
                         prompt with the covered lines removed. Together they show what the model kept, what it dropped,
                         and what you would lose.</p>
@@ -912,7 +913,8 @@
                         <p><a id="approve-rules" download="approved-rules.json">Download the rule set (JSON)</a></p>
                         <p><a id="approve-reduced" download="approved-reduced.md">Download the reduced prompt
                                 (Markdown)</a></p>
-                        <p class="note">Commit these files, or paste them into the repository.</p>
+                        <p><a id="approve-compile" download="reviewed-compile.json">Download the complete compile and review artifact (JSON)</a></p>
+                        <p class="note">Save the complete artifact under <code>dataflow.in/compile/</code> yourself, then rebuild. It preserves source references, coverage, explanations, check evidence, and individual decisions. Saving the rule set alone does not preserve approval. Later iterations must actually run the saved rules with suitable facts.</p>
                     </div>
                 </div>
             </section>

@@ -10,6 +10,7 @@
 
 import { ruleset_render, ruleset_run } from "../krank.mjs";
 import { diff_lines } from "./prompt-diff.mjs";
+import { review_reduce } from "../compile-review.mjs";
 
 const catalog = await load_json("./catalog.json");
 const bundle = await load_json("./files.json");
@@ -57,20 +58,10 @@ function rendered_by_rule(prose) {
     return map;
 }
 
-// reduced_markdown removes the lines of this file that a rule covers, and adds a
-// pointer to the compiled rule set. A case from another file is left alone: it
-// is not part of this prompt.
+// The old catalog surface uses the same fail-closed review gate as the studio.
+// Legacy cases alone never authorize removal.
 function reduced_markdown(current) {
-    const covered = current.cases
-        .filter((item) => (item.source ?? current.source) === current.source)
-        .map((item) => item.original);
-    if (covered.length === 0) {
-        return current.markdown;
-    }
-    const kept = current.markdown
-        .split("\n")
-        .filter((line) => !covered.some((original) => line.includes(original)));
-    return `${kept.join("\n").trimEnd()}\n\n## Compiled rules\n\nThis file's covered rules are compiled into the krank rule set \`${current.id}\`; see the compiled rules on this page.\n`;
+    return review_reduce(current, current.source, current.markdown, catalog.fact_contract).text;
 }
 
 function render_diff(before, after) {

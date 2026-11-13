@@ -52,21 +52,18 @@ test("every compiled prompt has rendered and comparison forms", () => {
     }
 });
 
-test("every case is marked and removed", () => {
+test("legacy cases never authorize markers or removal", () => {
     for (const entry of catalog.entries.filter((item) => item.compiled)) {
-        const cases = candidate_of(entry).cases.filter((item) => (item.source ?? entry.source) === entry.source);
+        if (candidate_of(entry).review) {
+            continue;
+        }
         const marked = readFileSync(`${out}/${slug_of(entry.source)}/marked.md`, "utf8");
         const reduced = readFileSync(`${out}/${slug_of(entry.source)}/reduced.md`, "utf8");
-        for (const item of cases) {
-            assert.ok(
-                marked.includes(`<!-- krank: {"rule":"${item.rule}"} -->`),
-                `${entry.source}: ${item.rule} is not marked`,
-            );
-            assert.ok(
-                !reduced.includes(item.original),
-                `${entry.source}: ${item.rule} is still present in the reduced form`,
-            );
-        }
+        assert.equal(marked, entry.markdown);
+        assert.equal(reduced, entry.markdown);
+        const record = manifest.entries.find((item) => item.source === entry.source);
+        assert.equal(record.coverage.approved, 0);
+        assert.equal(record.markers_found, 0);
     }
 });
 

@@ -45,7 +45,7 @@ node "$REPOSITORY_ROOT/scripts/site-facts.mjs" > "$DIRECTORY_BROWSER/files.json"
 cp "$REPOSITORY_ROOT/dataflow.in/object-model.json" "$DIRECTORY_BROWSER/object-model.json" \
     || fail 'the object model is missing'
 
-for file_library in krank.mjs ruleset-run.mjs ruleset-render.mjs; do
+for file_library in krank.mjs ruleset-run.mjs ruleset-render.mjs compile-review.mjs; do
     cp "$REPOSITORY_ROOT/sources/$file_library" "$DIRECTORY_OUTPUT/"
 done
 

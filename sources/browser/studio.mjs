@@ -15,6 +15,7 @@
 import { ruleset_render, ruleset_run } from "../krank.mjs";
 import { diff_lines } from "./prompt-diff.mjs";
 import { render_file } from "./file-view.mjs";
+import { review_report, review_reduce, review_check, review_decide, review_observations_match, explanation_current } from "../compile-review.mjs";
 
 const catalog = await load_json("./catalog.json");
 const bundle = await load_json("./files.json");
@@ -60,10 +61,11 @@ const object_about_tab = object_tabs.querySelector('[data-tab="object-about"]');
 const object_about_panel = object_panel.querySelector('.tab-panel[data-tab="object-about"]');
 
 let entry = catalog.entries.find((item) => item.compiled) ?? catalog.entries[0];
-let candidate = entry.candidates[0] ?? null;
+let candidate = entry.candidates.find((item) => item.id === entry.approved) ?? entry.candidates[0] ?? null;
 let working = entry.markdown;
 let edited = false;
 let last_check = null;
+let draft_revision = 0;
 let proposals = proposal_rows(object_model);
 const scan_times = new Map();
 let build_state = null;
@@ -368,17 +370,74 @@ function rendered_by_rule(prose) {
     return map;
 }
 
-function covered_origins(current_entry, current_candidate) {
-    return current_candidate.cases
-        .filter((item) => (item.source ?? current_entry.source) === current_entry.source)
-        .map((item) => item.original);
+function review_status() {
+    return review_report(candidate, entry.source, working, catalog.fact_contract);
 }
 
-function reduce(text, origins, candidate_id) {
-    const kept = text
-        .split("\n")
-        .filter((line) => !origins.some((origin) => line.includes(origin)));
-    return `${kept.join("\n").trimEnd()}\n\n## Compiled rules\n\nThis file's covered rules are compiled into the krank rule set \`${candidate_id}\`; see the compiled rules on this page.\n`;
+function review_cards() {
+    const container = document.createElement("div");
+    const report = review_status();
+    if (!candidate.review || report.reasons.length) {
+        const note = document.createElement("p");
+        note.textContent = report.reasons.join(" ") || "Legacy candidate: regenerate to identify and review requirements.";
+        container.append(note, rule_list(candidate));
+        return container;
+    }
+    for (const requirement of candidate.review.requirements) {
+        const status = report.requirements.find((item) => item.id === requirement.id);
+        const explanation = explanation_current(candidate, requirement.id, entry.source, working, catalog.fact_contract);
+        const card = document.createElement("article");
+        card.className = "candidate review-card";
+        const heading = document.createElement("h3");
+        heading.textContent = explanation?.title ?? requirement.title;
+        const source = document.createElement("blockquote");
+        source.textContent = `${entry.source}:${requirement.line}: ${working.split("\n")[requirement.line - 1]}`;
+        const summary = document.createElement("p");
+        summary.textContent = `${requirement.status.replaceAll("_", " ")} · ${status.decision} — ${status.reason}`;
+        const prose = document.createElement("p");
+        prose.textContent = explanation ? `Model explanation: ${explanation.text}`
+            : requirement.status === "executable" ? candidate.review.explanation_error ?? "Explanation unavailable. Review the exact interpretation below."
+            : `Extraction rationale: ${requirement.reason}`;
+        const limitations = document.createElement("p");
+        limitations.textContent = explanation ? `Limitations: ${explanation.limitations}`
+            : `Missing facts: ${requirement.missing_facts.join(", ") || "none specified"}. This is not an approved executable interpretation.`;
+        const rules = { facts: [], rules: candidate.rules.rules.filter((rule) => requirement.rules.includes(rule.id)) };
+        const detail = document.createElement("details");
+        const label = document.createElement("summary");
+        label.textContent = "Exact deterministic interpretation and raw rules";
+        const exact = document.createElement("pre");
+        exact.textContent = `${ruleset_render(rules)}\n\n${JSON.stringify(rules, null, 4)}`;
+        detail.append(label, exact);
+        const acknowledgment = document.createElement("p");
+        acknowledgment.className = "note";
+        acknowledgment.textContent = `Approval confirms all clauses and exceptions on this line are accounted for, this explanation matches the rules, and the limitations and recorded scope (${report.check_scope ?? "not checked"}) are appropriate. It does not prove future enforcement.`;
+        card.append(heading, source, summary, prose, limitations, detail, acknowledgment);
+        for (const [decision, title] of [["approved", "Approve coverage, limitations, and scope"], ["rejected", "Reject"], ["unreviewed", "Clear decision"]]) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.textContent = title;
+            button.disabled = decision === "approved" && requirement.status === "executable" && !report.check_scope;
+            button.addEventListener("click", () => {
+                try {
+                    if (textarea.value !== working) {
+                        throw new Error("Apply the edited prompt before reviewing requirements.");
+                    }
+                    review_decide(candidate, requirement.id, decision, entry.source, working, catalog.fact_contract);
+                    render();
+                } catch (error) {
+                    summary.textContent = error.message;
+                }
+            });
+            card.append(button);
+        }
+        const revise = document.createElement("button");
+        revise.type = "button";
+        revise.textContent = "Revise prompt and regenerate";
+        revise.addEventListener("click", revise_prompt);
+        card.append(revise);
+        container.append(card);
+    }
+    return container;
 }
 
 let prompt_url = null;
@@ -543,6 +602,7 @@ function render_candidates() {
         choose.addEventListener("click", () => {
             candidate = item;
             last_check = null;
+            reconcile_check();
             check_output.textContent = "";
             urls_reset();
             render();
@@ -562,7 +622,7 @@ function render_rules() {
         badge.textContent = text;
         rules_badges.append(badge);
     }
-    rule_summary.replaceChildren(rule_list(candidate));
+    rule_summary.replaceChildren(review_cards());
     const text = JSON.stringify(candidate.rules, null, 2);
     rules_box.textContent = text;
     const link = document.querySelector("#rules-download");
@@ -575,48 +635,28 @@ function render_prose() {
 }
 
 function render_compare() {
-    const rendered = rendered_by_rule(ruleset_render(candidate.rules));
-    const origins = covered_origins(entry, candidate);
-    const present = origins.filter((origin) => working.includes(origin)).length;
-    const covered = candidate.cases.map((item) => item.original);
-    const uncovered_lines = working
-        .split("\n")
-        .filter((line) => line.trim() !== "" && !covered.some((original) => line.includes(original)));
-    compare_note.textContent = origins.length === 0
-        ? "This candidate has no case drawn from this file."
-        : `${present} of ${origins.length} covered lines are present in the prompt text; ${uncovered_lines.length} non-empty line(s) are not covered by a case. A missing covered line is dimmed.`;
+    const report = review_status();
+    compare_note.textContent = `${report.identified} requirements identified; ${report.executable} executable; ${report.approved} approved; ${report.removed.length} removable lines. These counts do not prove extraction completeness. ${report.reasons.join(" ")}`;
     comparison.replaceChildren();
-    for (const item of candidate.cases) {
+    for (const item of report.reasons.length === 0 && Array.isArray(candidate.review?.requirements) ? candidate.review.requirements : []) {
         const row = document.createElement("tr");
-        if (!working.includes(item.original)) {
-            row.className = "missing";
-        }
-        row.append(
-            cell(item.original),
-            cell(rendered.get(item.rule) ?? "(not rendered)"),
-            cell(item.verdict, "verdict"),
-            cell(item.note),
-            cell(item.suggestion ?? "", "hint"),
-        );
+        const explanation = explanation_current(candidate, item.id, entry.source, working, catalog.fact_contract);
+        row.append(cell(`Line ${item.line}: ${item.quote}`), cell(explanation?.text ?? "Explanation unavailable"),
+            cell(item.status), cell(item.reason), cell(item.missing_facts.join(", ")));
         comparison.append(row);
     }
     uncovered.replaceChildren();
-    if (uncovered_lines.length === 0) {
-        const li = document.createElement("li");
-        li.textContent = "None: every non-empty line is covered by a case.";
-        uncovered.append(li);
-    } else {
-        for (const line of uncovered_lines) {
-            const li = document.createElement("li");
-            li.textContent = line;
-            uncovered.append(li);
+    working.split("\n").forEach((line, index) => {
+        if (line.trim() && !report.removed.includes(index + 1)) {
+            const item = document.createElement("li");
+            item.textContent = `Line ${index + 1} retained: ${line}`;
+            uncovered.append(item);
         }
-    }
+    });
 }
 
 function render_reduced() {
-    const origins = covered_origins(entry, candidate);
-    const reduced = origins.length === 0 ? working : reduce(working, origins, candidate.id);
+    const reduced = review_reduce(candidate, entry.source, working, catalog.fact_contract).text;
     reduced_box.textContent = reduced;
 
     diff_box.replaceChildren();
@@ -677,7 +717,9 @@ function render_approve() {
         ["Prompt", entry.source],
         ["Candidate", `${candidate.title} (${candidate.id})`],
         ["Rules", String(candidate.rules.rules.length)],
-        ["Cases", String(candidate.cases.length)],
+        ["Requirements", String(review_status().identified)],
+        ["Approved requirements", String(review_status().approved)],
+        ["Recorded check scope", review_status().check_scope ?? "none"],
         ["Prompt edited", edited ? "yes" : "no"],
         ["Check", last_check ? `run: ${last_check.firings} firing(s), ${last_check.emitted.length} emission(s)` : "not run (step 5)"],
     ];
@@ -697,8 +739,11 @@ function render_approve() {
     reduced_link.href = download_url(reduced_box.textContent, "text/markdown");
     reduced_link.download = `${candidate.id}-reduced.md`;
 
-    approve_warning.hidden = Boolean(last_check);
-    approve_warning.textContent = last_check ? "" : "The check has not been run; run step 5 before approving.";
+    const compile_link = document.querySelector("#approve-compile");
+    compile_link.href = download_url(JSON.stringify({ source: entry.source, approved: candidate.id, candidates: [candidate] }, null, 4), "application/json");
+    compile_link.download = `${candidate.id}-compile.json`;
+    approve_warning.hidden = Boolean(review_status().check_scope);
+    approve_warning.textContent = "No current review check. Regenerate legacy candidates, run step 5, then approve individual requirements in step 4. Downloading is not approval.";
 }
 
 function local_time(iso) {
@@ -872,7 +917,7 @@ function render() {
         dd.textContent = "No candidate rule set for this prompt yet.";
         approve.append(dt, dd);
         approve_warning.hidden = true;
-        for (const id of ["#rules-download", "#reduced-download", "#approve-rules", "#approve-reduced"]) {
+        for (const id of ["#rules-download", "#reduced-download", "#approve-rules", "#approve-reduced", "#approve-compile"]) {
             document.querySelector(id).removeAttribute("href");
         }
         return;
@@ -938,6 +983,23 @@ function selected_facts() {
     return files.flatMap((file) => file.entities ?? [{ type: "file", ...file.facts }]);
 }
 
+function reconcile_check() {
+    const check = candidate?.review?.check;
+    if (!check) {
+        return;
+    }
+    const previous = select_scope.value;
+    select_scope.value = check.scope;
+    if (review_observations_match(candidate, select_scope.value, selected_facts()) && review_status().check_scope) {
+        last_check = check.result;
+    } else {
+        select_scope.value = previous;
+        candidate.review.check = null;
+        candidate.review.approvals = {};
+        last_check = null;
+    }
+}
+
 function show(step) {
     for (const button of document.querySelectorAll(".steps button")) {
         button.classList.toggle("active", button.dataset.step === step);
@@ -948,15 +1010,41 @@ function show(step) {
 }
 
 select_prompt.addEventListener("change", () => {
+    draft_revision += 1;
     entry = catalog.entries.find((item) => item.source === select_prompt.value) ?? catalog.entries[0];
-    candidate = entry.candidates[0] ?? null;
+    candidate = entry.candidates.find((item) => item.id === entry.approved) ?? entry.candidates[0] ?? null;
     working = entry.markdown;
     edited = false;
     last_check = null;
+    reconcile_check();
     render();
 });
 
 textarea.addEventListener("input", () => {
+    draft_revision += 1;
+    if (candidate?.review) {
+        candidate.review.approvals = {};
+        candidate.review.check = null;
+        candidate.review.explanations = null;
+    }
+    last_check = null;
+    urls_reset();
+    if (candidate) {
+        render_rules();
+        render_compare();
+        render_reduced();
+        render_approve();
+        render_check_result();
+    }
+    if (textarea.value !== working) {
+        for (const id of ["#reduced-download", "#approve-rules", "#approve-reduced", "#approve-compile"]) {
+            document.querySelector(id).removeAttribute("href");
+        }
+        reduced_box.textContent = textarea.value;
+        approve_warning.hidden = false;
+        approve_warning.textContent = "Apply the edited prompt before checking or downloading review artifacts.";
+    }
+    render_proposals();
     update_edit_note();
     update_prompt_download();
 });
@@ -969,6 +1057,7 @@ document.querySelector("#apply").addEventListener("click", () => {
 });
 
 document.querySelector("#reset").addEventListener("click", () => {
+    draft_revision += 1;
     working = entry.markdown;
     edited = false;
     last_check = null;
@@ -1116,6 +1205,9 @@ document.querySelector("#propose").addEventListener("click", async () => {
 
 document.querySelector("#generate").addEventListener("click", async () => {
     const button = document.querySelector("#generate");
+    const request_entry = entry;
+    const request_text = textarea.value;
+    const request_revision = draft_revision;
     const note = document.querySelector("#generate-note");
     button.disabled = true;
     let phase = "generation started";
@@ -1135,7 +1227,7 @@ document.querySelector("#generate").addEventListener("click", async () => {
     update();
     const timer = setInterval(update, 1000);
     try {
-        const result = await post_sse("/compile", { source: entry.source, text: textarea.value }, (event) => {
+        const result = await post_sse("/compile", { source: request_entry.source, text: request_text }, (event) => {
             if (event.type === "phase") {
                 phase = event.message ?? event.phase;
             } else if (event.type === "status") {
@@ -1145,10 +1237,13 @@ document.querySelector("#generate").addEventListener("click", async () => {
                 phase = reasoning_tail(reasoning);
             }
         });
+        if (entry !== request_entry || textarea.value !== request_text || draft_revision !== request_revision) {
+            throw new Error("Prompt changed during generation; result discarded. Generate again for the current draft.");
+        }
         const candidates = result.candidates;
         entry = { ...entry, compiled: true, candidates };
         candidate = entry.candidates[0];
-        working = textarea.value;
+        working = request_text;
         edited = working !== entry.markdown;
         last_check = null;
         phase = `generated ${candidates.length} candidate(s)`;
@@ -1168,13 +1263,32 @@ document.querySelector("#generate").addEventListener("click", async () => {
     }
 });
 
+select_scope.addEventListener("change", () => {
+    last_check = null;
+    if (candidate?.review) {
+        candidate.review.check = null;
+        candidate.review.approvals = {};
+    }
+    if (textarea.value !== working) {
+        render_check_result();
+        return;
+    }
+    render();
+});
+
 document.querySelector("#run").addEventListener("click", () => {
     if (!candidate) {
         check_output.textContent = "No candidate rule set to run.";
         return;
     }
+    if (textarea.value !== working) {
+        check_output.textContent = "Apply the edited prompt before running a check.";
+        return;
+    }
     try {
-        const result = ruleset_run({ facts: selected_facts(), rules: candidate.rules.rules });
+        const result = candidate.review
+            ? review_check(candidate, entry.source, working, catalog.fact_contract, select_scope.value, selected_facts())
+            : ruleset_run({ facts: selected_facts(), rules: candidate.rules.rules });
         last_check = result;
         check_output.textContent = JSON.stringify(
             { rule_set: candidate.id, firings: result.firings, emitted: result.emitted },
@@ -1185,6 +1299,9 @@ document.querySelector("#run").addEventListener("click", () => {
         last_check = null;
         check_output.textContent = `error: ${error.message}`;
     }
+    render_rules();
+    render_compare();
+    render_reduced();
     render_check_result();
     render_approve();
 });
@@ -1199,5 +1316,6 @@ for (const button of document.querySelectorAll(".tab")) {
 
 populate_prompts();
 populate_scopes();
+reconcile_check();
 render();
 load_build_state();

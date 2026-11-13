@@ -172,6 +172,16 @@ test("every candidate renders its rules and its prose is in the source", () => {
     }
 });
 
+test("review and reduction share the browser-safe core", () => {
+    for (const path of ["sources/browser/studio.mjs", "sources/browser/catalog.mjs", "scripts/prompts-build.mjs"]) {
+        assert.match(read(path), /compile-review\.mjs/);
+        assert.match(read(path), /review_reduce\(/);
+    }
+    assert.match(read("sources/browser/index.html"), /id="approve-compile"/);
+    assert.match(read("sources/browser/studio.mjs"), /explanation_current\(/);
+    assert.match(read("sources/browser/studio.mjs"), /review_decide\(/);
+});
+
 test("the line diff reports removals and additions", () => {
     assert.deepEqual(
         diff_lines("a\nb\nc", "a\nc").map((row) => `${row.kind}:${row.text}`),

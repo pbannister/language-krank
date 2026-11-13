@@ -15,6 +15,8 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
+import { fact_contract } from "../sources/compile-review.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const directory_prompts = join(root, "prompts");
@@ -61,6 +63,7 @@ function candidates_of(entry) {
             explanation: candidate.explanation ?? "",
             rules: resolve_rules(candidate),
             cases: resolve_cases(candidate),
+            ...(candidate.review ? { review: candidate.review } : {}),
         }));
     }
     return [{
@@ -69,6 +72,7 @@ function candidates_of(entry) {
         explanation: entry.explanation ?? "",
         rules: resolve_rules(entry),
         cases: resolve_cases(entry),
+        ...(entry.review ? { review: entry.review } : {}),
     }];
 }
 
@@ -106,4 +110,7 @@ const entries = files.sort().map((full) => {
     };
 });
 
-process.stdout.write(`${JSON.stringify({ entries }, null, 4)}\n`);
+const contract = fact_contract(createHash("sha256")
+    .update(readFileSync(new URL("./site-facts.mjs", import.meta.url)))
+    .update(readFileSync(join(root, "dataflow.in/object-model.json"))).digest("hex"));
+process.stdout.write(`${JSON.stringify({ entries, fact_contract: contract }, null, 4)}\n`);

@@ -1,0 +1,23 @@
+{
+    "source": "prompts/example.md",
+    "text": "# File policy\nFiles must use spaces and four-space indentation.\nFiles must use spaces and four-space indentation.\nReviews must be helpful.\n",
+    "rules": {
+        "facts": [],
+        "rules": [
+            {"id": "spaces", "when": [{"fact": {"type": "file", "has_tab": true}}], "then": [{"emit": "Use spaces."}]},
+            {"id": "indent", "when": [{"fact": {"type": "file", "indent_unit": {"ne": 4}}}], "then": [{"emit": "Use four-space indentation."}]}
+        ]
+    },
+    "requirements": [
+        {"id": "spaces", "line": 2, "quote": "Files must use spaces", "title": "Use spaces", "status": "executable", "reason": "The file extractor reports tabs.", "missing_facts": [], "rules": ["spaces"]},
+        {"id": "indent", "line": 2, "quote": "four-space indentation", "title": "Indent by four spaces", "status": "executable", "reason": "The file extractor reports the indentation unit.", "missing_facts": [], "rules": ["indent"]},
+        {"id": "repeat", "line": 3, "quote": "Files must use spaces and four-space indentation.", "title": "Repeated policy", "status": "needs_clarification", "reason": "Confirm whether this repeated passage has a different scope.", "missing_facts": [], "rules": []},
+        {"id": "helpful", "line": 4, "quote": "Reviews must be helpful.", "title": "Helpful reviews", "status": "human_judgment", "reason": "Helpfulness needs human judgment.", "missing_facts": [], "rules": []}
+    ],
+    "passages": [
+        {"line": 1, "quote": "# File policy", "kind": "context", "requirements": []},
+        {"line": 2, "quote": "Files must use spaces and four-space indentation.", "kind": "requirements", "requirements": ["spaces", "indent"]},
+        {"line": 3, "quote": "Files must use spaces and four-space indentation.", "kind": "requirements", "requirements": ["repeat"]},
+        {"line": 4, "quote": "Reviews must be helpful.", "kind": "requirements", "requirements": ["helpful"]}
+    ]
+}

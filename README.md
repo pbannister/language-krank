@@ -43,6 +43,65 @@ The compile is recorded: `scripts/site-catalog.mjs` assembles the compiled rule 
 
 **In the Harness.** `sources/harness/krank-studio/` is a Harness client plugin that adds a **Krank** action to the conversation session header and opens the local studio. Install it into the web profile with `dsh plugin --profile web add -w sources/harness/krank-studio`, then reload the page. It is a launcher, not a second copy of the studio, and it is never published.
 
+## Requirement review and safe reduction
+
+The studio now separates finding requirements, compiling executable checks, explaining those checks, and human approval.
+Generation inventories obligations, prohibitions, permissions, prerequisites, exceptions, and measurable constraints rather than discarding process or modal language.
+Each requirement is classified as **executable**, **needs facts**, **needs clarification**, or **human judgment**.
+Missing capabilities remain visible; a candidate with no executable rules is still useful review material.
+The declared extractor contract is in `sources/compile-review.mjs`, with a revision derived from the extractor and object registry.
+A registered noun alone does not mean that observations of it exist.
+
+The Rules tab presents requirement cards with source quotations and reasons.
+A separate model call explains validated rules using their fact definitions, without receiving the original prose or extraction rationale.
+The explanation is a review aid, not a proof of equivalence.
+Expand a card to see the exact deterministic interpretation and raw rules.
+If explanation generation fails, valid rules remain available and the card explicitly reports the failure.
+The library renderer and its public API remain deterministic and unchanged.
+
+Run a check against a relevant file or directory, then approve or reject requirements individually.
+Approval acknowledges every clause and exception on the cited line, the interpretation, its limitations, and the recorded fact scope.
+A successful evaluation may emit violations; evaluation and project conformance are different things.
+Changing source text, rule content, coverage accounting, the fact contract, explanations, or check evidence invalidates approval.
+Checks on empty, unrelated, or incomplete fact observations cannot authorize reduction.
+Source edits during generation cause the stale response to be discarded.
+
+Download the **complete compile and review artifact**, not just the rule set, to preserve decisions.
+Save that JSON under `dataflow.in/compile/` yourself, then rebuild the studio or run `make prompts`.
+The studio does not overwrite authored files.
+A page-local source edit must also be saved to its prompt file before the build can reuse the review.
+Existing compile entries remain readable, but missing review metadata is unreviewed, not implicitly approved.
+The top-level `approved` field selects a candidate; it does not approve its requirements.
+
+Only exact source lines whose entire identified requirement content is executable, checked, and explicitly approved are eligible for removal.
+Partially covered lines, headings, and context stay intact.
+Repeated text is distinguished by its line number; substring matches never authorize deletion.
+The studio, output builder, and coverage report use the same review core.
+Generated manifests distinguish identified requirements, executable requirements, approvals, and removable lines.
+These counts describe the recorded reading, not proven extraction recall.
+A historical check does not install future enforcement: later iterations must load the saved rules and supply suitable facts when checking their work.
+
+### Review artifact contract
+
+A compile entry retains `source`, `approved` (candidate selection), and `candidates`.
+Each candidate retains its existing `id`, `title`, `rules`, and compatibility `cases`, plus optional `review` metadata:
+
+- `version`, `source`, `text`, and `contract` bind the review to the full source and extractor capabilities.
+- `requirements` contain unique IDs, 1-based `line` locations, exact clause `quote` strings, titles, classifications, reasons, missing facts, and rule IDs.
+- `passages` account for every nonblank line once, using its full exact quote, a `requirements` or `context` kind, and requirement IDs.
+- `explanations` bind model-written titles, explanations, and limitations to the validated interpretation; failures are recorded separately.
+- `check` records the evaluated rules, fact scope, fact snapshot, and result.
+- `approvals` record individual decisions and acknowledgement of coverage and limitations.
+
+Bindings use canonical JSON snapshots for exact comparison in both Node and the browser.
+They are not signatures or an authorization security boundary; authored review artifacts remain human-controlled project inputs.
+The current contract deliberately rejects unsupported fields and invented initial facts rather than guessing new extractors.
+Runtime marker capabilities remain explicit fact gaps in this first increment.
+
+Portable tests use a fake compiler and authored fixtures.
+They do not measure real-model recall, explanation fidelity, or readability.
+`evals/08-compile-review.md` defines the separately authorized baseline comparison and human scoring; live evaluation and human acceptance remain pending.
+
 ## Publishing
 
 `make publish` tags the current commit, pushes it, and publishes the package.
