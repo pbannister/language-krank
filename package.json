@@ -16,6 +16,7 @@
         ".": "./sources/krank.mjs",
         "./run": "./sources/ruleset-run.mjs",
         "./render": "./sources/ruleset-render.mjs",
+        "./contract": "./sources/studio-contract.mjs",
         "./package.json": "./package.json"
     },
     "bin": {
@@ -25,6 +26,7 @@
         "sources/krank.mjs",
         "sources/ruleset-run.mjs",
         "sources/ruleset-render.mjs",
+        "sources/studio-contract.mjs",
         "sources/ruleset-command.mjs",
         "documents/10-rule-notation.md"
     ],

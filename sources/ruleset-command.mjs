@@ -5,6 +5,7 @@
 //   node sources/ruleset-command.mjs run    <ruleset.json>
 //   node sources/ruleset-command.mjs render <ruleset.json>
 //   node sources/ruleset-command.mjs check  <ruleset.json> [facts.json] [--fail-on-emit]
+//   node sources/ruleset-command.mjs contract
 //
 // `check` is the conformance entry point: the model (or a test) supplies the
 // facts, the engine supplies the decision. The rules never enter the prompt; the
@@ -17,6 +18,7 @@
 import { readFileSync } from "node:fs";
 import { ruleset_run } from "./ruleset-run.mjs";
 import { ruleset_render } from "./ruleset-render.mjs";
+import { contract_document } from "./studio-contract.mjs";
 
 function usage() {
     return [
@@ -24,6 +26,7 @@ function usage() {
         "  node sources/ruleset-command.mjs run    <ruleset.json>",
         "  node sources/ruleset-command.mjs render <ruleset.json>",
         "  node sources/ruleset-command.mjs check  <ruleset.json> [facts.json] [--fail-on-emit]",
+        "  node sources/ruleset-command.mjs contract",
     ].join("\n");
 }
 
@@ -62,7 +65,17 @@ const command = args[0];
 const positional = args.slice(1).filter((arg) => !arg.startsWith("--"));
 const flags = new Set(args.slice(1).filter((arg) => arg.startsWith("--")));
 
-if (!command || positional.length === 0) {
+if (!command) {
+    console.error(usage());
+    process.exit(2);
+}
+
+if (command === "contract") {
+    process.stdout.write(`${JSON.stringify(contract_document(), null, 2)}\n`);
+    process.exit(0);
+}
+
+if (positional.length === 0) {
     console.error(usage());
     process.exit(2);
 }

@@ -173,7 +173,7 @@ test("export, catalog, full and single-source builds preserve approved metadata 
     for (const directory of ["sources", "scripts", "prompts", "dataflow.in/compile"]) {
         mkdirSync(`${sandbox}/${directory}`, { recursive: true });
     }
-    for (const path of ["sources/compile-review.mjs", "sources/ruleset-run.mjs", "sources/ruleset-render.mjs", "scripts/site-catalog.mjs", "scripts/site-facts.mjs", "scripts/prompts-build.mjs", "dataflow.in/object-model.json"]) {
+    for (const path of ["sources/compile-review.mjs", "sources/ruleset-run.mjs", "sources/ruleset-render.mjs", "sources/studio-contract.mjs", "scripts/site-catalog.mjs", "scripts/site-facts.mjs", "scripts/prompts-build.mjs", "dataflow.in/object-model.json"]) {
         copyFileSync(`${root}${path}`, `${sandbox}/${path}`);
     }
     const actual_contract = fact_contract(createHash("sha256").update(readFileSync(`${root}scripts/site-facts.mjs`))

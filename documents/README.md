@@ -14,6 +14,8 @@ The LLM does not load these files as project rules.
 - `05-lessons-from-MI25.md` — lessons from the MI25 fan-service project.
 - `06-project-pages.md` — project-pages publishing conventions (summary; canonical version in the homelab).
 - `07-prompt-maturity.md` — the 0–3 maturity rubric for the prompt protocol, and how to score it.
+- `14-interaction-cycle.md` — the shared core, its three surfaces, and the interaction loop.
+- `18-core-contract.md` — the frozen, versioned data contract between the core and its surfaces.
 
 ## Canonical Files
 
@@ -27,3 +29,4 @@ The following filenames are canonical and must not be renamed or duplicated with
 - `05-lessons-from-MI25.md`
 - `06-project-pages.md`
 - `07-prompt-maturity.md`
+- `18-core-contract.md`

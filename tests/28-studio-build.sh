@@ -173,6 +173,10 @@ grep -qi 'content-type: text/javascript' "$DIRECTORY_TEST/headers" \
     || fail 'studio.mjs is not served as text/javascript'
 curl -sf "http://127.0.0.1:$PORT/browser/catalog.json" > /dev/null \
     || fail 'catalog.json is not served'
+curl -sf "http://127.0.0.1:$PORT/contract" > "$DIRECTORY_TEST/contract.json" \
+    || fail 'the contract endpoint did not answer'
+node -e 'const c = require(process.argv[1]); if (!c.ok || c.contract.name !== "krank-studio-core" || c.contract.version < 1 || c.contract.stability !== "frozen") process.exit(1);' \
+    "$DIRECTORY_TEST/contract.json" || fail 'the contract endpoint returned the wrong contract'
 
 curl -sf "http://127.0.0.1:$PORT/file?path=prompts/01-contract.md" > "$DIRECTORY_TEST/source.txt" \
     || fail 'the file endpoint did not serve a shared file'

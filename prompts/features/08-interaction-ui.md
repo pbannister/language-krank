@@ -13,6 +13,8 @@ core, three surfaces.
 - `UI-R003` — The Harness extension must grow the Krank action into a panel that renders the cycle and calls `/compile`; the standalone web remains the embedded renderer.
 - `UI-R004` — The standalone web (`make studio`) must stay the reference renderer and pass the coverage gate (`tests/31-prompts-build`) without the Harness.
 - `UI-R005` — A VSCode extension, if built, must be a thin webview over the same contract and the same web renderer.
+- `UI-R006` — The shared contract must be a browser-safe, versioned module covering the object model, catalog, fact bundle, compile request/response, `prompts.out/` manifest, and check result; validators must be pure and fail closed.
+- `UI-R007` — The contract must be exposed as `GET /contract` on the studio server and as `krank contract`; a breaking shape change must bump the contract version and update every surface.
 
 ## Behavior
 

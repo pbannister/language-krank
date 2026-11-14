@@ -31,6 +31,7 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { ruleset_run } from "../sources/krank.mjs";
 import { fact_contract, review_initialize, explanation_task, explanation_accept } from "../sources/compile-review.mjs";
+import { contract_document, validate_artifact } from "../sources/studio-contract.mjs";
 
 const port = Number(process.argv[2] ?? 8090);
 const root = resolve(process.argv[3] ?? fileURLToPath(new URL("../dataflow.out/studio", import.meta.url)));
@@ -193,6 +194,10 @@ async function parse_candidates(output, body, send) {
         review_initialize(candidate, body.source, body.text, contract);
     }
     // Validate all candidates before making any explanation call.
+    const response_check = validate_artifact("compile_response", { candidates: data.candidates });
+    if (!response_check.ok) {
+        throw new Error(`the compiler response violates the core contract: ${response_check.errors.join("; ")}`);
+    }
     for (const candidate of data.candidates) {
         if (!candidate.review.requirements.some((item) => item.status === "executable")) {
             continue;
@@ -377,8 +382,9 @@ function handle_stream(request, response, build, parse) {
         let stream_open = false;
         try {
             const body = JSON.parse(await body_of(request));
-            if (typeof body.source !== "string" || typeof body.text !== "string") {
-                throw new Error("source and text are required");
+            const request_check = validate_artifact("compile_request", body);
+            if (!request_check.ok) {
+                throw new Error(request_check.errors.join("; "));
             }
             response.writeHead(200, {
                 "content-type": "text/event-stream; charset=utf-8",
@@ -425,6 +431,12 @@ const server = createServer((request, response) => {
     } catch {
         response.writeHead(400);
         response.end("bad path\n");
+        return;
+    }
+
+    if (request.method === "GET" && pathname === "/contract") {
+        response.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+        response.end(`${JSON.stringify({ ok: true, contract: contract_document() }, null, 2)}\n`);
         return;
     }
 

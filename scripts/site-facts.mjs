@@ -22,6 +22,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, extname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { assert_artifact } from "../sources/studio-contract.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const directories = ["sources", "scripts", "tests", "site.in", "prompts", "records", "documents"];
@@ -344,4 +345,6 @@ const entries = files
         };
     });
 
-process.stdout.write(`${JSON.stringify({ directories, files: entries }, null, 4)}\n`);
+const bundle = { directories, files: entries };
+assert_artifact("fact_bundle", bundle);
+process.stdout.write(`${JSON.stringify(bundle, null, 4)}\n`);

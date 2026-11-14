@@ -26,7 +26,7 @@ The round trip between `prompts/` and `prompts.out/`, deferred until
 
 One core, three surfaces; the design is `documents/14-interaction-cycle.md`, the requirements `prompts/features/08-interaction-ui.md`.
 
-* [ ] freeze the shared core as a library and its HTTP/CLI contract (object model, catalog, extractors, `prompts-build`, `/compile`, `krank check`).
+* [x] freeze the shared core as a library and its HTTP/CLI contract (object model, catalog, extractors, `prompts-build`, `/compile`, `krank check`): `sources/studio-contract.mjs`, `GET /contract`, `krank contract`, producer validation, and `tests/33` (2026-11-13).
 * [ ] grow the Harness plugin from a launcher into a panel that embeds the web renderer and calls `/compile`.
 * [ ] (deferred) VSCode extension: a thin webview over the frozen contract and the same renderer.
 
@@ -53,6 +53,7 @@ One core, three surfaces; the design is `documents/14-interaction-cycle.md`, the
 
 ## Recently Completed
 
+- [x] freeze the versioned core contract: browser-safe validators for object model, catalog, fact bundle, compile request/response, `prompts.out` manifest, and check result; producer enforcement; `GET /contract` and `krank contract`; `tests/33` (2026-11-13).
 - [x] complete the Harness Extension: embedded Krank panel over the standalone studio, live browser mount check, and dark-iframe contrast fix (2026-11-13).
 - [x] create the project from `00-project-skeleton` and vendor the shared rules (2026-11-04).
 - [x] write the notation and semantics in `documents/10-rule-notation.md`.

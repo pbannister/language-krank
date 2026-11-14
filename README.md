@@ -28,6 +28,18 @@ The package surface is `@bannister.us/krank`.
 
 During development, a sibling project can depend on this checkout by path (`"@bannister.us/krank": "file:../08-language-krank"`) or on a release tag once one is cut.
 
+## Core contract
+
+The studio core and its surfaces share a frozen, versioned contract:
+`sources/studio-contract.mjs`, exported as `@bannister.us/krank/contract`.
+It defines validators for the object model, catalog, fact bundle, compile
+request/response, `prompts.out/manifest.json`, and `krank check` output.
+Validators are pure and fail closed.
+
+Inspect it with `curl http://127.0.0.1:8090/contract` or `npx krank contract`.
+A breaking shape change bumps `CORE_CONTRACT_VERSION` and updates every surface;
+the versioning and artifact table are in `documents/18-core-contract.md`.
+
 ## Browser demo
 
 `sources/browser/` holds two zero-build pages that load `sources/krank.mjs` as a native ES module; the engine and renderer carry no `node:` import, so the same code runs in the browser.

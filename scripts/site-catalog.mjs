@@ -17,6 +17,7 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { fact_contract } from "../sources/compile-review.mjs";
+import { assert_artifact } from "../sources/studio-contract.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const directory_prompts = join(root, "prompts");
@@ -114,4 +115,6 @@ const entries = files.sort().map((full) => {
 const contract = fact_contract(createHash("sha256")
     .update(readFileSync(new URL("./site-facts.mjs", import.meta.url)))
     .update(readFileSync(join(root, "dataflow.in/object-model.json"))).digest("hex"));
-process.stdout.write(`${JSON.stringify({ entries, fact_contract: contract }, null, 4)}\n`);
+const catalog = { entries, fact_contract: contract };
+assert_artifact("catalog", catalog);
+process.stdout.write(`${JSON.stringify(catalog, null, 4)}\n`);

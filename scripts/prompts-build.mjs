@@ -27,6 +27,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ruleset_render } from "../sources/ruleset-render.mjs";
 import { review_reduce, review_selection, explanation_current } from "../sources/compile-review.mjs";
+import { validate_artifact } from "../sources/studio-contract.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 
@@ -107,6 +108,15 @@ function build_entry(entry, output) {
 const compiled = catalog.entries.filter((item) => item.compiled);
 const manifest_file = join(output, "manifest.json");
 
+function write_manifest(manifest) {
+    const validation = validate_artifact("prompts_manifest", manifest);
+    if (!validation.ok) {
+        console.error(`prompts-build: manifest violates the core contract: ${validation.errors.join("; ")}`);
+        process.exit(1);
+    }
+    writeFileSync(manifest_file, `${JSON.stringify(manifest, null, 4)}\n`);
+}
+
 if (source_arg) {
     let manifest = { generated_by: "scripts/prompts-build.mjs", generated_at: new Date().toISOString(), entries: [] };
     if (existsSync(manifest_file)) {
@@ -125,7 +135,7 @@ if (source_arg) {
     if (!entry.compiled) {
         rmSync(join(output, slug_of(entry.source)), { recursive: true, force: true });
         manifest.entries = manifest.entries.filter((item) => item.source !== entry.source);
-        writeFileSync(manifest_file, `${JSON.stringify(manifest, null, 4)}\n`);
+        write_manifest(manifest);
         process.stdout.write(`prompts-build: ${entry.source} has no candidate; removed its tree\n`);
         process.exit(0);
     }
@@ -138,7 +148,7 @@ if (source_arg) {
     }
     manifest.entries.sort((left, right) => left.source.localeCompare(right.source));
     manifest.generated_at = new Date().toISOString();
-    writeFileSync(manifest_file, `${JSON.stringify(manifest, null, 4)}\n`);
+    write_manifest(manifest);
     process.stdout.write(`prompts-build: wrote ${entry.source}\n`);
     process.exit(0);
 }
@@ -151,6 +161,6 @@ const manifest = { generated_by: "scripts/prompts-build.mjs", generated_at: new 
 for (const entry of compiled) {
     manifest.entries.push(build_entry(entry, output));
 }
-writeFileSync(manifest_file, `${JSON.stringify(manifest, null, 4)}\n`);
+write_manifest(manifest);
 
 process.stdout.write(`prompts-build: wrote ${manifest.entries.length} prompt(s) into ${output}\n`);
