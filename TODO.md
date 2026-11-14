@@ -46,13 +46,14 @@ One core, three surfaces; the design is `documents/14-interaction-cycle.md`, the
 
 ## Harness Extension
 
-* [ ] build the plugin in the DSH checkout and run `dsh web --port 3081` as the isolated test instance.
-* [ ] find the slot that hosts a full page or an iframe, and grow the plugin from the launcher into an iframe panel over the studio.
-* [ ] test it: `--dump-config` shows the plugin, the served client bundle resolves, and a DSH vitest component test mounts the action.
-* [ ] keep the standalone web as the embedded renderer and the contract frozen.
+* [x] build/link the plugin into the web profile and run `dsh web --port 3081 --no-open` as the isolated test instance (2026-11-13).
+* [x] grow the header launcher into an embedded panel: the action anchors in `conversation.session.header.actions`, and the iframe panel portals to `document.body` because the header action slot is clipped (2026-11-13).
+* [x] test it: `--dump-config` lists `dsh-krank-studio`, the mounted page serves the client bundle, and `scripts/harness-panel-check.mjs` opens a real session, mounts the action, verifies the iframe, close/reopen retention, and Escape dismissal (2026-11-13). The installed DSH ships no Vitest/DOM environment, so the live browser check substitutes for a Vitest component test.
+* [x] keep the standalone web as the embedded renderer and the contract frozen: the panel iframe points at the `make studio` page and the plugin holds no host service or credential (2026-11-13).
 
 ## Recently Completed
 
+- [x] complete the Harness Extension: embedded Krank panel over the standalone studio, live browser mount check, and dark-iframe contrast fix (2026-11-13).
 - [x] create the project from `00-project-skeleton` and vendor the shared rules (2026-11-04).
 - [x] write the notation and semantics in `documents/10-rule-notation.md`.
 - [x] implement the interpreter `sources/ruleset-run.mjs`, the renderer `sources/ruleset-render.mjs`, and the CLI `sources/ruleset-command.mjs`.

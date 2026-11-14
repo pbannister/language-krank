@@ -21,6 +21,7 @@ published to npm.
 - `HARNESS-STUDIO-R005` — The README must give install, reload, and remove commands, including a fallback launcher path when `dsh` is not on `PATH`.
 - `HARNESS-STUDIO-R006` — The action's visible label must be `Krank`, so the header names the tool rather than the page it opens.
 - `HARNESS-STUDIO-R007` — The embedded panel must be a modal dialog with an iframe titled `Krank prompt studio`, Close control, Escape dismissal, and focus returned to the header action; closing must hide rather than unmount the iframe so page-local studio state survives reopening.
+- `HARNESS-STUDIO-R008` — `scripts/harness-panel-check.mjs` must mount the action in a running Harness page and verify the dialog, iframe source, iframe retention across close/reopen, and Escape dismissal, because the installed DSH package offers no Vitest component environment.
 
 ## Behavior
 

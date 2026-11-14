@@ -31,6 +31,22 @@ node ~/.npm/_npx/1e7f6d9597241db0/node_modules/@deepseek-ai/dsh/lib/bin.js \
     plugin --profile web add ~/work/08-language-krank/sources/harness/krank-studio
 ```
 
+## Verify the mounted panel
+
+With the isolated Harness instance running and `make studio` serving port 8090:
+
+```sh
+node scripts/harness-panel-check.mjs \
+    'http://127.0.0.1:3081/?token=<printed-token>'
+```
+
+The check opens a real session, clicks **Krank**, verifies the dialog and iframe,
+closes and reopens the panel to confirm the iframe is retained, and verifies
+Escape dismissal. It writes a screenshot to `dataflow.out/ui-audit/`.
+
+The installed DSH package ships no Vitest or DOM test environment, so this browser
+mount check replaces the component-test step in the TODO.
+
 ## How it loads
 
 The Harness Web Client loads a client entry through `window.__ModuleLoader__`;

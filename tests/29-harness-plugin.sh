@@ -21,6 +21,10 @@ done
 
 node --check "$DIRECTORY_PLUGIN/lib/client.js" || fail 'client.js does not parse'
 node --check "$DIRECTORY_PLUGIN/lib/index.js" || fail 'index.js does not parse'
+node --check "$REPOSITORY_ROOT/scripts/harness-panel-check.mjs" \
+    || fail 'the live panel check does not parse'
+grep -q 'harness-panel-check.mjs' "$DIRECTORY_PLUGIN/README.md" \
+    || fail 'the README does not document the live panel check'
 
 node -e '
 const p = require(process.argv[1]);
