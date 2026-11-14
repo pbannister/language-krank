@@ -123,6 +123,8 @@ test("the studio exposes skip, step, and tab navigation semantics", () => {
         assert.ok(source.includes(wiring), `accessibility wiring is missing ${wiring}`);
     }
     assert.match(html, /:where\(a, button, input, select, textarea, summary\):focus-visible/);
+    assert.match(html, /body\s*\{[\s\S]*?background:\s*Canvas;[\s\S]*?color:\s*CanvasText;/);
+    assert.match(html, /\.steps button\s*\{[\s\S]*?color:\s*inherit;/);
     assert.match(html, /@media \(max-width: 54rem\)[\s\S]*?align-content: start/);
     assert.match(html, /body,[\s\S]*?\.tab-panel \{\s*min-width: 0;/);
     assert.match(html, /table-layout: fixed/);
