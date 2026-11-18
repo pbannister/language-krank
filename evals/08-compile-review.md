@@ -5,6 +5,7 @@
 Compare requirement extraction and rule explanations before and after the review change.
 Portable tests exercise contracts and fixtures, not model recall or human comprehension.
 This evaluation requires a separately authorized live model run and human scoring; it has not been run as part of implementation.
+A baseline of the current implementation reuses the same metrics; see Baseline and regression gate below.
 
 ## Requires
 
@@ -103,3 +104,27 @@ Record per-run counts and the concrete examples that decide them:
 Report baseline and changed distributions, including failures, rather than a single best run.
 An extraction gain with unsupported inventions is not an improvement.
 Human acceptance and readability judgments remain pending until the operator records them.
+
+## Baseline and regression gate
+
+This section defines how to measure the current implementation and gate later changes with it.
+It does not assert that a measurement has happened.
+A live result stays "not run" until an operator records it.
+
+A baseline measures the current implementation with the case and metrics above.
+It is not a before/after pair: the review change is already in this checkout.
+A before/after comparison needs two isolated checkouts with identical input and provider settings.
+
+To collect one, start the studio server and run `scripts/compile-review-eval.mjs` with an output path under `tests.out/`.
+The collector requires `KRANK_EVAL_LIVE=1` and `KRANK_EVAL_MODEL`, and refuses every other invocation.
+It sends only `{source, text}` from the case fixture, makes no scoring claim, and never reads this rubric.
+It preserves every raw response and every failure without retrying.
+
+A recorded baseline holds, per run, the model, settings, revision, request, latency, raw response, and failure when any.
+After the runs, a human scores identification recall, supported executable recall, unsupported inventions, explanation fidelity, readability, and safe reduction from the recorded examples.
+The human writes the scored baseline under `records/` only after review.
+Generated collector output under `tests.out/` is never edited by hand.
+
+A change to the compiler or its extractor must not regress the recorded baseline on any of those six measures.
+An extraction gain with new unsupported inventions is not an improvement.
+If no baseline is recorded, portable tests are the only evidence and no recall or readability claim may be made.
