@@ -21,7 +21,9 @@ rules are used. The aim is the general pattern the project skeleton records as
 The interpreter and renderer are browser-safe ES modules with no dependencies.
 The package surface is `@bannister.us/krank`.
 
-- Install the library: `npm install @bannister.us/krank`.
+- Install the current GitHub release:
+  `npm install -g https://github.com/pbannister/language-krank/releases/latest/download/krank.tgz`.
+- Install the library from npm: `npm install @bannister.us/krank`.
 - Import it: `import { ruleset_run, ruleset_session, ruleset_render } from "@bannister.us/krank";`.
 - Run the tool without installing: `npx krank run ruleset.json`, `npx krank render ruleset.json`, or `npx krank check ruleset.json facts.json` to supply facts and read the engine's decision (`--fail-on-emit` makes any emission exit nonzero, so it can gate a check).
 - In a browser, import the modules directly from a served URL, for example `import { ruleset_run } from "https://host/krank/sources/ruleset-run.mjs"`. The barrel and the two library modules carry no `node:` import, so they work in a browser; the command-line tool does not.

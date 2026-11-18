@@ -1300,7 +1300,7 @@ test("the episode, document, page, version, and todo extractors", () => {
     const nav = facts.files.find((file) => file.path === "site.in/pages.nav");
     assert.ok(nav.entities.some((item) => item.type === "nav" && item.label.length > 0));
     const version = facts.files.find((file) => file.path === "package.json");
-    assert.ok(version.entities.some((item) => item.type === "version" && item.value === "0.3.0"));
+    assert.ok(version.entities.some((item) => item.type === "version" && item.value === "0.4.0"));
     const todo = facts.files.find((file) => file.path === "TODO.md");
     assert.ok(todo.entities.some((item) => item.type === "todo_item" && item.checked));
 });
